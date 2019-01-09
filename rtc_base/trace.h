@@ -16,23 +16,73 @@
 #ifndef WEBRTC_SYSTEM_WRAPPERS_INCLUDE_TRACE_H_
 #define WEBRTC_SYSTEM_WRAPPERS_INCLUDE_TRACE_H_
 
-// #include <stddef.h>
-// #include <stdbool.h>
+#include <stddef.h>
+#include <stdbool.h>
 // #include <stdint.h>
+#include <stdio.h> // FILE*
 
-#include "rtc_base/checks.h"
+/*
+ * int main(void)
+ * {
+ *     TraceOStream ostream1 = {
+ *         .file = stdout,
+ *         .filter = kTraceAll,
+ *     };
+ *     WebRtcTrace_SetOStream(&ostream1);
+ *     // Generate file name
+ *     struct timespec ts;
+ *     clock_gettime(CLOCK_REALTIME, &ts); // CLOCK_MONOTONIC
+ *     struct tm buffer;
+ *     const struct tm *system_time = localtime_r(&ts.tv_sec, &buffer);
+ *     char filename[64];
+ *     snprintf(filename, sizeof(filename), "%s_%02d_%02d_%02d_%02d_%02d_%02d.log", "webrtc",
+ *              system_time->tm_year + 1900, system_time->tm_mon + 1, system_time->tm_mday,
+ *              system_time->tm_hour, system_time->tm_min, system_time->tm_sec);
+ *     fp = fopen(filename, "wb");
+ *     TraceOStream ostream2 = {
+ *         .file = fp,
+ *         .filter = kTraceError,
+ *     };
+ *     // Called before |InitFunctionPointers| be called
+ *     WebRtcTrace_SetOStream(&ostream1);
+ *     WebRtcTrace_SetOStream(&ostream2);
+ *     // Test max ostream number
+ *     // WebRtcTrace_SetOStream(&ostream2);
+ *     // WebRtcTrace_SetOStream(&ostream2);
+ *     WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, 0xa5,
+ *                  "failed in TimeToNextUpdate() call");
+ *     WEBRTC_TRACE(kTraceWarning, kTraceAudioMixerServer, 0xa5,
+ *                  "participant must be registered before turning it into anonymous");
+ *     printf("stdout(%p): (%#x), fp(%p): (%#x)\n", 
+ *            (void *)stdout, WebRtcTrace_level_filter(stdout), 
+ *            (void *)fp, WebRtcTrace_level_filter(fp));
+ *     WebRtcTrace_set_level_filter(stdout, kTraceNone);
+ *     // Test file rewind
+ *     for (size_t i = 0; i < 1024; i++) {
+ *         WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, i,
+ *                      "failed in TimeToNextUpdate() call (%zu)", i);
+ *         usleep(1000);
+ *     }
+ *     if (fp)
+ *         fclose(fp);
+ *     return 0;
+ * }
+ *
+ */
 
-namespace webrtc {
-
-#if RTC_DCHECK_IS_ON
-#define WEBRTC_TRACE Trace::Add
+#if !defined(NDEBUG) || defined(TRACE_ALWAYS_ON) // #if RTC_DCHECK_IS_ON
+#define WEBRTC_TRACE WebRtcTrace_Add
 #else
 // Disable all TRACE macros. The LOG macro is still functional.
-#define WEBRTC_TRACE true ? (void) 0 : Trace::Add
+#define WEBRTC_TRACE true ? (void) 0 : WebRtcTrace_Add
 #endif // RTC_DCHECK_IS_ON
 
+#if defined(__cplusplus)
+extern "C" { // namespace webrtc {
+#endif
+
 // From common_types.h
-enum TraceModule {
+typedef enum {
   kTraceUndefined = 0,
   // not a module, triggered from the engine code
   kTraceVoice = 0x0001,
@@ -54,9 +104,11 @@ enum TraceModule {
   kTraceVideoRenderer = 0x0014,
   kTraceVideoCapture = 0x0015,
   kTraceRemoteBitrateEstimator = 0x0017,
-};
+} TraceModule;
 
-enum TraceLevel {
+// From common_types.h
+// Used as bitmask
+typedef enum {
   kTraceNone = 0x0000,  // no trace
   kTraceStateInfo = 0x0001,
   kTraceWarning = 0x0002,
@@ -77,77 +129,46 @@ enum TraceLevel {
   // Non-verbose level used by LS_INFO of logging.h. Do not use directly.
   kTraceTerseInfo = 0x2000,
 
-  kTraceAll = 0xffff
-};
+  kTraceAll = 0xffff,
+} TraceLevel;
 
-// External Trace API
-class TraceCallback {
- public:
-  virtual void Print(TraceLevel level, const char* message, int length) = 0;
-  virtual void WriteToFile(const char* message, int length) = 0;
+typedef struct {
+  FILE* file; // Used as identifer
+  TraceLevel filter; // Used as bitmask
+  // TraceModule module;
+  // If |add_file_counter| is false the same file will be
+  // reused when it fills up. If it's true a new file with incremented name will be used.
+  // const bool add_file_counter;
+} TraceOStream;
 
- // protected:
-  virtual ~TraceCallback() {}
-  TraceCallback() {}
-};
+// Specifies what type of messages should be written to the trace file. The
+// |filter| parameter is a bitmask where each message type is enumerated by the
+// TraceLevel enumerator. If |file| is nullptr, all ostreams will be changed.
+void WebRtcTrace_set_level_filter(FILE* file,
+                                  int filter);
 
-class Trace {
- public:
-  // The length of the trace text preceeding the log message.
-  static const int kBoilerplateLength;
-  // The position of the timestamp text within a trace.
-  static const int kTimestampPosition;
-  // The length of the timestamp (without "delta" field).
-  static const int kTimestampLength;
+// Returns what type of messages are written to the trace file.
+int WebRtcTrace_level_filter(FILE* file);
 
-  // Increments the reference count to the trace.
-  static void CreateTrace();
-  // Decrements the reference count to the trace.
-  static void ReturnTrace();
-  // Note: any instance that writes to the trace file should increment and
-  // decrement the reference count on construction and destruction,
-  // respectively.
+// Registers out stream to receive trace messages. returns -1 if full
+int WebRtcTrace_SetOStream(TraceOStream* ostream);
 
-  // Specifies what type of messages should be written to the trace file. The
-  // filter parameter is a bitmask where each message type is enumerated by the
-  // TraceLevel enumerator. TODO(hellner): why is the TraceLevel enumerator not
-  // defined in this file?
-  static void set_level_filter(int filter);
+// Adds a trace message for writing to file. The message is put in a queue
+// for writing to file whenever possible for performance reasons. I.e. there
+// is a crash it is possible that the last, vital logs are not logged yet.
+// |level| is the type of message to log. If that type of messages is
+// filtered it will not be written to file. |module| is an identifier for what
+// part of the code the message is coming.
+// |id| is an identifier that should be unique for that set of classes that
+// are associated (e.g. all instances owned by an engine).
+// |msg| and the ellipsis are the same as e.g. snprintf.
+void WebRtcTrace_Add(const TraceLevel level,
+                     const TraceModule module,
+                     const int id,
+                     const char* msg, ...);
 
-  // Returns what type of messages are written to the trace file.
-  static int level_filter();
-
-  // TODO(lgY): move this interface to |TraceCallback|
-  // Sets the file name. If add_file_counter is false the same file will be
-  // reused when it fills up. If it's true a new file with incremented name
-  // will be used.
-  /* static int SetTraceFile(const char* file_name,
-                          const bool add_file_counter = false); */
-
-  // Registers callback to receive trace messages.
-  // TODO(hellner): Why not use OutStream instead? Why is TraceCallback not
-  // defined in this file?
-  static int SetTraceCallback(TraceCallback* callback);
-
-  // Adds a trace message for writing to file. The message is put in a queue
-  // for writing to file whenever possible for performance reasons. I.e. there
-  // is a crash it is possible that the last, vital logs are not logged yet.
-  // level is the type of message to log. If that type of messages is
-  // filtered it will not be written to file. module is an identifier for what
-  // part of the code the message is coming.
-  // id is an identifier that should be unique for that set of classes that
-  // are associated (e.g. all instances owned by an engine).
-  // msg and the ellipsis are the same as e.g. sprintf.
-  // TODO(hellner) Why is TraceModule not defined in this file?
-  static void Add(const TraceLevel level,
-                  const TraceModule module,
-                  const int id,
-                  const char* msg, ...);
-
- private:
-  static volatile int level_filter_;
-};
-
-}  // namespace webrtc
+#if defined(__cplusplus)
+} // }  // namespace webrtc
+#endif
 
 #endif  // WEBRTC_SYSTEM_WRAPPERS_INCLUDE_TRACE_H_

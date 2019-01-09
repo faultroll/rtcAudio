@@ -310,10 +310,10 @@ DSP_S32 Audio_Webrtc_SentMixChnFrame(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_S32 s32Id
         Audio_Webrtc_Buffer_Size(pMixer->stParInfo[s32Id].pInput, &length);
         length = (length < pMixer->stParInfo[s32Id].u32Size) ? (pMixer->stParInfo[s32Id].u32Size - length) : 0;
         length = SAMPLE2LENGTH(length);
-        if (length < pstData->s32Len)
+        if (length < (size_t)pstData->s32Len)
         {
-            printf("[%s] (%d): not enough buf (%d > %d)\n", __func__, s32Id,
-                   pstData->s32Len, length);
+            printf("[%s] (%d): not enough buf (%zu > %zu)\n", __func__, s32Id,
+                   (size_t)pstData->s32Len, length);
 
             return -1;
         }
