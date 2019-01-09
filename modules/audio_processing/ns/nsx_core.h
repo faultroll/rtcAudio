@@ -208,10 +208,35 @@ extern NormalizeRealBuffer WebRtcNsx_NormalizeRealBuffer;
 
 // Compute speech/noise probability.
 // Intended to be private.
-void WebRtcNsx_SpeechNoiseProb(NoiseSuppressionFixedC* inst,
-                               uint16_t* nonSpeechProbFinal,
-                               uint32_t* priorLocSnr,
-                               uint32_t* postLocSnr);
+typedef void (*SpeechNoiseProb)(NoiseSuppressionFixedC* inst,
+                                uint16_t* nonSpeechProbFinal,
+                                uint32_t* priorLocSnr,
+                                uint32_t* postLocSnr);
+extern SpeechNoiseProb WebRtcNsx_SpeechNoiseProb;
+
+// C version function pointers
+void WebRtcNsx_SpeechNoiseProbC(NoiseSuppressionFixedC* inst,
+                                uint16_t* nonSpeechProbFinal,
+                                uint32_t* priorLocSnr,
+                                uint32_t* postLocSnr);
+void WebRtcNsx_NoiseEstimationC(NoiseSuppressionFixedC* inst,
+                                uint16_t* magn,
+                                uint32_t* noise,
+                                int16_t* q_noise);
+void WebRtcNsx_PrepareSpectrumC(NoiseSuppressionFixedC* inst,
+                                int16_t* freq_buf);
+void WebRtcNsx_DenormalizeC(NoiseSuppressionFixedC* inst,
+                            int16_t* in,
+                            int factor);
+void WebRtcNsx_SynthesisUpdateC(NoiseSuppressionFixedC* inst,
+                                int16_t* out_frame,
+                                int16_t gain_factor);
+void WebRtcNsx_AnalysisUpdateC(NoiseSuppressionFixedC* inst,
+                               int16_t* out,
+                               int16_t* new_speech);
+void WebRtcNsx_NormalizeRealBufferC(NoiseSuppressionFixedC* inst,
+                                    const int16_t* in,
+                                    int16_t* out);
 
 #if defined(WEBRTC_HAS_NEON)
 // For the above function pointers, functions for generic platforms are declared
@@ -235,6 +260,10 @@ void WebRtcNsx_PrepareSpectrumNeon(NoiseSuppressionFixedC* inst,
 // For the above function pointers, functions for generic platforms are declared
 // and defined as static in file nsx_core.c, while those for MIPS platforms
 // are declared below and defined in file nsx_core_mips.c.
+void WebRtcNsx_SpeechNoiseProb_mips(NoiseSuppressionFixedC* inst,
+                                    uint16_t* nonSpeechProbFinal,
+                                    uint32_t* priorLocSnr,
+                                    uint32_t* postLocSnr);
 void WebRtcNsx_SynthesisUpdate_mips(NoiseSuppressionFixedC* inst,
                                     int16_t* out_frame,
                                     int16_t gain_factor);

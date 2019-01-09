@@ -8,13 +8,15 @@
 
 #include <vector>
 
+#include "modules/audio_processing/include/common.h"
+
 namespace webrtc {
 
 // The noise suppression (NS) component attempts to remove noise while
 // retaining speech. Recommended to be enabled on the client-side.
 //
 // Recommended to be enabled on the client-side.
-class NoiseSuppression {
+class NoiseSuppression : public ApmCaptureModule {
  public:
   virtual int Enable(bool enable) = 0;
   virtual bool is_enabled() const = 0;
@@ -34,7 +36,10 @@ class NoiseSuppression {
   // Returns the noise estimate per frequency bin averaged over all channels.
   virtual std::vector<float> NoiseEstimate() = 0;
 
- protected:
+  // ApmSubmodule
+  virtual void Initialize(size_t num_channels, int sample_rate_hz) = 0;
+
+ // protected:
   virtual ~NoiseSuppression() {}
 };
 

@@ -1,6 +1,5 @@
 
-#define WEBRTC_POSIX
-#include "modules/audio_processing/ns/noise_suppression_impl.h"
+#include "modules/audio_processing/transient/transient_suppressor.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <memory> // std::unique_ptr
@@ -16,15 +15,12 @@ int main(void)
 
     FILE *file_in = nullptr, *file_out = nullptr;
     file_in = fopen("noise_32000.pcm", "rb");
-    file_out = fopen("ns_32000_16_1.pcm", "wb");
+    file_out = fopen("transient_32000_16_1.pcm", "wb");
 
-    rtc::CriticalSection crit;
-    std::unique_ptr<webrtc::NoiseSuppression> suppressor;
+    std::unique_ptr<webrtc::TransientSuppressor> suppressor;
     suppressor.reset(
-        new webrtc::NoiseSuppressionImpl(&crit));
-    suppressor->Initialize(kNumChannels, kSampleRateHz);
-    suppressor->set_level(webrtc::NoiseSuppression::kModerate);
-    suppressor->Enable(true);
+        new webrtc::TransientSuppressor());
+    suppressor->Initialize(kSampleRateHz, kSampleRateHz, kNumChannels);
 
     int read_size = 0;
     webrtc::AudioFrame audio_frame;
@@ -44,10 +40,17 @@ int main(void)
 
         audio_buffer->DeinterleaveFrom(&audio_frame);
         audio_buffer->SplitIntoFrequencyBands();
-        audio_buffer->CopyLowPassToReference();
+        // audio_buffer->CopyLowPassToReference();
 
-        suppressor->AnalyzeCaptureAudio(audio_buffer.get());
-        suppressor->ProcessCaptureAudio(audio_buffer.get());
+        suppressor->Suppress(
+            audio_buffer->channels_f()[0],
+            audio_buffer->num_frames(),
+            audio_buffer->num_channels(),
+            audio_buffer->split_bands_const_f(0)[webrtc::Band::kBand0To8kHz],
+            audio_buffer->num_frames_per_band(),
+            NULL, 0,
+            /* _agc_manager->voice_probability() */1.f,
+            /* key_pressed */true);
 
         audio_buffer->MergeFrequencyBands();
         audio_buffer->InterleaveTo(&audio_frame, true);

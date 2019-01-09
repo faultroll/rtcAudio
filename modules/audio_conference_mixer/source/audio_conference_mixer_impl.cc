@@ -19,11 +19,14 @@
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/include/common.h"
 #include "modules/audio_processing/agc/gain_control_impl.h"
-// #include "modules/audio_processing/vad/voice_detection_impl.h"
-#include "modules/audio_processing/vad/standalone_vad.h"
+/* #include "modules/audio_processing/high_pass_filter.h" */
+/* // #include "modules/audio_processing/transient/transient_suppressor.h"
+#include "modules/audio_processing/ns/noise_suppression_impl.h" */
 /* #include "modules/audio_processing/logging/apm_data_dumper.h"
 // #include "modules/audio_processing/agc2/fixed_gain_controller.h"
 #include "modules/audio_processing/agc2/limiter.h" */
+// #include "modules/audio_processing/vad/voice_detection_impl.h"
+#include "modules/audio_processing/vad/standalone_vad.h"
 #include "rtc_base/trace.h"
 
 // #define _VAD_METHOD_ENERGY_
@@ -153,12 +156,13 @@ bool AudioConferenceMixerImpl::Init() {
     _limiter.reset(
         new GainControlImpl(&_crit_render, &_crit_capture));
     /* _data_dumper = std::unique_ptr<ApmDataDumper>(new ApmDataDumper(0));
+    // histogram_name_prefix can only be |AudioMixer|/|Agc2|/|Test|
     // _limiter.reset(
-    //     new FixedGainController(_data_dumper.get(), "AudioConferenceMixer");
+    //     new FixedGainController(_data_dumper.get(), "AudioMixer");
     _limiter.reset(
-        new Limiter(static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"));
+        new Limiter(static_cast<size_t>(48000), _data_dumper.get(), "AudioMixer"));
     // _limiter = rtc::make_unique<Limiter>(
-    //     static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"); // only one brace! */
+    //     static_cast<size_t>(48000), _data_dumper.get(), "AudioMixer"); // only one brace! */
     if(!_limiter.get())
         return false;
 
@@ -186,6 +190,17 @@ bool AudioConferenceMixerImpl::Init() {
     if(_limiter->Enable(true) != AudioProcessing::kNoError)
         return false;
     /* // _limiter.SetGain(0.f); */
+    /* _filter.reset(
+        new HighPassFilter(_outputFrequency, num_channels)); */
+    /* // _suppressor.reset(
+    //     new TransientSuppressor());
+    // _suppressor->Initialize(_outputFrequency, _outputFrequency, num_channels);
+    _suppressor.reset(
+        new NoiseSuppressionImpl(&_crit_capture));
+    _suppressor->Initialize(num_channels, _outputFrequency);
+    // _suppressor->set_level(NoiseSuppression::kModerate);
+    _suppressor->Enable(true); */
+
     _mixed_buffer.reset(
         new AudioBuffer(_outputFrequency, num_channels,
                         _outputFrequency, num_channels,
@@ -1038,10 +1053,15 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     }
 
     _mixed_buffer->DeinterleaveFrom(mixedAudio);
+    // _mixed_buffer->SplitIntoFrequencyBands(); // transient need this
+    // _mixed_buffer->CopyLowPassToReference(); // ns need this
 
-    // Smoothly limit the mixed frame.
+    /* _filter->Process(_mixed_buffer.get(), false); */
+    /* _suppressor->AnalyzeCaptureAudio(_mixed_buffer.get()); */
     _limiter->AnalyzeCaptureAudio(_mixed_buffer.get());
-    const int error = _limiter->ProcessCaptureAudio(_mixed_buffer.get()/* , false */);
+    // Smoothly limit the mixed frame.
+    /* _suppressor->ProcessCaptureAudio(_mixed_buffer.get()); */
+    const int error = _limiter->ProcessCaptureAudio(_mixed_buffer.get());
     /* // Put float data in an AudioFrameView.
     AudioFrameView<float> mixing_buffer_view(_mixed_buffer->channels_f(),
                                              mixedAudio->num_channels(),
@@ -1050,8 +1070,16 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     //                            AudioConferenceMixerImpl::kProcessPeriodicityInMs;
     _limiter->SetSampleRate(mixedAudio->sample_rate_hz());
     _limiter->Process(mixing_buffer_view); */
-    
-    _mixed_buffer->InterleaveTo(mixedAudio, false);
+    /* // _suppressor->Suppress(
+    //     _mixed_buffer->channels_f()[0], _mixed_buffer->num_frames(),
+    //     _mixed_buffer->num_channels(),
+    //     _mixed_buffer->split_bands_const_f(0)[kBand0To8kHz], _mixed_buffer->num_frames_per_band(),
+    //     NULL, 0,
+    //     1.f, // _agc_manager->voice_probability()
+    //     false); */
+
+    // _mixed_buffer->MergeFrequencyBands(); // if split, then merge
+    _mixed_buffer->InterleaveTo(mixedAudio, true);
 
     // And now we can safely restore the level. This procedure results in
     // some loss of resolution, deemed acceptable.

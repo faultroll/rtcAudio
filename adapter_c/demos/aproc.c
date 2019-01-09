@@ -52,6 +52,8 @@ int main(void)
         .fs_hz_in_ = 16000,
         .num_channels_ = 1,
 
+        .enable_limiter_ = false,
+
         .enable_resampler_ = true,
         .fs_hz_out_ = 32000,
 

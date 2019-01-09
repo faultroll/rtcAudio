@@ -147,8 +147,8 @@ class AudioBuffer {
 
   // Use for float deinterleaved data.
   /* void CopyFrom(const float* const* data, const StreamConfig& stream_config);
-  void CopyTo(const StreamConfig& stream_config, float* const* data);
-  void CopyLowPassToReference(); */
+  void CopyTo(const StreamConfig& stream_config, float* const* data); */
+  void CopyLowPassToReference();
 
   // Splits the buffer data into frequency bands.
   void SplitIntoFrequencyBands();

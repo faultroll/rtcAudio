@@ -1721,11 +1721,11 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
   bi = ((v4sf_union*)vb)[1].f[0];
   abr = ((v4sf_union*)vab)[0].f[0];
   abi = ((v4sf_union*)vab)[1].f[0];
- 
+
 #ifdef ZCONVOLVE_USING_INLINE_NEON_ASM // inline asm version, unfortunately miscompiled by clang 3.2, at least on ubuntu.. so this will be restricted to gcc
   const float *a_ = a, *b_ = b; float *ab_ = ab;
   int N = Ncvec;
-  asm volatile("mov         r8, %2                  \n"
+  __asm__ volatile("mov         r8, %2              \n"
                "vdup.f32    q15, %4                 \n"
                "1:                                  \n"
                "pld         [%0,#64]                \n"
@@ -1734,11 +1734,11 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
                "pld         [%0,#96]                \n"
                "pld         [%1,#96]                \n"
                "pld         [%2,#96]                \n"
-               "vld1.f32    {q0,q1},   [%0,:128]!         \n"
-               "vld1.f32    {q4,q5},   [%1,:128]!         \n"
-               "vld1.f32    {q2,q3},   [%0,:128]!         \n"
-               "vld1.f32    {q6,q7},   [%1,:128]!         \n"
-               "vld1.f32    {q8,q9},   [r8,:128]!          \n"
+               "vld1.f32    {q0,q1},   [%0,:128]!   \n"
+               "vld1.f32    {q4,q5},   [%1,:128]!   \n"
+               "vld1.f32    {q2,q3},   [%0,:128]!   \n"
+               "vld1.f32    {q6,q7},   [%1,:128]!   \n"
+               "vld1.f32    {q8,q9},   [r8,:128]!   \n"
                
                "vmul.f32    q10, q0, q4             \n"
                "vmul.f32    q11, q0, q5             \n"
@@ -1753,8 +1753,8 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
                "vmla.f32    q9, q11, q15            \n"
                "vmla.f32    q0, q12, q15            \n"
                "vmla.f32    q1, q13, q15            \n"
-               "vst1.f32    {q8,q9},[%2,:128]!    \n"
-               "vst1.f32    {q0,q1},[%2,:128]!    \n"
+               "vst1.f32    {q8,q9},[%2,:128]!      \n"
+               "vst1.f32    {q0,q1},[%2,:128]!      \n"
                "subs        %3, #2                  \n"
                "bne         1b                      \n"
                : "+r"(a_), "+r"(b_), "+r"(ab_), "+r"(N) : "r"(scaling) : "r8", "q0","q1","q2","q3","q4","q5","q6","q7","q8","q9", "q10","q11","q12","q13","q15","memory");

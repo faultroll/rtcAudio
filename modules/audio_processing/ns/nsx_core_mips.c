@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/system/arch.h"
 #if defined(MIPS32_LE)
 
 #include <string.h>
@@ -25,10 +26,10 @@ static const int16_t kIndicatorTable[17] = {
 // speech/noise probability is returned in: probSpeechFinal
 //snrLocPrior is the prior SNR for each frequency (in Q11)
 //snrLocPost is the post SNR for each frequency (in Q11)
-void WebRtcNsx_SpeechNoiseProb(NoiseSuppressionFixedC* inst,
-                               uint16_t* nonSpeechProbFinal,
-                               uint32_t* priorLocSnr,
-                               uint32_t* postLocSnr) {
+void WebRtcNsx_SpeechNoiseProb_mips(NoiseSuppressionFixedC* inst,
+                                    uint16_t* nonSpeechProbFinal,
+                                    uint32_t* priorLocSnr,
+                                    uint32_t* postLocSnr) {
   uint32_t tmpU32no1, tmpU32no2, tmpU32no3;
   int32_t indPriorFX, tmp32no1;
   int32_t logLrtTimeAvgKsumFX;

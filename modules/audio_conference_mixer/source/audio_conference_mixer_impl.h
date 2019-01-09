@@ -32,6 +32,9 @@ class AudioBuffer;
 // class FixedGainController;
 class Limiter; */
 class GainControl;
+/* class HighPassFilter; */
+/* // class TransientSuppressor;
+class NoiseSuppression; */
 class StandaloneVad;
 
 struct FrameAndMuteInfo {
@@ -200,6 +203,7 @@ private:
     // Note: should never be higher than 1 or lower than 0.
     int16_t _processCalls;
 
+    std::unique_ptr<AudioBuffer> _mixed_buffer;
     // Used for inhibiting saturation in mixing.
     rtc::CriticalSection _crit_render RTC_ACQUIRED_BEFORE(_crit_capture);
     rtc::CriticalSection _crit_capture;
@@ -207,7 +211,10 @@ private:
     /* std::unique_ptr<ApmDataDumper> _data_dumper;
     // std::unique_ptr<FixedGainController> _limiter;
     std::unique_ptr<Limiter> _limiter; */
-    std::unique_ptr<AudioBuffer> _mixed_buffer;
+    // Filter low freq non-voice noise
+    /* std::unique_ptr<HighPassFilter> _filter; */
+    /* // std::unique_ptr<TransientSuppressor> _suppressor;
+    std::unique_ptr<NoiseSuppression> _suppressor; */
 
     // woogeen vad
     enum {kMaximumVadParticipants = 1024};

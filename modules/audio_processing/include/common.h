@@ -82,7 +82,9 @@ class ApmCaptureModule {
     }
 
     audio_buffer_->DeinterleaveFrom(audio_frame);
+    audio_buffer_->SplitIntoFrequencyBands();
     const int error = ProcessCaptureAudio(audio_buffer_.get());
+    audio_buffer_->MergeFrequencyBands();
     audio_buffer_->InterleaveTo(audio_frame, false);
 
     return error;
@@ -102,6 +104,7 @@ class ApmRenderModule {
   // Processes the render signal.
   virtual int ProcessRenderAudio(AudioBuffer* audio_buffer) = 0;
   // Pack an AudioBuffer into a vector<float>.
+  // Cannot be declared both virtual and static
   // virtual static void PackRenderAudioBuffer(AudioBuffer* audio_buffer,
   //                                           std::vector<int16_t>* packed_buffer) = 0;
   // virtual int ProcessRenderAudio(RTC_VIEW(const int16_t) packed_buffer) = 0;

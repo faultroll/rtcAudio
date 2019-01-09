@@ -114,7 +114,7 @@ class GainControl : public ApmCaptureModule,
   virtual bool stream_has_echo() const = 0;
 
   // ApmSubmodule
-  virtual void Initialize(size_t num_proc_channels, int sample_rate_hz) = 0;
+  virtual void Initialize(size_t num_channels, int sample_rate_hz) = 0;
   // virtual void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio) = 0;
   // virtual int AnalyzeCaptureAudio(AudioBuffer* audio) = 0;
   // virtual int ProcessCaptureAudio(AudioBuffer* audio, bool stream_has_echo) = 0;

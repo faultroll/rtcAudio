@@ -74,13 +74,13 @@ void MixFewFramesWithNoLimiter(const std::vector<AudioFrame*>& mix_list,
 void MixToFloatFrame(const std::vector<AudioFrame*>& mix_list,
                      size_t samples_per_channel,
                      size_t number_of_channels,
-                     FrameCombiner::MixingBuffer* mixing_buffer) {
+                     RTC_VIEW(float[FrameCombiner::kMaximumChannelSize]) mixing_buffer) {
   RTC_DCHECK_LE(samples_per_channel, FrameCombiner::kMaximumChannelSize);
   RTC_DCHECK_LE(number_of_channels, FrameCombiner::kMaximumNumberOfChannels);
   // Clear the mixing buffer.
-  for (auto& one_channel_buffer : *mixing_buffer) {
-    RTC_VIEW(float) one_channel_buffer_view = RTC_MAKE_VIEW(float)(one_channel_buffer);
-    std::fill(one_channel_buffer_view.begin(), one_channel_buffer_view.end(), 0.f);
+  for (size_t ch = 0; ch < mixing_buffer.size(); ++ch) {
+    RTC_VIEW(float) one_channel_buffer = RTC_MAKE_VIEW(float)(mixing_buffer[ch]);
+    std::fill(one_channel_buffer.begin(), one_channel_buffer.end(), 0.f);
   }
 
   // Convert to FloatS16 and mix.
@@ -92,7 +92,7 @@ void MixToFloatFrame(const std::vector<AudioFrame*>& mix_list,
       for (size_t k = 0; k < std::min(samples_per_channel,
                                       FrameCombiner::kMaximumChannelSize);
            ++k) {
-        (*mixing_buffer)[j][k] += frame->data()[number_of_channels * k + j];
+        mixing_buffer[j][k] += frame->data()[number_of_channels * k + j];
       }
     }
   }
@@ -171,8 +171,7 @@ void FrameCombiner::Combine(const std::vector<AudioFrame*>& mix_list,
     return;
   }
 
-  MixToFloatFrame(mix_list, samples_per_channel, number_of_channels,
-                  mixing_buffer_.get());
+  MixToFloatFrame(mix_list, samples_per_channel, number_of_channels, mixing_buffer_);
 
   const size_t output_number_of_channels =
       std::min(number_of_channels, kMaximumNumberOfChannels);
@@ -182,7 +181,7 @@ void FrameCombiner::Combine(const std::vector<AudioFrame*>& mix_list,
   // Put float data in an AudioFrameView.
   float* channel_pointers[kMaximumNumberOfChannels];
   for (size_t i = 0; i < output_number_of_channels; ++i) {
-    channel_pointers[i] = &(*mixing_buffer_.get())[i][0];
+    channel_pointers[i] = &mixing_buffer_[i][0];
   }
   AudioFrameView<float> mixing_buffer_view(&channel_pointers[0],
                                            output_number_of_channels,

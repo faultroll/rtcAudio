@@ -71,13 +71,13 @@ int main(int argc, char *argv[])
           *pSrc4 = nullptr, *pSrc5 = nullptr, *pSrc6 = nullptr;
     FILE *pOut = nullptr;
 
-    pSrc1 = fopen("demos/samples/1_48000_16_2.pcm", "rb+");
-    pSrc2 = fopen("demos/samples/2_48000_16_2.pcm", "rb+");
-    pSrc3 = fopen("demos/samples/3_48000_16_2.pcm", "rb+");
-    pSrc4 = fopen("demos/samples/4_48000_16_2.pcm", "rb+");
-    pSrc5 = fopen("demos/samples/5_48000_16_2.pcm", "rb+");
-    pSrc6 = fopen("demos/samples/6_48000_16_2.pcm", "rb+");
-    pOut = fopen("conference_mixed_48000_16_2.pcm", "wb+");
+    pSrc1 = fopen("demos/samples/1_48000_16_2.pcm", "rb");
+    pSrc2 = fopen("demos/samples/2_48000_16_2.pcm", "rb");
+    pSrc3 = fopen("demos/samples/3_48000_16_2.pcm", "rb");
+    pSrc4 = fopen("demos/samples/4_48000_16_2.pcm", "rb");
+    pSrc5 = fopen("demos/samples/5_48000_16_2.pcm", "rb");
+    pSrc6 = fopen("demos/samples/6_48000_16_2.pcm", "rb");
+    pOut = fopen("conference_mixed_48000_16_2.pcm", "wb");
 
     int iId = 0;
     short *pBuf1 = new short[i10msSz];

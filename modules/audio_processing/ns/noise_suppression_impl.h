@@ -29,9 +29,9 @@ class NoiseSuppressionImpl : public NoiseSuppression {
   ~NoiseSuppressionImpl() override;
 
   // TODO(peah): Fold into ctor, once public API is removed.
-  void Initialize(size_t channels, int sample_rate_hz);
-  void AnalyzeCaptureAudio(AudioBuffer* audio);
-  void ProcessCaptureAudio(AudioBuffer* audio);
+  void Initialize(size_t channels, int sample_rate_hz) override;
+  int AnalyzeCaptureAudio(AudioBuffer* audio) override;
+  int ProcessCaptureAudio(AudioBuffer* audio) override;
 
   // NoiseSuppression implementation.
   int Enable(bool enable) override;

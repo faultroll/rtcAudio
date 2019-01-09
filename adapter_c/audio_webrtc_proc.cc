@@ -21,6 +21,194 @@ extern "C"
 {
 #endif
 
+typedef struct AprocLimiter AprocLimiter;
+typedef struct AprocLimiterParam AprocLimiterParam;
+
+int Aproc_Limiter_Create(AprocLimiter **handle,
+                         AprocLimiterParam *parameter
+                        );
+int Aproc_Limiter_Destroy(AprocLimiter *handle
+                         );
+int Aproc_Limiter_Process(AprocLimiter *handle,
+                          const int16_t *input, size_t input_length,
+                          int16_t *output, size_t *output_length
+                         );
+
+struct AprocLimiterParam
+{
+    int fs_hz_;
+    int num_channels_;
+};
+
+#if defined(__cplusplus)
+};
+#endif
+
+// source
+#include "modules/audio_processing/agc/gain_control_impl.h"
+#include "common_audio/include/audio_util.h"
+#include "modules/audio_processing/audio_buffer.h"
+
+struct AprocLimiter
+{
+    // TODO remove crit
+    rtc::CriticalSection *crit_render_ RTC_ACQUIRED_BEFORE(_crit_capture);
+    rtc::CriticalSection *crit_capture_;
+    webrtc::GainControl *limiter_;
+    webrtc::AudioBuffer *audio_buffer_;
+    size_t num_channels_, sample_10ms_;
+};
+
+int Aproc_Limiter_Create(AprocLimiter **handle,
+                         AprocLimiterParam *parameter)
+{
+    if (NULL == handle
+        || NULL == parameter)
+    {
+        return -1;
+    }
+
+    int return_code;
+    AprocLimiter *handle_tmp = NULL;
+    do
+    {
+        handle_tmp =
+            (AprocLimiter *)malloc(sizeof(AprocLimiter));
+        if (NULL == handle_tmp)
+        {
+            return_code = -1;
+            break;
+        }
+
+        handle_tmp->crit_render_ = new rtc::CriticalSection();
+        handle_tmp->crit_capture_ = new rtc::CriticalSection();
+        handle_tmp->limiter_ =
+            new webrtc::GainControlImpl(handle_tmp->crit_render_, handle_tmp->crit_capture_);
+        handle_tmp->limiter_->Initialize(parameter->num_channels_, parameter->fs_hz_);
+        handle_tmp->limiter_->set_mode(webrtc::GainControl::kFixedDigital);
+        // We smoothly limit the mixed frame to -7 dbFS. -6 would correspond to the
+        // divide-by-2 but -7 is used instead to give a bit of headroom since the
+        // AGC is not a hard limiter.
+        handle_tmp->limiter_->set_target_level_dbfs(7);
+        handle_tmp->limiter_->set_compression_gain_db(0);
+        handle_tmp->limiter_->enable_limiter(true);
+        handle_tmp->limiter_->Enable(true);
+        // handle_tmp->limiter_.SetGain(0.f);
+        handle_tmp->audio_buffer_ =
+            new webrtc::AudioBuffer(parameter->fs_hz_, parameter->num_channels_,
+                                    parameter->fs_hz_, parameter->num_channels_,
+                                    parameter->fs_hz_, parameter->num_channels_);
+        handle_tmp->audio_buffer_->set_activity(webrtc::AudioFrame::kVadActive);
+        handle_tmp->num_channels_ = parameter->num_channels_;
+        handle_tmp->sample_10ms_ =
+            parameter->fs_hz_ * parameter->num_channels_ / (1000 / 10);
+
+        return_code = 0;
+    }
+    while (0);
+
+    *handle = handle_tmp;
+
+    return return_code;
+}
+
+int Aproc_Limiter_Destroy(AprocLimiter *handle)
+{
+    if (NULL == handle)
+    {
+        return -1;
+    }
+
+    int return_code;
+    do
+    {
+        delete handle->audio_buffer_;
+        delete handle->limiter_;
+        delete handle->crit_capture_;
+        delete handle->crit_render_;
+        free(handle);
+
+        return_code = 0;
+    }
+    while (0);
+
+    return return_code;
+}
+
+int Aproc_Limiter_Process(AprocLimiter *handle,
+                          const int16_t *input, size_t input_length,
+                          int16_t *output, size_t *output_length)
+{
+    if (NULL == handle
+        || NULL == input || 0 == input_length
+        || NULL == output || NULL == output_length || 0 == *output_length)
+    {
+        return -1;
+    }
+
+    int return_code;
+    do
+    {
+        // check |input_length|
+        if (input_length % handle->sample_10ms_ != 0)
+        {
+            printf("limiter: (%zu) mod (%zu) != (0) cannot process, skip\n", input_length, handle->sample_10ms_);
+            return_code = -1;
+            break;
+        }
+        // check |output_length|
+        if (input_length > *output_length)
+        {
+            printf("limiter: (%zu) > (%zu) will cause overflow, skip\n", input_length, *output_length);
+            return_code = -1;
+            break;
+        }
+
+        // agc can only process 10ms sample, so loop
+        size_t offset = 0;
+        do
+        {
+            int16_t *const *deinterleaved = handle->audio_buffer_->channels();
+            if (1)
+                // Downmix and deinterleave simultaneously.
+                webrtc::DownmixInterleavedToMono(input + offset, handle->sample_10ms_, handle->num_channels_, deinterleaved[0]);
+            else
+                webrtc::Deinterleave(input + offset, handle->sample_10ms_, handle->num_channels_, deinterleaved);
+
+            // limit
+            handle->audio_buffer_->SplitIntoFrequencyBands();
+            // handle->audio_buffer_->CopyLowPassToReference();
+
+            handle->limiter_->AnalyzeCaptureAudio(handle->audio_buffer_);
+            handle->limiter_->ProcessCaptureAudio(handle->audio_buffer_);
+
+            handle->audio_buffer_->MergeFrequencyBands();
+
+            if (0)
+                webrtc::Interleave(deinterleaved, handle->sample_10ms_, handle->num_channels_, output + offset);
+            else
+                webrtc::UpmixMonoToInterleaved(deinterleaved[0], handle->sample_10ms_, handle->num_channels_, output + offset);
+
+            offset += handle->sample_10ms_;
+            // printf("current offset %zu\n", offset);
+        }
+        while (offset < input_length);
+
+        *output_length = input_length;
+
+        return_code = 0;
+    }
+    while (0);
+
+    return return_code;
+}
+
+// header
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
+
 typedef struct AprocResampler AprocResampler;
 typedef struct AprocResamplerParam AprocResamplerParam;
 
@@ -47,10 +235,12 @@ struct AprocResamplerParam
 
 // source
 #include "common_audio/resampler/include/resampler.h"
+// #include "common_audio/resampler/include/push_resampler.h"
 
 struct AprocResampler
 {
     webrtc::Resampler *resampler_;
+    // webrtc::PushResampler<int16_t> *resampler_;
     size_t ratio_; // Q8
 };
 
@@ -79,14 +269,19 @@ int Aproc_Resampler_Create(AprocResampler **handle,
             new webrtc::Resampler(parameter->fs_hz_in_,
                                   parameter->fs_hz_out_,
                                   parameter->num_channels_);
-        // TODO check pointers
-        /* if (NULL == handle_tmp->resampler_)
-        {
-            free(handle_tmp);
-            handle_tmp = NULL;
-            return_code = -1;
-            break;
-        } */
+        // handle_tmp->resampler_ =
+        //     new webrtc::PushResampler<int16_t>();
+        // if (NULL == handle_tmp->resampler_)
+        // {
+        //     free(handle_tmp);
+        //     handle_tmp = NULL;
+        //     return_code = -1;
+        //     break;
+        // }
+        // handle_tmp->resampler_->InitializeIfNeeded(
+        //     parameter->fs_hz_in_,
+        //     parameter->fs_hz_out_,
+        //     parameter->num_channels_);
 
         handle_tmp->ratio_ = (parameter->fs_hz_out_ << 8) / parameter->fs_hz_in_;
 
@@ -145,6 +340,9 @@ int Aproc_Resampler_Process(AprocResampler *handle,
         handle->resampler_->Push(input, input_length,
                                  output, *output_length,
                                  *output_length);
+        // *output_length = handle->resampler_->Resample(
+        //                      input, input_length,
+        //                      output, *output_length);
 
         return_code = 0;
     }
@@ -558,6 +756,7 @@ struct AudioWebrtcProc
 {
     AprocResampler   *resampler_;
     AprocNetEQ       *neteq_;
+    AprocLimiter     *limiter_;
 
     AudioWebrtcProcParam parameter_;
 };
@@ -579,6 +778,13 @@ int Audio_Webrtc_Proc_Create(AudioWebrtcProc **handle,
         handle_tmp =
             (AudioWebrtcProc *)malloc(sizeof(AudioWebrtcProc));
 
+        if (parameter->enable_limiter_)
+        {
+            AprocLimiterParam parameter_tmp;
+            parameter_tmp.fs_hz_ = fs_hz_tmp;
+            parameter_tmp.num_channels_ = parameter->num_channels_;
+            Aproc_Limiter_Create(&handle_tmp->limiter_, &parameter_tmp);
+        }
         if (parameter->enable_resampler_)
         {
             AprocResamplerParam parameter_tmp;
@@ -630,6 +836,10 @@ int Audio_Webrtc_Proc_Destroy(AudioWebrtcProc *handle)
         {
             Aproc_Resampler_Destroy(handle->resampler_);
         }
+        if (handle->parameter_.enable_limiter_)
+        {
+            Aproc_Limiter_Destroy(handle->limiter_);
+        }
         free(handle);
 
         return_code = 0;
@@ -652,23 +862,36 @@ int Audio_Webrtc_Proc_Process(AudioWebrtcProc *handle,
 
     int return_code;
     int16_t *input_tmp = (int16_t *)input;
-    size_t input_length_tmp = input_length, output_length_tmp = *output_length;
+    size_t input_length_tmp = input_length, output_length_tmp;
     do
     {
+        // TODO check return value, if not sucess, do not change |input_tmp|
+        if (handle->parameter_.enable_limiter_)
+        {
+            output_length_tmp = *output_length;
+            Aproc_Limiter_Process(handle->limiter_,
+                                  input_tmp, input_length_tmp,
+                                  output, &output_length_tmp);
+            input_tmp = output;
+            input_length_tmp = output_length_tmp;
+        }
         if (handle->parameter_.enable_resampler_)
         {
+            output_length_tmp = *output_length;
             Aproc_Resampler_Process(handle->resampler_,
                                     input_tmp, input_length_tmp,
                                     output, &output_length_tmp);
+            input_tmp = output;
+            input_length_tmp = output_length_tmp;
         }
         if (handle->parameter_.enable_neteq_)
         {
-            input_tmp = output;
-            input_length_tmp = output_length_tmp;
             output_length_tmp = *output_length;
             Aproc_NetEQ_Process(handle->neteq_,
                                 input_tmp, input_length_tmp,
                                 output, &output_length_tmp);
+            input_tmp = output;
+            input_length_tmp = output_length_tmp;
         }
         // TODO if nothing is enable, just copy input to output
         *output_length = output_length_tmp;

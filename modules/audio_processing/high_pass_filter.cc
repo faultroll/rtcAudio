@@ -12,6 +12,7 @@
 
 #include "rtc_base/view.h"
 #include "modules/audio_processing/audio_buffer.h"
+#include "modules/audio_processing/utility/cascaded_biquad_filter.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -75,8 +76,8 @@ void HighPassFilter::Process(AudioBuffer* audio, bool use_split_band_data) {
     }
   } else {
     for (size_t k = 0; k < audio->num_channels(); ++k) {
-      RTC_VIEW(float) channel_data =
-          RTC_MAKE_VIEW(float)(&audio->channels_f()[k][0], audio->num_frames());
+      RTC_VIEW(float) channel_data = RTC_MAKE_VIEW(float)(
+          &audio->channels_f()[k][0], audio->num_frames());
       filters_[k]->Process(channel_data);
     }
   }

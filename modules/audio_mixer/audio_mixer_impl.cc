@@ -105,6 +105,10 @@ AudioMixerImpl::SourceStatusList::iterator FindSourceInList(
 
 }  // namespace
 
+rtc::scoped_refptr<AudioMixer> AudioMixer::Create() {
+  return AudioMixerImpl::Create();
+}
+
 AudioMixerImpl::AudioMixerImpl(
     std::unique_ptr<OutputRateCalculator> output_rate_calculator,
     bool use_limiter)

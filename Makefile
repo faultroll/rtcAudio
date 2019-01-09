@@ -26,10 +26,11 @@ deps    := $(patsubst %.o,%.d,$(objs))
 libs    := -lpthread
 cflags   = -I. -DWEBRTC_POSIX # -DWEBRTC_WIN
 cflags  += -Wno-unused-parameter -Wno-sign-compare -g # -DNDEBUG
-# cflags  += -mcpu=cortex-a9 -mfloat-abi=softfp -mfpu=neon # arm-hisiv600-linux-
-# cflags  += -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4 # arm-himix200-linux-
+# can be found in SDK Makefile or on board /lib/ dir
+# cflags  += -mcpu=cortex-a9 -mfloat-abi=softfp -mfpu=neon # a9_vfpv3_neon, arm-hisiv600-linux-
+# cflags  += -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4 # a7_softfp_neon-vfpv4, arm-himix200-linux-
 # Define |PFFFT_SIMD_DISABLE| for no neon flag
-# cflags  += -mcpu=cortex-a53 -DPFFFT_SIMD_DISABLE # aarch64-himix100-linux-
+# cflags  += -mcpu=cortex-a53 -DPFFFT_SIMD_DISABLE # cannot find neon flag, aarch64-himix100-linux-
 ldflags := -lstdc++
 # for reproducible build
 objs    := $(sort $(objs))

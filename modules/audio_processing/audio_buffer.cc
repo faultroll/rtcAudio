@@ -332,7 +332,7 @@ void AudioBuffer::InterleaveTo(AudioFrame* frame, bool data_changed) const {
   }
 }
 
-/* void AudioBuffer::CopyLowPassToReference() {
+void AudioBuffer::CopyLowPassToReference() {
   reference_copied_ = true;
   if (!low_pass_reference_channels_.get() ||
       low_pass_reference_channels_->num_channels() != num_channels_) {
@@ -345,14 +345,18 @@ void AudioBuffer::InterleaveTo(AudioFrame* frame, bool data_changed) const {
            low_pass_reference_channels_->num_frames_per_band() *
                sizeof(split_bands_const(i)[kBand0To8kHz][0]));
   }
-} */
+}
 
 void AudioBuffer::SplitIntoFrequencyBands() {
-  splitting_filter_->Analysis(data_.get(), split_data_.get());
+  if (splitting_filter_.get()) {
+    splitting_filter_->Analysis(data_.get(), split_data_.get());
+  }
 }
 
 void AudioBuffer::MergeFrequencyBands() {
-  splitting_filter_->Synthesis(split_data_.get(), data_.get());
+  if (splitting_filter_.get()) {
+    splitting_filter_->Synthesis(split_data_.get(), data_.get());
+  }
 }
 
 void AudioBuffer::ExportSplitChannelData(

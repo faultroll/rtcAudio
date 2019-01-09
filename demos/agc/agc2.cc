@@ -1,6 +1,6 @@
 
 #define WEBRTC_POSIX
-#include "modules/audio_processing/ns/noise_suppression_impl.h"
+#include "modules/audio_processing/agc/gain_control_impl.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <memory> // std::unique_ptr
@@ -10,21 +10,28 @@
 int main(void)
 {
     // bitwidth is always 16-bit
-    static const int kSampleRateHz = 32000,
+    static const int kSampleRateHz = 8000,
                      kNumChannels = 1,
                      kSample10Ms = kSampleRateHz * kNumChannels / (1000 / 10);
 
     FILE *file_in = nullptr, *file_out = nullptr;
-    file_in = fopen("noise_32000.pcm", "rb");
-    file_out = fopen("ns_32000_16_1.pcm", "wb");
+    file_in = fopen("noise_8000.pcm", "rb");
+    file_out = fopen("agc_8000_16_1.pcm", "wb");
 
-    rtc::CriticalSection crit;
-    std::unique_ptr<webrtc::NoiseSuppression> suppressor;
-    suppressor.reset(
-        new webrtc::NoiseSuppressionImpl(&crit));
-    suppressor->Initialize(kNumChannels, kSampleRateHz);
-    suppressor->set_level(webrtc::NoiseSuppression::kModerate);
-    suppressor->Enable(true);
+    rtc::CriticalSection crit_render, crit_capture;
+    std::unique_ptr<webrtc::GainControl> limiter;
+    limiter.reset(
+        new webrtc::GainControlImpl(&crit_render, &crit_capture));
+    limiter->Initialize(kNumChannels, kSampleRateHz);
+    limiter->set_mode(webrtc::GainControl::kFixedDigital);
+    // We smoothly limit the mixed frame to -7 dbFS. -6 would correspond to the
+    // divide-by-2 but -7 is used instead to give a bit of headroom since the
+    // AGC is not a hard limiter.
+    limiter->set_target_level_dbfs(7);
+    limiter->set_compression_gain_db(0);
+    limiter->enable_limiter(true);
+    limiter->Enable(true);
+    // limiter.SetGain(0.f);
 
     int read_size = 0;
     webrtc::AudioFrame audio_frame;
@@ -46,8 +53,8 @@ int main(void)
         audio_buffer->SplitIntoFrequencyBands();
         audio_buffer->CopyLowPassToReference();
 
-        suppressor->AnalyzeCaptureAudio(audio_buffer.get());
-        suppressor->ProcessCaptureAudio(audio_buffer.get());
+        limiter->AnalyzeCaptureAudio(audio_buffer.get());
+        limiter->ProcessCaptureAudio(audio_buffer.get());
 
         audio_buffer->MergeFrequencyBands();
         audio_buffer->InterleaveTo(&audio_frame, true);

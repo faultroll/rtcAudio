@@ -97,7 +97,7 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/system/arch.h"
-#include "system_wrappers/include/cpu_features_wrapper.h"  // kSSE2, WebRtc_G...
+// #include "system_wrappers/include/cpu_features_wrapper.h"  // kSSE2, WebRtc_G...
 
 namespace webrtc {
 
@@ -332,7 +332,7 @@ void SincResampler::Resample(size_t frames, float* destination) {
   }
 }
 
-#undef CONVOLVE_FUNC
+// #undef CONVOLVE_FUNC
 
 size_t SincResampler::ChunkSize() const {
   return static_cast<size_t>(block_size_ / io_sample_rate_ratio_);

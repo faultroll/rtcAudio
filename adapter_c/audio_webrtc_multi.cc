@@ -109,12 +109,13 @@ DSP_S32 Audio_Webrtc_CreateMulChn(AUDIO_WEBRTC_MULTI_S *pMulti, DSP_S32 *ps32Id,
             pMulti->stChnInfo[i].stParam = *pstParam;
 #if defined(MULTI_USING_RESAMPLER)
             pMulti->stChnInfo[i].stData.s32Len = SAMPLE2LENGTH(1 * 48 * 30); // Mono, 48 kHz, 30 ms
-            printf("[%s:%d] samplerate: src(%d), dst(%d)\n", __func__, __LINE__,
+            printf("[%s:%d] (%d) samplerate: src(%d), dst(%d)\n", __func__, __LINE__, i,
                    pMulti->stParam.s32Samplerate, pMulti->stChnInfo[i].stParam.s32Samplerate);
             Audio_Webrtc_AFrameAlloc(&pMulti->stChnInfo[i].stData);
             AudioWebrtcProcParam stAprocParam;
             stAprocParam.fs_hz_in_ = pMulti->stParam.s32Samplerate;
             stAprocParam.num_channels_ = pMulti->stParam.s32Channels;
+            stAprocParam.enable_limiter_ = false;
             stAprocParam.enable_resampler_ = true;
             stAprocParam.fs_hz_out_ = pMulti->stChnInfo[i].stParam.s32Samplerate;
             stAprocParam.enable_neteq_ = false;

@@ -15,6 +15,7 @@
 
 #include "modules/include/audio_frame.h"
 #include "rtc_base/ref_count.h"
+#include "rtc_base/scoped_refptr.h"
 
 namespace webrtc {
 
@@ -23,6 +24,9 @@ namespace webrtc {
 // of WebRtc/Libjingle.
 class AudioMixer : public rtc::RefCountInterface {
  public:
+  // Factory method. Constructor disabled.
+  static rtc::scoped_refptr<AudioMixer> Create();
+
   // A callback class that all mixer participants must inherit from/implement.
   class Source {
    public:

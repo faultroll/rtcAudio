@@ -69,12 +69,12 @@ void NoiseSuppressionImpl::Initialize(size_t channels, int sample_rate_hz) {
   set_level(level_);
 }
 
-void NoiseSuppressionImpl::AnalyzeCaptureAudio(AudioBuffer* audio) {
+int NoiseSuppressionImpl::AnalyzeCaptureAudio(AudioBuffer* audio) {
   RTC_DCHECK(audio);
 #if defined(WEBRTC_NS_FLOAT)
   rtc::CritScope cs(crit_);
   if (!enabled_) {
-    return;
+    return AudioProcessing::kNotEnabledError;
   }
 
   RTC_DCHECK_GE(160, audio->num_frames_per_band());
@@ -84,13 +84,14 @@ void NoiseSuppressionImpl::AnalyzeCaptureAudio(AudioBuffer* audio) {
                      audio->split_bands_const_f(i)[kBand0To8kHz]);
   }
 #endif
+  return AudioProcessing::kNoError;
 }
 
-void NoiseSuppressionImpl::ProcessCaptureAudio(AudioBuffer* audio) {
+int NoiseSuppressionImpl::ProcessCaptureAudio(AudioBuffer* audio) {
   RTC_DCHECK(audio);
   rtc::CritScope cs(crit_);
   if (!enabled_) {
-    return;
+    return AudioProcessing::kNotEnabledError;
   }
 
   RTC_DCHECK_GE(160, audio->num_frames_per_band());
@@ -104,6 +105,7 @@ void NoiseSuppressionImpl::ProcessCaptureAudio(AudioBuffer* audio) {
                       audio->num_bands(), audio->split_bands(i));
 #endif
   }
+  return AudioProcessing::kNoError;
 }
 
 int NoiseSuppressionImpl::Enable(bool enable) {

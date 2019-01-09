@@ -2,11 +2,11 @@
 #include "audio_webrtc_mixer.h"
 #include <stdio.h>
 #include <string.h>
-#include "webrtc/modules/audio_conference_mixer/include/audio_conference_mixer.h"
+#include "modules/audio_conference_mixer/include/audio_conference_mixer.h"
 #include "rtc_base/atomic_ops.h"
 #include "rtc_base/time_utils.h"
-/* #include "webrtc/common_audio/resampler/include/resampler.h" */
-// #include "webrtc/common_audio/ring_buffer.h"
+/* #include "common_audio/resampler/include/resampler.h" */
+// #include "common_audio/ring_buffer.h"
 #include "audio_webrtc_buffer.h"
 #include "audio_webrtc_proc.h"
 
@@ -36,8 +36,7 @@ public:
         m_samplerate(samplerate),
         m_channels(channels)
     {
-        // fix bugs that no audio input but gets noise
-        m_audioFrame.Reset();
+        // Reset(); // default muted
     }
 
     virtual int32_t GetAudioFrame(int32_t id, webrtc::AudioFrame *audioFrame)
@@ -64,6 +63,11 @@ public:
         m_audioFrame.vad_activity_ = webrtc::AudioFrame::kVadActive;
 
         memmove(m_audioFrame.mutable_data(), pData, SAMPLE2LENGTH(iSamples));
+    }
+
+    void Reset()
+    {
+        m_audioFrame.Reset();
     }
 
 public:
@@ -193,7 +197,7 @@ DSP_S32 Audio_Webrtc_CreateMixChn(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_S32 *ps32Id,
 #if defined(MIXER_USING_RESAMPLER)
             pMixer->stParInfo[i].u32Seq = 0;
             pMixer->stParInfo[i].u64PtsOld = 0;
-            printf("[%s:%d] samplerate: src(%d), dst(%d)\n", __func__, __LINE__,
+            printf("[%s:%d] (%d) samplerate: src(%d), dst(%d)\n", __func__, __LINE__, i,
                    pMixer->stParInfo[i].stParam.s32Samplerate, pMixer->stParam.s32Samplerate);
             pMixer->stParInfo[i].iSz30ms = pMixer->iSz10ms * (3 + 3); // Aproc need 30 ms sample, and may expand
             pMixer->stParInfo[i].pData = malloc(pMixer->stParInfo[i].iSz30ms);
@@ -215,6 +219,7 @@ DSP_S32 Audio_Webrtc_CreateMixChn(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_S32 *ps32Id,
             AudioWebrtcProcParam stAprocParam;
             stAprocParam.fs_hz_in_ = pMixer->stParInfo[i].stParam.s32Samplerate;
             stAprocParam.num_channels_ = pMixer->stParInfo[i].stParam.s32Channels;
+            stAprocParam.enable_limiter_ = true;
             stAprocParam.enable_resampler_ = true;
             stAprocParam.fs_hz_out_ = pMixer->stParam.s32Samplerate;
             stAprocParam.enable_neteq_ = true;
@@ -223,7 +228,7 @@ DSP_S32 Audio_Webrtc_CreateMixChn(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_S32 *ps32Id,
             stAprocParam.Buffer_ReadFromEnd = Aproc_Buffer_ReadFromEnd;
             Audio_Webrtc_Proc_Create(&pMixer->stParInfo[i].pAproc, &stAprocParam);
 #endif
-
+            pMixer->stParInfo[i].pPar->Reset();
             pMixer->pMixerImpl->SetMixabilityStatus(pMixer->stParInfo[i].pPar, true);
 
             pMixer->stParInfo[i].bEnable = true;
@@ -475,7 +480,7 @@ DSP_S32 Audio_Webrtc_GetMixGrpFrame(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_PUB_DATAIN
         }
 
         pMixer->pMixerImpl->Process();
-        pstData->pVirAddr = pMixer->pCb->m_audioFrame.data();
+        pstData->pVirAddr = pMixer->pCb->m_audioFrame.mutable_data();
         pstData->s32Len = pMixer->iSz10ms;
         pstData->u64Pts = 0; // TODO rtc::TimeNanos();
         pstData->u32Seq = 0;

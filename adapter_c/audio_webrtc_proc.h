@@ -27,9 +27,19 @@ struct AudioWebrtcProcParam
     int num_channels_;
     struct
     {
+        // agc
+        bool enable_limiter_;
+    };
+    struct
+    {
         bool enable_resampler_;
         int fs_hz_out_;
     };
+    /* struct
+    {
+        // ns/transient
+        bool enable_suppressor_;
+    }; */
     struct
     {
         // only support 8/16/32/48 khz when |enable_neteq_|

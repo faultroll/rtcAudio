@@ -15,21 +15,23 @@
 #include <string.h>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/system/arch.h"
 #include "common_audio/signal_processing/include/real_fft.h"
 #include "modules/audio_processing/ns/nsx_core.h"
 // #include "system_wrappers/include/cpu_features_wrapper.h"
 
-#if defined(WEBRTC_HAS_NEON)
-/* Tables are defined in ARM assembly files. */
-extern const int16_t WebRtcNsx_kLogTable[9];
-extern const int16_t WebRtcNsx_kCounterDiv[201];
-extern const int16_t WebRtcNsx_kLogTableFrac[256];
-#else
-static const int16_t WebRtcNsx_kLogTable[9] = {
+// #if defined(WEBRTC_HAS_NEON)
+// /* Tables are defined in ARM assembly files. */
+// extern const int16_t WebRtcNsx_kLogTable[9];
+// extern const int16_t WebRtcNsx_kCounterDiv[201];
+// extern const int16_t WebRtcNsx_kLogTableFrac[256];
+// #else
+// Constants to compensate for shifting signal log(2^shifts).
+/* static */ const int16_t WebRtcNsx_kLogTable[9] = {
   0, 177, 355, 532, 710, 887, 1065, 1242, 1420
 };
 
-static const int16_t WebRtcNsx_kCounterDiv[201] = {
+/* static */ const int16_t WebRtcNsx_kCounterDiv[201] = {
   32767, 16384, 10923, 8192, 6554, 5461, 4681, 4096, 3641, 3277, 2979, 2731,
   2521, 2341, 2185, 2048, 1928, 1820, 1725, 1638, 1560, 1489, 1425, 1365, 1311,
   1260, 1214, 1170, 1130, 1092, 1057, 1024, 993, 964, 936, 910, 886, 862, 840,
@@ -46,7 +48,7 @@ static const int16_t WebRtcNsx_kCounterDiv[201] = {
   172, 172, 171, 170, 169, 168, 167, 166, 165, 165, 164, 163
 };
 
-static const int16_t WebRtcNsx_kLogTableFrac[256] = {
+/* static */ const int16_t WebRtcNsx_kLogTableFrac[256] = {
   0,   1,   3,   4,   6,   7,   9,  10,  11,  13,  14,  16,  17,  18,  20,  21,
   22,  24,  25,  26,  28,  29,  30,  32,  33,  34,  36,  37,  38,  40,  41,  42,
   44,  45,  46,  47,  49,  50,  51,  52,  54,  55,  56,  57,  59,  60,  61,  62,
@@ -65,7 +67,7 @@ static const int16_t WebRtcNsx_kLogTableFrac[256] = {
   237, 238, 238, 239, 240, 241, 241, 242, 243, 244, 244, 245, 246, 247, 247,
   248, 249, 249, 250, 251, 252, 252, 253, 254, 255, 255
 };
-#endif  // WEBRTC_HAS_NEON
+// #endif  // WEBRTC_HAS_NEON
 
 // Skip first frequency bins during estimation. (0 <= value < 64)
 static const size_t kStartBand = 5;
@@ -299,256 +301,6 @@ static const int16_t kDeterminantEstMatrix[66] = {
   355,    330
 };
 
-// Update the noise estimation information.
-static void UpdateNoiseEstimate(NoiseSuppressionFixedC* inst, int offset) {
-  int32_t tmp32no1 = 0;
-  int32_t tmp32no2 = 0;
-  int16_t tmp16 = 0;
-  const int16_t kExp2Const = 11819; // Q13
-
-  size_t i = 0;
-
-  tmp16 = WebRtcSpl_MaxValueW16(inst->noiseEstLogQuantile + offset,
-                                   inst->magnLen);
-  // Guarantee a Q-domain as high as possible and still fit in int16
-  inst->qNoise = 14 - (int) WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(
-                   kExp2Const, tmp16, 21);
-  for (i = 0; i < inst->magnLen; i++) {
-    // inst->quantile[i]=exp(inst->lquantile[offset+i]);
-    // in Q21
-    tmp32no2 = kExp2Const * inst->noiseEstLogQuantile[offset + i];
-    tmp32no1 = (0x00200000 | (tmp32no2 & 0x001FFFFF)); // 2^21 + frac
-    tmp16 = (int16_t)(tmp32no2 >> 21);
-    tmp16 -= 21;// shift 21 to get result in Q0
-    tmp16 += (int16_t) inst->qNoise; //shift to get result in Q(qNoise)
-    if (tmp16 < 0) {
-      tmp32no1 >>= -tmp16;
-    } else {
-      tmp32no1 <<= tmp16;
-    }
-    inst->noiseEstQuantile[i] = WebRtcSpl_SatW32ToW16(tmp32no1);
-  }
-}
-
-// Noise Estimation
-static void NoiseEstimationC(NoiseSuppressionFixedC* inst,
-                             uint16_t* magn,
-                             uint32_t* noise,
-                             int16_t* q_noise) {
-  int16_t lmagn[HALF_ANAL_BLOCKL], counter, countDiv;
-  int16_t countProd, delta, zeros, frac;
-  int16_t log2, tabind, logval, tmp16, tmp16no1, tmp16no2;
-  const int16_t log2_const = 22713; // Q15
-  const int16_t width_factor = 21845;
-
-  size_t i, s, offset;
-
-  tabind = inst->stages - inst->normData;
-  RTC_DCHECK_LT(tabind, 9);
-  RTC_DCHECK_GT(tabind, -9);
-  if (tabind < 0) {
-    logval = -WebRtcNsx_kLogTable[-tabind];
-  } else {
-    logval = WebRtcNsx_kLogTable[tabind];
-  }
-
-  // lmagn(i)=log(magn(i))=log(2)*log2(magn(i))
-  // magn is in Q(-stages), and the real lmagn values are:
-  // real_lmagn(i)=log(magn(i)*2^stages)=log(magn(i))+log(2^stages)
-  // lmagn in Q8
-  for (i = 0; i < inst->magnLen; i++) {
-    if (magn[i]) {
-      zeros = WebRtcSpl_NormU32((uint32_t)magn[i]);
-      frac = (int16_t)((((uint32_t)magn[i] << zeros)
-                              & 0x7FFFFFFF) >> 23);
-      // log2(magn(i))
-      RTC_DCHECK_LT(frac, 256);
-      log2 = (int16_t)(((31 - zeros) << 8)
-                             + WebRtcNsx_kLogTableFrac[frac]);
-      // log2(magn(i))*log(2)
-      lmagn[i] = (int16_t)((log2 * log2_const) >> 15);
-      // + log(2^stages)
-      lmagn[i] += logval;
-    } else {
-      lmagn[i] = logval;//0;
-    }
-  }
-
-  // loop over simultaneous estimates
-  for (s = 0; s < SIMULT; s++) {
-    offset = s * inst->magnLen;
-
-    // Get counter values from state
-    counter = inst->noiseEstCounter[s];
-    RTC_DCHECK_LT(counter, 201);
-    countDiv = WebRtcNsx_kCounterDiv[counter];
-    countProd = (int16_t)(counter * countDiv);
-
-    // quant_est(...)
-    for (i = 0; i < inst->magnLen; i++) {
-      // compute delta
-      if (inst->noiseEstDensity[offset + i] > 512) {
-        // Get the value for delta by shifting intead of dividing.
-        int factor = WebRtcSpl_NormW16(inst->noiseEstDensity[offset + i]);
-        delta = (int16_t)(FACTOR_Q16 >> (14 - factor));
-      } else {
-        delta = FACTOR_Q7;
-        if (inst->blockIndex < END_STARTUP_LONG) {
-          // Smaller step size during startup. This prevents from using
-          // unrealistic values causing overflow.
-          delta = FACTOR_Q7_STARTUP;
-        }
-      }
-
-      // update log quantile estimate
-      tmp16 = (int16_t)((delta * countDiv) >> 14);
-      if (lmagn[i] > inst->noiseEstLogQuantile[offset + i]) {
-        // +=QUANTILE*delta/(inst->counter[s]+1) QUANTILE=0.25, =1 in Q2
-        // CounterDiv=1/(inst->counter[s]+1) in Q15
-        tmp16 += 2;
-        inst->noiseEstLogQuantile[offset + i] += tmp16 / 4;
-      } else {
-        tmp16 += 1;
-        // *(1-QUANTILE), in Q2 QUANTILE=0.25, 1-0.25=0.75=3 in Q2
-        // TODO(bjornv): investigate why we need to truncate twice.
-        tmp16no2 = (int16_t)((tmp16 / 2) * 3 / 2);
-        inst->noiseEstLogQuantile[offset + i] -= tmp16no2;
-        if (inst->noiseEstLogQuantile[offset + i] < logval) {
-          // This is the smallest fixed point representation we can
-          // have, hence we limit the output.
-          inst->noiseEstLogQuantile[offset + i] = logval;
-        }
-      }
-
-      // update density estimate
-      if (WEBRTC_SPL_ABS_W16(lmagn[i] - inst->noiseEstLogQuantile[offset + i])
-          < WIDTH_Q8) {
-        tmp16no1 = (int16_t)WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(
-                     inst->noiseEstDensity[offset + i], countProd, 15);
-        tmp16no2 = (int16_t)WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(
-                     width_factor, countDiv, 15);
-        inst->noiseEstDensity[offset + i] = tmp16no1 + tmp16no2;
-      }
-    }  // end loop over magnitude spectrum
-
-    if (counter >= END_STARTUP_LONG) {
-      inst->noiseEstCounter[s] = 0;
-      if (inst->blockIndex >= END_STARTUP_LONG) {
-        UpdateNoiseEstimate(inst, offset);
-      }
-    }
-    inst->noiseEstCounter[s]++;
-
-  }  // end loop over simultaneous estimates
-
-  // Sequentially update the noise during startup
-  if (inst->blockIndex < END_STARTUP_LONG) {
-    UpdateNoiseEstimate(inst, offset);
-  }
-
-  for (i = 0; i < inst->magnLen; i++) {
-    noise[i] = (uint32_t)(inst->noiseEstQuantile[i]); // Q(qNoise)
-  }
-  (*q_noise) = (int16_t)inst->qNoise;
-}
-
-// Filter the data in the frequency domain, and create spectrum.
-static void PrepareSpectrumC(NoiseSuppressionFixedC* inst, int16_t* freq_buf) {
-  size_t i = 0, j = 0;
-
-  for (i = 0; i < inst->magnLen; i++) {
-    inst->real[i] = (int16_t)((inst->real[i] *
-        (int16_t)(inst->noiseSupFilter[i])) >> 14);  // Q(normData-stages)
-    inst->imag[i] = (int16_t)((inst->imag[i] *
-        (int16_t)(inst->noiseSupFilter[i])) >> 14);  // Q(normData-stages)
-  }
-
-  freq_buf[0] = inst->real[0];
-  freq_buf[1] = -inst->imag[0];
-  for (i = 1, j = 2; i < inst->anaLen2; i += 1, j += 2) {
-    freq_buf[j] = inst->real[i];
-    freq_buf[j + 1] = -inst->imag[i];
-  }
-  freq_buf[inst->anaLen] = inst->real[inst->anaLen2];
-  freq_buf[inst->anaLen + 1] = -inst->imag[inst->anaLen2];
-}
-
-// Denormalize the real-valued signal |in|, the output from inverse FFT.
-static void DenormalizeC(NoiseSuppressionFixedC* inst,
-                         int16_t* in,
-                         int factor) {
-  size_t i = 0;
-  int32_t tmp32 = 0;
-  for (i = 0; i < inst->anaLen; i += 1) {
-    tmp32 = WEBRTC_SPL_SHIFT_W32((int32_t)in[i],
-                                 factor - inst->normData);
-    inst->real[i] = WebRtcSpl_SatW32ToW16(tmp32); // Q0
-  }
-}
-
-// For the noise supression process, synthesis, read out fully processed
-// segment, and update synthesis buffer.
-static void SynthesisUpdateC(NoiseSuppressionFixedC* inst,
-                             int16_t* out_frame,
-                             int16_t gain_factor) {
-  size_t i = 0;
-  int16_t tmp16a = 0;
-  int16_t tmp16b = 0;
-  int32_t tmp32 = 0;
-
-  // synthesis
-  for (i = 0; i < inst->anaLen; i++) {
-    tmp16a = (int16_t)WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(
-                 inst->window[i], inst->real[i], 14); // Q0, window in Q14
-    tmp32 = WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(tmp16a, gain_factor, 13); // Q0
-    // Down shift with rounding
-    tmp16b = WebRtcSpl_SatW32ToW16(tmp32); // Q0
-    inst->synthesisBuffer[i] = WebRtcSpl_AddSatW16(inst->synthesisBuffer[i],
-                                                   tmp16b); // Q0
-  }
-
-  // read out fully processed segment
-  for (i = 0; i < inst->blockLen10ms; i++) {
-    out_frame[i] = inst->synthesisBuffer[i]; // Q0
-  }
-
-  // update synthesis buffer
-  memcpy(inst->synthesisBuffer, inst->synthesisBuffer + inst->blockLen10ms,
-      (inst->anaLen - inst->blockLen10ms) * sizeof(*inst->synthesisBuffer));
-  WebRtcSpl_ZerosArrayW16(inst->synthesisBuffer
-      + inst->anaLen - inst->blockLen10ms, inst->blockLen10ms);
-}
-
-// Update analysis buffer for lower band, and window data before FFT.
-static void AnalysisUpdateC(NoiseSuppressionFixedC* inst,
-                            int16_t* out,
-                            int16_t* new_speech) {
-  size_t i = 0;
-
-  // For lower band update analysis buffer.
-  memcpy(inst->analysisBuffer, inst->analysisBuffer + inst->blockLen10ms,
-      (inst->anaLen - inst->blockLen10ms) * sizeof(*inst->analysisBuffer));
-  memcpy(inst->analysisBuffer + inst->anaLen - inst->blockLen10ms, new_speech,
-      inst->blockLen10ms * sizeof(*inst->analysisBuffer));
-
-  // Window data before FFT.
-  for (i = 0; i < inst->anaLen; i++) {
-    out[i] = (int16_t)WEBRTC_SPL_MUL_16_16_RSFT_WITH_ROUND(
-               inst->window[i], inst->analysisBuffer[i], 14); // Q0
-  }
-}
-
-// Normalize the real-valued signal |in|, the input to forward FFT.
-static void NormalizeRealBufferC(NoiseSuppressionFixedC* inst,
-                                 const int16_t* in,
-                                 int16_t* out) {
-  size_t i = 0;
-  RTC_DCHECK_GE(inst->normData, 0);
-  for (i = 0; i < inst->anaLen; ++i) {
-    out[i] = in[i] << inst->normData;  // Q(normData)
-  }
-}
-
 // Declare function pointers.
 NoiseEstimation WebRtcNsx_NoiseEstimation;
 PrepareSpectrum WebRtcNsx_PrepareSpectrum;
@@ -556,6 +308,7 @@ SynthesisUpdate WebRtcNsx_SynthesisUpdate;
 AnalysisUpdate WebRtcNsx_AnalysisUpdate;
 Denormalize WebRtcNsx_Denormalize;
 NormalizeRealBuffer WebRtcNsx_NormalizeRealBuffer;
+SpeechNoiseProb WebRtcNsx_SpeechNoiseProb;
 
 #if defined(WEBRTC_HAS_NEON)
 // Initialize function pointers for ARM Neon platform.
@@ -570,6 +323,7 @@ static void WebRtcNsx_InitNeon(void) {
 #if defined(MIPS32_LE)
 // Initialize function pointers for MIPS platform.
 static void WebRtcNsx_InitMips(void) {
+  WebRtcNsx_SpeechNoiseProb = WebRtcNsx_SpeechNoiseProb_mips;
   WebRtcNsx_PrepareSpectrum = WebRtcNsx_PrepareSpectrum_mips;
   WebRtcNsx_SynthesisUpdate = WebRtcNsx_SynthesisUpdate_mips;
   WebRtcNsx_AnalysisUpdate = WebRtcNsx_AnalysisUpdate_mips;
@@ -755,12 +509,13 @@ int32_t WebRtcNsx_InitCore(NoiseSuppressionFixedC* inst, uint32_t fs) {
 #endif
 
   // Initialize function pointers.
-  WebRtcNsx_NoiseEstimation = NoiseEstimationC;
-  WebRtcNsx_PrepareSpectrum = PrepareSpectrumC;
-  WebRtcNsx_SynthesisUpdate = SynthesisUpdateC;
-  WebRtcNsx_AnalysisUpdate = AnalysisUpdateC;
-  WebRtcNsx_Denormalize = DenormalizeC;
-  WebRtcNsx_NormalizeRealBuffer = NormalizeRealBufferC;
+  WebRtcNsx_SpeechNoiseProb = WebRtcNsx_SpeechNoiseProbC;
+  WebRtcNsx_NoiseEstimation = WebRtcNsx_NoiseEstimationC;
+  WebRtcNsx_PrepareSpectrum = WebRtcNsx_PrepareSpectrumC;
+  WebRtcNsx_SynthesisUpdate = WebRtcNsx_SynthesisUpdateC;
+  WebRtcNsx_AnalysisUpdate = WebRtcNsx_AnalysisUpdateC;
+  WebRtcNsx_Denormalize = WebRtcNsx_DenormalizeC;
+  WebRtcNsx_NormalizeRealBuffer = WebRtcNsx_NormalizeRealBufferC;
 
 #if defined(WEBRTC_HAS_NEON)
   WebRtcNsx_InitNeon();

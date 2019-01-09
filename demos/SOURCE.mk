@@ -1,11 +1,11 @@
 srcs_main += \
-        demos/mixer/mixer.cc \
-        demos/mixer/conference_mixer.cc \
-        demos/neteq/main.cc \
-        demos/ns/ns.cc \
-        demos/ns/ns2.cc \
-        demos/agc/agc.cc \
-        demos/agc/agc2.cc \
-        demos/aec/aecm.cc \
-        demos/aec/aec.cc \
-        demos/aec/aec3.cc
+        demos/pffft/conference_mixer/main.cc \
+        demos/pffft/mixer/main.cc \
+        demos/pffft/neteq/main.cc \
+        demos/pffft/ns/ns.cc \
+        demos/pffft/ns/ns2.cc \
+        demos/pffft/agc/agc.cc \
+        demos/pffft/agc/agc2.cc \
+        demos/pffft/aec/aecm.cc \
+        demos/pffft/aec/aec.cc \
+        demos/pffft/aec/aec3.cc

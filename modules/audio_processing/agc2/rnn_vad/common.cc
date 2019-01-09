@@ -11,16 +11,16 @@
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 
 #include "rtc_base/system/arch.h"
-#include "system_wrappers/include/cpu_features_wrapper.h"
+// #include "system_wrappers/include/cpu_features_wrapper.h"
 
 namespace webrtc {
 namespace rnn_vad {
 
 Optimization DetectOptimization() {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
-  if (GetCPUInfo(kSSE2) != 0) {
+#if defined(WEBRTC_HAS_SSE2) //  if (GetCPUInfo(kSSE2) != 0) {
     return Optimization::kSse2;
-  }
+#endif //  }
 #endif
 
 #if defined(WEBRTC_HAS_NEON)
