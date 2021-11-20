@@ -13,9 +13,9 @@
 
 #include "rtc_base/checks.h"
 
-#include <cstdarg>
+/* #include <cstdarg>
 #include <cstdio>
-#include <cstdlib>
+#include <cstdlib> */
 #include <sstream>
 #include <string>
 
@@ -23,12 +23,12 @@
 #include <windows.h>
 #endif
 
-#if defined(WEBRTC_WIN)
+/* #if defined(WEBRTC_WIN)
 #define LAST_SYSTEM_ERROR (::GetLastError())
 #elif defined(WEBRTC_POSIX)
 #include <errno.h>
 #define LAST_SYSTEM_ERROR (errno)
-#endif  // WEBRTC_WIN
+#endif  // WEBRTC_WIN */
 
 #if defined(_MSC_VER)
 // Warning C4722: destructor never returns, potential memory leak.
@@ -37,7 +37,7 @@
 #endif
 
 namespace rtc {
-namespace {
+/* namespace {
 
 void VPrintError(const char* format, va_list args) {
   vfprintf(stderr, format, args);
@@ -55,10 +55,11 @@ void PrintError(const char* format, ...) {
   va_end(args);
 }
 
-}  // namespace
+}  // namespace */
 
-#if 1 // !defined(__cplusplus) // C version won't declare this in header file
-// Like a stripped-down LogMessage from logging.h, except that it aborts.
+#if 0
+#if 1 // !defined(__cplusplus)
+// C version won't declare this in header file
 class FatalMessage {
  public:
   FatalMessage(const char* file, int line);
@@ -71,37 +72,45 @@ class FatalMessage {
  private:
   void Init(const char* file, int line);
 
+  std::string file_;
+  int line_;
   std::ostringstream stream_;
 };
 #endif
 
-FatalMessage::FatalMessage(const char* file, int line) {
-  Init(file, line);
+FatalMessage::FatalMessage(const char* file, int line)
+  : file_(file),
+    line_(line) {
+  /* Init(file, line); */
 }
 
-FatalMessage::FatalMessage(const char* file, int line, std::string* result) {
-  Init(file, line);
+FatalMessage::FatalMessage(const char* file, int line, std::string* result)
+  : file_(file),
+    line_(line) {
+  /* Init(file, line); */
   stream_ << "Check failed: " << *result << std::endl << "# ";
   delete result;
 }
 
 RTC_NORETURN FatalMessage::~FatalMessage() {
-  fflush(stdout);
+  /* fflush(stdout);
   fflush(stderr);
   stream_ << std::endl << "#" << std::endl;
   PrintError("%s", stream_.str().c_str());
   fflush(stderr);
-  abort();
+  abort(); */
+  rtc_FatalMessage(file_.c_str(), line_, stream_.str().c_str());
 }
 
-void FatalMessage::Init(const char* file, int line) {
+/* void FatalMessage::Init(const char* file, int line) {
   stream_ << std::endl
           << std::endl
           << "#" << std::endl
           << "# Fatal error in " << file << ", line " << line << std::endl
           << "# last system error: " << LAST_SYSTEM_ERROR << std::endl
           << "# ";
-}
+} */
+#endif
 
 #if 0 // defined(__cplusplus)
 // MSVC doesn't like complex extern templates and DLLs.
@@ -122,9 +131,9 @@ template std::string* MakeCheckOpString<std::string, std::string>(
 
 }  // namespace rtc
 
-#if 1 // !defined(__cplusplus)
+/* #if 1 // !defined(__cplusplus)
 // Function to call from the C version of the RTC_CHECK and RTC_DCHECK macros.
 RTC_NORETURN void rtc_FatalMessage(const char* file, int line, const char* msg) {
   rtc::FatalMessage(file, line).stream() << msg;
 }
-#endif
+#endif */
