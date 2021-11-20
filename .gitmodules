@@ -1,0 +1,4 @@
+[submodule "demos/samples"]
+	path = demos/samples
+	url = git@github.com:faultroll/rtcAudio.git
+	branch = samples
