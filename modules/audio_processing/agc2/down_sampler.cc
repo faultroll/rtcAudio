@@ -65,8 +65,8 @@ void DownSampler::Initialize(int sample_rate_hz) {
   }
 }
 
-void DownSampler::DownSample(rtc::ArrayView<const float> in,
-                             rtc::ArrayView<float> out) {
+void DownSampler::DownSample(RTC_VIEW(const float) in,
+                             RTC_VIEW(float) out) {
   data_dumper_->DumpWav("lc_down_sampler_input", in, sample_rate_hz_, 1);
   RTC_DCHECK_EQ((size_t)(sample_rate_hz_ * AudioProcessing::kChunkSizeMs / 1000), in.size());
   RTC_DCHECK_EQ((size_t)(AudioProcessing::kSampleRate8kHz * AudioProcessing::kChunkSizeMs / 1000), out.size());
@@ -75,7 +75,7 @@ void DownSampler::DownSample(rtc::ArrayView<const float> in,
 
   // Band-limit the signal to 4 kHz.
   if (sample_rate_hz_ != AudioProcessing::kSampleRate8kHz) {
-    low_pass_filter_.Process(in, rtc::ArrayView<float>(x, in.size()));
+    low_pass_filter_.Process(in, RTC_MAKE_VIEW(float)(x, in.size()));
 
     // Downsample the signal.
     size_t k = 0;

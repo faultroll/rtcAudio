@@ -10,7 +10,7 @@
 
 #include "modules/audio_processing/agc2/rnn_vad/pitch_search.h"
 
-#include <array>
+// #include <array>
 #include <cstddef>
 
 #include "rtc_base/checks.h"
@@ -27,24 +27,26 @@ PitchEstimator::PitchEstimator()
   RTC_DCHECK_EQ(kNumInvertedLags12kHz, auto_corr_view_.size());
 }
 
-PitchEstimator::~PitchEstimator() = default;
+PitchEstimator::~PitchEstimator() {}
 
 PitchInfo PitchEstimator::Estimate(
-    rtc::ArrayView<const float, kBufSize24kHz> pitch_buf) {
+    RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf) {
   // Perform the initial pitch search at 12 kHz.
   Decimate2x(pitch_buf, pitch_buf_decimated_view_);
   auto_corr_calculator_.ComputeOnPitchBuffer(pitch_buf_decimated_view_,
                                              auto_corr_view_);
   std::array<size_t, 2> pitch_candidates_inv_lags = FindBestPitchPeriods(
       auto_corr_view_, pitch_buf_decimated_view_, kMaxPitch12kHz);
+  RTC_VIEW(size_t) pitch_candidates_inv_lags_view = 
+    RTC_MAKE_VIEW(size_t)(pitch_candidates_inv_lags);
   // Refine the pitch period estimation.
   // The refinement is done using the pitch buffer that contains 24 kHz samples.
   // Therefore, adapt the inverted lags in |pitch_candidates_inv_lags| from 12
   // to 24 kHz.
-  pitch_candidates_inv_lags[0] *= 2;
-  pitch_candidates_inv_lags[1] *= 2;
+  pitch_candidates_inv_lags_view[0] *= 2;
+  pitch_candidates_inv_lags_view[1] *= 2;
   size_t pitch_inv_lag_48kHz =
-      RefinePitchPeriod48kHz(pitch_buf, pitch_candidates_inv_lags);
+      RefinePitchPeriod48kHz(pitch_buf, pitch_candidates_inv_lags_view);
   // Look for stronger harmonics to find the final pitch period and its gain.
   RTC_DCHECK_LT(pitch_inv_lag_48kHz, kMaxPitch48kHz);
   last_pitch_48kHz_ = CheckLowerPitchPeriodsAndComputePitchGain(

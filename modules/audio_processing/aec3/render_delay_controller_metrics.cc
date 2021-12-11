@@ -41,7 +41,7 @@ constexpr int kMaxSkewShiftCount = 20;
 
 }  // namespace
 
-RenderDelayControllerMetrics::RenderDelayControllerMetrics() = default;
+RenderDelayControllerMetrics::RenderDelayControllerMetrics() {}
 
 void RenderDelayControllerMetrics::Update(
     rtc::Optional<size_t> delay_samples,

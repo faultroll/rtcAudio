@@ -11,8 +11,9 @@
 #include "modules/audio_processing/aec3/shadow_filter_update_gain.h"
 
 #include <algorithm>
-#include <functional>
+// #include <functional>
 
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -35,7 +36,7 @@ void ShadowFilterUpdateGain::HandleEchoPathChange() {
 }
 
 void ShadowFilterUpdateGain::Compute(
-    const std::array<float, kFftLengthBy2Plus1>& render_power,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power,
     const RenderSignalAnalyzer& render_signal_analyzer,
     const FftData& E_shadow,
     size_t size_partitions,
@@ -53,25 +54,28 @@ void ShadowFilterUpdateGain::Compute(
   // Do not update the filter if the render is not sufficiently excited.
   if (++poor_signal_excitation_counter_ < size_partitions ||
       saturated_capture_signal || call_counter_ <= size_partitions) {
-    G->re.fill(0.f);
-    G->im.fill(0.f);
+    G->re_view.fill(0.f);
+    G->im_view.fill(0.f);
     return;
   }
 
   // Compute mu.
-  std::array<float, kFftLengthBy2Plus1> mu;
+  float mu[kFftLengthBy2Plus1];
+  RTC_VIEW(float) mu_view = RTC_MAKE_VIEW(float)(mu);
   auto X2 = render_power;
-  std::transform(X2.begin(), X2.end(), mu.begin(), [&](float a) {
+  std::transform(X2.begin(), X2.end(), mu_view.begin(), [&](float a) {
     return a > current_config_.noise_gate ? current_config_.rate / a : 0.f;
   });
 
   // Avoid updating the filter close to narrow bands in the render signals.
-  render_signal_analyzer.MaskRegionsAroundNarrowBands(&mu);
+  render_signal_analyzer.MaskRegionsAroundNarrowBands(mu_view);
 
   // G = mu * E * X2.
-  std::transform(mu.begin(), mu.end(), E_shadow.re.begin(), G->re.begin(),
+  std::transform(mu_view.begin(), mu_view.end(), 
+                 E_shadow.re_view.begin(), G->re_view.begin(),
                  std::multiplies<float>());
-  std::transform(mu.begin(), mu.end(), E_shadow.im.begin(), G->im.begin(),
+  std::transform(mu_view.begin(), mu_view.end(), 
+                 E_shadow.im_view.begin(), G->im_view.begin(),
                  std::multiplies<float>());
 }
 

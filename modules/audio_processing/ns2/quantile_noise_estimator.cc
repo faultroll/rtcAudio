@@ -17,9 +17,12 @@
 namespace webrtc {
 
 QuantileNoiseEstimator::QuantileNoiseEstimator() {
-  quantile_.fill(0.f);
-  density_.fill(0.3f);
-  log_quantile_.fill(8.f);
+  RTC_VIEW(float) quantile_view = RTC_MAKE_VIEW(float)(quantile_);
+  quantile_view.fill(0.f);
+  RTC_VIEW(float) density_view = RTC_MAKE_VIEW(float)(density_);
+  density_view.fill(0.3f);
+  RTC_VIEW(float) log_quantile_view = RTC_MAKE_VIEW(float)(log_quantile_);
+  log_quantile_view.fill(8.f);
 
   constexpr float kOneBySimult = 1.f / kSimult;
   for (size_t i = 0; i < kSimult; ++i) {
@@ -28,9 +31,9 @@ QuantileNoiseEstimator::QuantileNoiseEstimator() {
 }
 
 void QuantileNoiseEstimator::Estimate(
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
-    rtc::ArrayView<float, kFftSizeBy2Plus1> noise_spectrum) {
-  std::array<float, kFftSizeBy2Plus1> log_spectrum;
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
+    RTC_VIEW(float) /* kFftSizeBy2Plus1 */ noise_spectrum) {
+  float log_spectrum[kFftSizeBy2Plus1];
   LogApproximation(signal_spectrum, log_spectrum);
 
   int quantile_index_to_return = -1;
@@ -77,12 +80,13 @@ void QuantileNoiseEstimator::Estimate(
 
   if (quantile_index_to_return >= 0) {
     ExpApproximation(
-        rtc::ArrayView<const float>(&log_quantile_[quantile_index_to_return],
+        RTC_MAKE_VIEW(const float)(&log_quantile_[quantile_index_to_return],
                                     kFftSizeBy2Plus1),
         quantile_);
   }
 
-  std::copy(quantile_.begin(), quantile_.end(), noise_spectrum.begin());
+  RTC_VIEW(float) quantile_view = RTC_MAKE_VIEW(float)(quantile_);
+  std::copy(quantile_view.begin(), quantile_view.end(), noise_spectrum.begin());
 }
 
 }  // namespace webrtc

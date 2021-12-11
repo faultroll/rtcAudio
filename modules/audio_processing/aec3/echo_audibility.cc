@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/block_buffer.h"
 #include "modules/audio_processing/aec3/spectrum_buffer.h"
 #include "modules/audio_processing/aec3/stationarity_estimator.h"
@@ -27,10 +27,10 @@ EchoAudibility::EchoAudibility(bool use_render_stationarity_at_init)
   Reset();
 }
 
-EchoAudibility::~EchoAudibility() = default;
+EchoAudibility::~EchoAudibility() {}
 
 void EchoAudibility::Update(const RenderBuffer& render_buffer,
-                            rtc::ArrayView<const float> average_reverb,
+                            RTC_VIEW(const float) average_reverb,
                             int delay_blocks,
                             bool external_delay_seen) {
   UpdateRenderNoiseEstimator(render_buffer.GetSpectrumBuffer(),
@@ -50,7 +50,7 @@ void EchoAudibility::Reset() {
 
 void EchoAudibility::UpdateRenderStationarityFlags(
     const RenderBuffer& render_buffer,
-    rtc::ArrayView<const float> average_reverb,
+    RTC_VIEW(const float) average_reverb,
     int min_channel_delay_blocks) {
   const SpectrumBuffer& spectrum_buffer = render_buffer.GetSpectrumBuffer();
   int idx_at_delay = spectrum_buffer.OffsetIndex(spectrum_buffer.read,

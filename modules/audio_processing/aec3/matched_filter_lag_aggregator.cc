@@ -26,14 +26,14 @@ MatchedFilterLagAggregator::MatchedFilterLagAggregator(
       thresholds_(thresholds) {
   RTC_DCHECK(data_dumper);
   RTC_DCHECK_LE(thresholds_.initial, thresholds_.converged);
-  histogram_data_.fill(0);
+  histogram_data_view_.fill(0);
 }
 
-MatchedFilterLagAggregator::~MatchedFilterLagAggregator() = default;
+MatchedFilterLagAggregator::~MatchedFilterLagAggregator() {}
 
 void MatchedFilterLagAggregator::Reset(bool hard_reset) {
   std::fill(histogram_.begin(), histogram_.end(), 0);
-  histogram_data_.fill(0);
+  histogram_data_view_.fill(0);
   histogram_data_index_ = 0;
   if (hard_reset) {
     significant_candidate_found_ = false;
@@ -41,7 +41,7 @@ void MatchedFilterLagAggregator::Reset(bool hard_reset) {
 }
 
 rtc::Optional<DelayEstimate> MatchedFilterLagAggregator::Aggregate(
-    rtc::ArrayView<const MatchedFilter::LagEstimate> lag_estimates) {
+    RTC_VIEW(const MatchedFilter::LagEstimate) lag_estimates) {
   // Choose the strongest lag estimate as the best one.
   float best_accuracy = 0.f;
   int best_lag_estimate_index = -1;
@@ -55,24 +55,25 @@ rtc::Optional<DelayEstimate> MatchedFilterLagAggregator::Aggregate(
   }
 
   // TODO(peah): Remove this logging once all development is done.
-  data_dumper_->DumpRaw("aec3_echo_path_delay_estimator_best_index",
-                        best_lag_estimate_index);
-  data_dumper_->DumpRaw("aec3_echo_path_delay_estimator_histogram", histogram_);
+  data_dumper_->DumpRaw(
+      "aec3_echo_path_delay_estimator_best_index", best_lag_estimate_index);
+  data_dumper_->DumpRaw(
+      "aec3_echo_path_delay_estimator_histogram", RTC_MAKE_VIEW(const int)(histogram_));
 
   if (best_lag_estimate_index != -1) {
-    RTC_DCHECK_GT(histogram_.size(), (size_t)histogram_data_[histogram_data_index_]);
-    RTC_DCHECK_LE(0, histogram_data_[histogram_data_index_]);
-    --histogram_[histogram_data_[histogram_data_index_]];
+    RTC_DCHECK_GT(histogram_.size(), (size_t)histogram_data_view_[histogram_data_index_]);
+    RTC_DCHECK_LE(0, histogram_data_view_[histogram_data_index_]);
+    --histogram_[histogram_data_view_[histogram_data_index_]];
 
-    histogram_data_[histogram_data_index_] =
+    histogram_data_view_[histogram_data_index_] =
         lag_estimates[best_lag_estimate_index].lag;
 
-    RTC_DCHECK_GT(histogram_.size(), (size_t)histogram_data_[histogram_data_index_]);
-    RTC_DCHECK_LE(0, histogram_data_[histogram_data_index_]);
-    ++histogram_[histogram_data_[histogram_data_index_]];
+    RTC_DCHECK_GT(histogram_.size(), (size_t)histogram_data_view_[histogram_data_index_]);
+    RTC_DCHECK_LE(0, histogram_data_view_[histogram_data_index_]);
+    ++histogram_[histogram_data_view_[histogram_data_index_]];
 
     histogram_data_index_ =
-        (histogram_data_index_ + 1) % histogram_data_.size();
+        (histogram_data_index_ + 1) % histogram_data_view_.size();
 
     const int candidate =
         std::distance(histogram_.begin(),

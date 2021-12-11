@@ -13,8 +13,9 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/ns_common.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -22,22 +23,22 @@ namespace webrtc {
 class NrFft {
  public:
   NrFft();
-  NrFft(const NrFft&) = delete;
-  NrFft& operator=(const NrFft&) = delete;
 
   // Transforms the signal from time to frequency domain.
-  void Fft(rtc::ArrayView<float, kFftSize> time_data,
-           rtc::ArrayView<float, kFftSize> real,
-           rtc::ArrayView<float, kFftSize> imag);
+  void Fft(RTC_VIEW(float) /* kFftSize */ time_data,
+           RTC_VIEW(float) /* kFftSize */ real,
+           RTC_VIEW(float) /* kFftSize */ imag);
 
   // Transforms the signal from frequency to time domain.
-  void Ifft(rtc::ArrayView<const float> real,
-            rtc::ArrayView<const float> imag,
-            rtc::ArrayView<float> time_data);
+  void Ifft(RTC_VIEW(const float) real,
+            RTC_VIEW(const float) imag,
+            RTC_VIEW(float) time_data);
 
  private:
   std::vector<size_t> bit_reversal_state_;
   std::vector<float> tables_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(NrFft);
 };
 
 }  // namespace webrtc

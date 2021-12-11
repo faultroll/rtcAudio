@@ -11,9 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_FALLBACK_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_FALLBACK_H_
 
-#include <array>
+// #include <array>
 #include <vector>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
 namespace webrtc {
@@ -32,18 +33,19 @@ class ReverbModelFallback {
 
   // Adds the estimated unmodelled echo power to the residual echo power
   // estimate.
-  void AddEchoReverb(const std::array<float, kFftLengthBy2Plus1>& S2,
+  void AddEchoReverb(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ S2,
                      size_t delay,
                      float reverb_decay_factor,
-                     std::array<float, kFftLengthBy2Plus1>* R2);
+                     RTC_VIEW(float) /* kFftLengthBy2Plus1 */R2);
 
   // Returns the current power spectrum reverberation contributions.
-  const std::array<float, kFftLengthBy2Plus1>& GetPowerSpectrum() const {
-    return R2_reverb_;
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ GetPowerSpectrum() const {
+    return RTC_MAKE_VIEW(const float)(R2_reverb_);
   }
 
  private:
-  std::array<float, kFftLengthBy2Plus1> R2_reverb_;
+  float R2_reverb_[kFftLengthBy2Plus1];
+  RTC_VIEW(float) R2_reverb_view_ = RTC_MAKE_VIEW(float)(R2_reverb_);
   int S2_old_index_ = 0;
   std::vector<std::array<float, kFftLengthBy2Plus1>> S2_old_;
 };

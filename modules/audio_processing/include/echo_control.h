@@ -66,7 +66,7 @@ class EchoControlFactory {
 // for PC and IP phone applications.
 //
 // Not recommended to be enabled on the server-side.
-struct AecCore;
+// struct AecCore;
 class EchoCancellation {
  public:
   // EchoCancellation and EchoControlMobile may not be enabled simultaneously.
@@ -170,7 +170,7 @@ class EchoCancellation {
   // channels, the pointer to the first one is returned.  A NULL pointer is
   // returned when the AEC component is disabled or has not been initialized
   // successfully.
-  virtual struct AecCore* aec_core() const = 0;
+  // virtual struct AecCore* aec_core() const = 0;
 
  protected:
   virtual ~EchoCancellation() {}

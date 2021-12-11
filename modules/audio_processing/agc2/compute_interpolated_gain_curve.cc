@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/agc2/agc2_testing_common.h"
 #include "modules/audio_processing/agc2/limiter_db_gain_curve.h"
@@ -82,7 +83,7 @@ std::vector<double> SampleLimiterRegion(const LimiterDbGainCurve* limiter) {
   static_assert(kInterpolatedGainCurveBeyondKneePoints > 2, "");
 
   struct Interval {
-    Interval() = default;  // Ctor required by std::priority_queue.
+    Interval() {}  // Ctor required by std::priority_queue.
     Interval(double l, double r, double e) : x0(l), x1(r), error(e) {
       RTC_CHECK(x0 < x1);
     }
@@ -218,9 +219,15 @@ namespace test {
 InterpolatedParameters ComputeInterpolatedGainCurveApproximationParams() {
   InterpolatedParameters parameters;
   LimiterDbGainCurve limiter;
-  parameters.computed_approximation_params_x.fill(0.0f);
-  parameters.computed_approximation_params_m.fill(0.0f);
-  parameters.computed_approximation_params_q.fill(0.0f);
+  RTC_VIEW(float) computed_approximation_params_x_view = 
+    RTC_MAKE_VIEW(float)(parameters.computed_approximation_params_x);
+  computed_approximation_params_x_view.fill(0.0f);
+  RTC_VIEW(float) computed_approximation_params_m_view = 
+    RTC_MAKE_VIEW(float)(parameters.computed_approximation_params_m);
+  computed_approximation_params_m_view.fill(0.0f);
+  RTC_VIEW(float) computed_approximation_params_q_view = 
+    RTC_MAKE_VIEW(float)(parameters.computed_approximation_params_q);
+  computed_approximation_params_q_view.fill(0.0f);
   PrecomputeKneeApproxParams(&limiter, &parameters);
   PrecomputeBeyondKneeApproxParams(&limiter, &parameters);
   return parameters;

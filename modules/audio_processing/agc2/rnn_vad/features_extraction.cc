@@ -10,7 +10,7 @@
 
 #include "modules/audio_processing/agc2/rnn_vad/features_extraction.h"
 
-#include <array>
+// #include <array>
 
 #include "modules/audio_processing/agc2/rnn_vad/lp_residual.h"
 #include "rtc_base/checks.h"
@@ -39,7 +39,7 @@ FeaturesExtractor::FeaturesExtractor()
   Reset();
 }
 
-FeaturesExtractor::~FeaturesExtractor() = default;
+FeaturesExtractor::~FeaturesExtractor() {}
 
 void FeaturesExtractor::Reset() {
   pitch_buf_24kHz_.Reset();
@@ -49,14 +49,15 @@ void FeaturesExtractor::Reset() {
 }
 
 bool FeaturesExtractor::CheckSilenceComputeFeatures(
-    rtc::ArrayView<const float, kFrameSize10ms24kHz> samples,
-    rtc::ArrayView<float, kFeatureVectorSize> feature_vector) {
+    RTC_VIEW(const float) /* kFrameSize10ms24kHz */ samples,
+    RTC_VIEW(float) /* kFeatureVectorSize */ feature_vector) {
   // Pre-processing.
   if (use_high_pass_filter_) {
-    std::array<float, kFrameSize10ms24kHz> samples_filtered;
-    hpf_.Process(samples, samples_filtered);
+    float samples_filtered[kFrameSize10ms24kHz];
+    RTC_VIEW(float) samples_filtered_view = RTC_MAKE_VIEW(float)(samples_filtered);
+    hpf_.Process(samples, samples_filtered_view);
     // Feed buffer with the pre-processed version of |samples|.
-    pitch_buf_24kHz_.Push(samples_filtered);
+    pitch_buf_24kHz_.Push(samples_filtered_view);
   } else {
     // Feed buffer with |samples|.
     pitch_buf_24kHz_.Push(samples);
@@ -77,12 +78,13 @@ bool FeaturesExtractor::CheckSilenceComputeFeatures(
   // Analyze reference and lagged frames checking if silence has been detected
   // and write the feature vector.
   return spectral_features_extractor_.CheckSilenceComputeFeatures(
-      reference_frame_view_, {lagged_frame.data(), kFrameSize20ms24kHz},
-      {feature_vector.data() + kNumLowerBands, kNumBands - kNumLowerBands},
-      {feature_vector.data(), kNumLowerBands},
-      {feature_vector.data() + kNumBands, kNumLowerBands},
-      {feature_vector.data() + kNumBands + kNumLowerBands, kNumLowerBands},
-      {feature_vector.data() + kNumBands + 2 * kNumLowerBands, kNumLowerBands},
+      reference_frame_view_,
+      RTC_MAKE_VIEW(const float)(lagged_frame.data(), kFrameSize20ms24kHz),
+      RTC_MAKE_VIEW(float)(feature_vector.data() + kNumLowerBands, kNumBands - kNumLowerBands),
+      RTC_MAKE_VIEW(float)(feature_vector.data(), kNumLowerBands),
+      RTC_MAKE_VIEW(float)(feature_vector.data() + kNumBands, kNumLowerBands),
+      RTC_MAKE_VIEW(float)(feature_vector.data() + kNumBands + kNumLowerBands, kNumLowerBands),
+      RTC_MAKE_VIEW(float)(feature_vector.data() + kNumBands + 2 * kNumLowerBands, kNumLowerBands),
       &feature_vector[kFeatureVectorSize - 1]);
 }
 

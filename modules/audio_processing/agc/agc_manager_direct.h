@@ -23,7 +23,18 @@
 namespace webrtc {
 
 class MonoAgc;
-class GainControl;
+// class GainControl;
+
+// Callbacks that need to be injected into AgcManagerDirect to read and control
+// the volume values. This is done to remove the VoiceEngine dependency in
+// AgcManagerDirect.
+// DONE(aluebs): Remove VolumeCallbacks.
+/* class VolumeCallbacks {
+ public:
+  virtual ~VolumeCallbacks() {}
+  virtual void SetMicVolume(int volume) = 0;
+  virtual int GetMicVolume() = 0;
+}; */
 
 // Direct interface to use AGC to set volume and compression values.
 // AudioProcessing uses this interface directly to integrate the callback-less
@@ -44,11 +55,9 @@ class AgcManagerDirect final {
                    int sample_rate_hz);
 
   ~AgcManagerDirect();
-  /* AgcManagerDirect(const AgcManagerDirect&) = delete;
-  AgcManagerDirect& operator=(const AgcManagerDirect&) = delete; */
 
   void Initialize();
-  void SetupDigitalGainControl(GainControl* gain_control) const;
+  // void SetupDigitalGainControl(GainControl* gain_control) const;
 
   void AnalyzePreProcess(const AudioBuffer* audio);
   void Process(const AudioBuffer* audio);
@@ -73,14 +82,14 @@ class AgcManagerDirect final {
   FRIEND_TEST_ALL_PREFIXES(AgcManagerDirectStandaloneTest,
                            DisableDigitalDisablesDigital);
   FRIEND_TEST_ALL_PREFIXES(AgcManagerDirectStandaloneTest,
-                           AgcMinMicLevelExperiment); */
+                           AgcMinMicLevelExperiment);
 
   // Dependency injection for testing. Don't delete |agc| as the memory is owned
   // by the manager.
   AgcManagerDirect(Agc* agc,
                    int startup_min_level,
                    int clipped_level_min,
-                   int sample_rate_hz);
+                   int sample_rate_hz); */
 
   void AnalyzePreProcess(const float* const* audio, size_t samples_per_channel);
 
@@ -113,8 +122,6 @@ class MonoAgc {
           bool disable_digital_adaptive,
           int min_mic_level);
   ~MonoAgc();
-  /* MonoAgc(const MonoAgc&) = delete;
-  MonoAgc& operator=(const MonoAgc&) = delete; */
 
   void Initialize();
   void SetCaptureMuted(bool muted);

@@ -13,12 +13,12 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
@@ -62,7 +62,7 @@ class AecState {
 
   // Returns the appropriate scaling of the residual echo to match the
   // audibility.
-  void GetResidualEchoScaling(rtc::ArrayView<float> residual_scaling) const;
+  void GetResidualEchoScaling(RTC_VIEW(float) residual_scaling) const;
 
   // Returns whether the stationary properties of the signals are used in the
   // aec.
@@ -71,7 +71,7 @@ class AecState {
   }
 
   // Returns the ERLE.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle() const {
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& Erle() const {
     return erle_estimator_.Erle();
   }
 
@@ -85,7 +85,7 @@ class AecState {
   float FullBandErleLog2() const { return erle_estimator_.FullbandErleLog2(); }
 
   // Returns the ERL.
-  const std::array<float, kFftLengthBy2Plus1>& Erl() const {
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ Erl() const {
     return erl_estimator_.Erl();
   }
 
@@ -120,7 +120,7 @@ class AecState {
   float ReverbDecay() const { return reverb_model_estimator_.ReverbDecay(); }
 
   // Return the frequency response of the reverberant echo.
-  rtc::ArrayView<const float> GetReverbFrequencyResponse() const {
+  RTC_VIEW(const float) GetReverbFrequencyResponse() const {
     return reverb_model_estimator_.GetReverbFrequencyResponse();
   }
 
@@ -134,14 +134,13 @@ class AecState {
   // TODO(bugs.webrtc.org/10913): Compute multi-channel ERL.
   void Update(
       const rtc::Optional<DelayEstimate>& external_delay,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
           adaptive_filter_frequency_responses,
-      rtc::ArrayView<const std::vector<float>>
-          adaptive_filter_impulse_responses,
+      RTC_VIEW(const std::vector<float>) adaptive_filter_impulse_responses,
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2_refined,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-      rtc::ArrayView<const SubtractorOutput> subtractor_output);
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2_refined,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      RTC_VIEW(const SubtractorOutput) subtractor_output);
 
   // Returns filter length in blocks.
   int FilterLengthBlocks() const {
@@ -197,7 +196,7 @@ class AecState {
 
     // Returns the delay in blocks relative to the beginning of the filter that
     // corresponds to the direct path of the echo.
-    rtc::ArrayView<const int> DirectPathFilterDelays() const {
+    RTC_VIEW(const int) DirectPathFilterDelays() const {
       return filter_delays_blocks_;
     }
 
@@ -207,7 +206,7 @@ class AecState {
 
     // Updates the delay estimates based on new data.
     void Update(
-        rtc::ArrayView<const int> analyzer_filter_delay_estimates_blocks,
+        RTC_VIEW(const int) analyzer_filter_delay_estimates_blocks,
         const rtc::Optional<DelayEstimate>& external_delay,
         size_t blocks_with_proper_filter_adaptation);
 
@@ -268,10 +267,10 @@ class AecState {
     bool SaturatedEcho() const { return saturated_echo_; }
 
     // Updates the detection decision based on new data.
-    void Update(rtc::ArrayView<const std::vector<float>> x,
+    void Update(RTC_VIEW(const std::vector<float>) x,
                 bool saturated_capture,
                 bool usable_linear_estimate,
-                rtc::ArrayView<const SubtractorOutput> subtractor_output,
+                RTC_VIEW(const SubtractorOutput) subtractor_output,
                 float echo_path_gain);
 
    private:

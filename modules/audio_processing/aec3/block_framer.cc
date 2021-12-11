@@ -28,7 +28,7 @@ BlockFramer::BlockFramer(size_t num_bands, size_t num_channels)
   RTC_DCHECK_LT(0, num_channels);
 }
 
-BlockFramer::~BlockFramer() = default;
+BlockFramer::~BlockFramer() {}
 
 // All the constants are chosen so that the buffer is either empty or has enough
 // samples for InsertBlockAndExtractSubFrame to produce a frame. In order to
@@ -52,7 +52,7 @@ void BlockFramer::InsertBlock(
 
 void BlockFramer::InsertBlockAndExtractSubFrame(
     const std::vector<std::vector<std::vector<float>>>& block,
-    std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame) {
+    std::vector<std::vector<RTC_VIEW(float)>>* sub_frame) {
   RTC_DCHECK(sub_frame);
   RTC_DCHECK_EQ(num_bands_, block.size());
   RTC_DCHECK_EQ(num_bands_, sub_frame->size());

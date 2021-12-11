@@ -14,7 +14,6 @@
 #include <memory>
 #include <vector>
 
-// #include "rtc_base/array_view.h"
 #include "modules/audio_processing/utility/cascaded_biquad_filter.h"
 #include "rtc_base/constructor_magic.h"
 
@@ -26,8 +25,6 @@ class HighPassFilter {
  public:
   HighPassFilter(int sample_rate_hz, size_t num_channels);
   ~HighPassFilter();
-  /* HighPassFilter(const HighPassFilter&) = delete;
-  HighPassFilter& operator=(const HighPassFilter&) = delete; */
 
   void Process(AudioBuffer* audio, bool use_split_band_data);
   void Process(std::vector<std::vector<float>>* audio);

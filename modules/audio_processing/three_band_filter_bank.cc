@@ -133,7 +133,7 @@ ThreeBandFilterBank::ThreeBandFilterBank(size_t length)
   }
 }
 
-ThreeBandFilterBank::~ThreeBandFilterBank() = default;
+ThreeBandFilterBank::~ThreeBandFilterBank() {}
 
 // The analysis can be separated in these steps:
 //   1. Serial to parallel downsampling by a factor of |kNumBands|.

@@ -61,7 +61,6 @@ size_t EchoControlMobile::echo_path_size_bytes() {
 }
 
 struct EchoControlMobileImpl::StreamProperties {
-  StreamProperties() = delete;
   StreamProperties(int sample_rate_hz,
                    size_t num_reverse_channels,
                    size_t num_output_channels)
@@ -72,6 +71,8 @@ struct EchoControlMobileImpl::StreamProperties {
   int sample_rate_hz;
   size_t num_reverse_channels;
   size_t num_output_channels;
+  
+  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(StreamProperties);
 };
 
 class EchoControlMobileImpl::Canceller {
@@ -128,7 +129,7 @@ EchoControlMobileImpl::~EchoControlMobileImpl() {
 }
 
 void EchoControlMobileImpl::ProcessRenderAudio(
-    rtc::ArrayView<const int16_t> packed_render_audio) {
+    RTC_VIEW(const int16_t) packed_render_audio) {
   rtc::CritScope cs_capture(crit_capture_);
   if (!enabled_) {
     return;

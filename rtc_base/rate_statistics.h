@@ -38,9 +38,9 @@ class RTC_EXPORT RateStatistics {
   //         ex: kBpsScale (8000) for bits/s if count represents bytes.
   RateStatistics(int64_t max_window_size_ms, float scale);
 
-  /* RateStatistics(const RateStatistics& other);
+  RateStatistics(const RateStatistics& other);
 
-  RateStatistics(RateStatistics&& other); */
+  RateStatistics(RateStatistics&& other);
 
   ~RateStatistics();
 

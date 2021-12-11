@@ -12,6 +12,8 @@
 
 #include <numeric>
 
+#include "rtc_base/view.h"
+
 namespace webrtc {
 SubbandNearendDetector::SubbandNearendDetector(
     const EchoCanceller3Config::Suppressor::SubbandNearendDetection& config,
@@ -27,19 +29,21 @@ SubbandNearendDetector::SubbandNearendDetector(
           1.f / (config_.subband2.high - config_.subband2.low + 1)) {}
 
 void SubbandNearendDetector::Update(
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         nearend_spectrum,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         residual_echo_spectrum,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         comfort_noise_spectrum,
     bool initial_state) {
   nearend_state_ = false;
   for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
-    const std::array<float, kFftLengthBy2Plus1>& noise =
-        comfort_noise_spectrum[ch];
-    std::array<float, kFftLengthBy2Plus1> nearend;
-    nearend_smoothers_[ch].Average(nearend_spectrum[ch], nearend);
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ noise =
+        RTC_MAKE_VIEW(const float)(comfort_noise_spectrum[ch]);
+    float nearend[kFftLengthBy2Plus1];
+    RTC_VIEW(float) /* kFftLengthBy2Plus1 */ nearend_view =
+        RTC_MAKE_VIEW(float)(nearend);
+    nearend_smoothers_[ch].Average(nearend_spectrum[ch], nearend_view);
 
     // Noise power of the first region.
     float noise_power =
@@ -49,14 +53,14 @@ void SubbandNearendDetector::Update(
 
     // Nearend power of the first region.
     float nearend_power_subband1 =
-        std::accumulate(nearend.begin() + config_.subband1.low,
-                        nearend.begin() + config_.subband1.high + 1, 0.f) *
+        std::accumulate(nearend_view.begin() + config_.subband1.low,
+                        nearend_view.begin() + config_.subband1.high + 1, 0.f) *
         one_over_subband_length1_;
 
     // Nearend power of the second region.
     float nearend_power_subband2 =
-        std::accumulate(nearend.begin() + config_.subband2.low,
-                        nearend.begin() + config_.subband2.high + 1, 0.f) *
+        std::accumulate(nearend_view.begin() + config_.subband2.low,
+                        nearend_view.begin() + config_.subband2.high + 1, 0.f) *
         one_over_subband_length2_;
 
     // One channel is sufficient to trigger nearend state.

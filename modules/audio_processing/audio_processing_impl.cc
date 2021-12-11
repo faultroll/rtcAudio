@@ -132,7 +132,7 @@ static const size_t kMaxNumFramesToBuffer = 100;
 class HighPassFilterImpl : public HighPassFilter {
  public:
   explicit HighPassFilterImpl(AudioProcessingImpl* apm) : apm_(apm) {}
-  ~HighPassFilterImpl() override = default;
+  ~HighPassFilterImpl() override {}
 
   // HighPassFilter implementation.
   int Enable(bool enable) override {
@@ -300,8 +300,8 @@ struct AudioProcessingImpl::ApmPrivateSubmodules {
   std::unique_ptr<GainApplier> pre_amplifier;
 };
 
-AudioProcessingBuilder::AudioProcessingBuilder() = default;
-AudioProcessingBuilder::~AudioProcessingBuilder() = default;
+AudioProcessingBuilder::AudioProcessingBuilder() {}
+AudioProcessingBuilder::~AudioProcessingBuilder() {}
 
 AudioProcessingBuilder& AudioProcessingBuilder::SetCapturePostProcessing(
     std::unique_ptr<CustomProcessing> capture_post_processing) {
@@ -2076,10 +2076,10 @@ AudioProcessingImpl::ApmCaptureState::ApmCaptureState(
       echo_path_gain_change(false),
       prev_analog_mic_level(-1) {}
 
-AudioProcessingImpl::ApmCaptureState::~ApmCaptureState() = default;
+AudioProcessingImpl::ApmCaptureState::~ApmCaptureState() {}
 
-AudioProcessingImpl::ApmRenderState::ApmRenderState() = default;
+AudioProcessingImpl::ApmRenderState::ApmRenderState() {}
 
-AudioProcessingImpl::ApmRenderState::~ApmRenderState() = default;
+AudioProcessingImpl::ApmRenderState::~ApmRenderState() {}
 
 }  // namespace webrtc

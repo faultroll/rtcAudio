@@ -14,7 +14,7 @@
 #include <numeric>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/agc2/down_sampler.h"
@@ -32,7 +32,7 @@ bool IsSse2Available() {
 #endif
 }
 
-void RemoveDcLevel(rtc::ArrayView<float> x) {
+void RemoveDcLevel(RTC_VIEW(float) x) {
   RTC_DCHECK_LT(0, x.size());
   float mean = std::accumulate(x.data(), x.data() + x.size(), 0.f);
   mean /= x.size();
@@ -43,8 +43,8 @@ void RemoveDcLevel(rtc::ArrayView<float> x) {
 }
 
 void PowerSpectrum(const OouraFft* ooura_fft,
-                   rtc::ArrayView<const float> x,
-                   rtc::ArrayView<float> spectrum) {
+                   RTC_VIEW(const float) x,
+                   RTC_VIEW(float) spectrum) {
   RTC_DCHECK_EQ(65, spectrum.size());
   RTC_DCHECK_EQ(128, x.size());
   float X[128];
@@ -68,8 +68,8 @@ void PowerSpectrum(const OouraFft* ooura_fft,
 }
 
 webrtc::SignalClassifier::SignalType ClassifySignal(
-    rtc::ArrayView<const float> signal_spectrum,
-    rtc::ArrayView<const float> noise_spectrum,
+    RTC_VIEW(const float) signal_spectrum,
+    RTC_VIEW(const float) noise_spectrum,
     ApmDataDumper* data_dumper) {
   int num_stationary_bands = 0;
   int num_highly_nonstationary_bands = 0;
@@ -105,11 +105,11 @@ SignalClassifier::FrameExtender::FrameExtender(size_t frame_size,
                                                size_t extended_frame_size)
     : x_old_(extended_frame_size - frame_size, 0.f) {}
 
-SignalClassifier::FrameExtender::~FrameExtender() = default;
+SignalClassifier::FrameExtender::~FrameExtender() {}
 
 void SignalClassifier::FrameExtender::ExtendFrame(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float> x_extended) {
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) x_extended) {
   RTC_DCHECK_EQ(x_old_.size() + x.size(), x_extended.size());
   std::copy(x_old_.data(), x_old_.data() + x_old_.size(), x_extended.data());
   std::copy(x.data(), x.data() + x.size(), x_extended.data() + x_old_.size());
@@ -137,7 +137,7 @@ void SignalClassifier::Initialize(int sample_rate_hz) {
 }
 
 SignalClassifier::SignalType SignalClassifier::Analyze(
-    rtc::ArrayView<const float> signal) {
+    RTC_VIEW(const float) signal) {
   RTC_DCHECK_EQ(signal.size(), (size_t)sample_rate_hz_ / 100);
 
   // Compute the signal power spectrum.
@@ -178,7 +178,7 @@ SignalClassifier::SignalType SignalClassifier::Analyze(
 
 void SignalClassifier::Analyze(const AudioBuffer& audio,
                                SignalType* signal_type) {
-  *signal_type = SignalClassifier::Analyze(rtc::ArrayView<const float>(
+  *signal_type = SignalClassifier::Analyze(RTC_MAKE_VIEW(const float)(
                                audio.channels_const_f()[0], audio.num_frames()));
 }
 

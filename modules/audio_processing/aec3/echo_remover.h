@@ -29,7 +29,7 @@ class EchoRemover {
                              int sample_rate_hz,
                              size_t num_render_channels,
                              size_t num_capture_channels);
-  virtual ~EchoRemover() = default;
+  virtual ~EchoRemover() {}
 
   // Get current metrics.
   virtual void GetMetrics(EchoControl::Metrics* metrics) const = 0;

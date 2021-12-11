@@ -82,20 +82,22 @@ bool IsSse2Available() {
 Aec3Fft::Aec3Fft() : ooura_fft_(IsSse2Available()) {}
 
 // TODO(peah): Change x to be std::array once the rest of the code allows this.
-void Aec3Fft::ZeroPaddedFft(rtc::ArrayView<const float> x,
+void Aec3Fft::ZeroPaddedFft(RTC_VIEW(const float) x,
                             Window window,
                             FftData* X) const {
   RTC_DCHECK(X);
   RTC_DCHECK_EQ(kFftLengthBy2, x.size());
-  std::array<float, kFftLength> fft;
-  std::fill(fft.begin(), fft.begin() + kFftLengthBy2, 0.f);
+  float fft[kFftLength];
+  RTC_VIEW(float) fft_view = RTC_MAKE_VIEW(float)(fft);
+  std::fill(fft_view.begin(), fft_view.begin() + kFftLengthBy2, 0.f);
+
   switch (window) {
     case Window::kRectangular:
-      std::copy(x.begin(), x.end(), fft.begin() + kFftLengthBy2);
+      std::copy(x.begin(), x.end(), fft_view.begin() + kFftLengthBy2);
       break;
     case Window::kHanning:
       std::transform(x.begin(), x.end(), std::begin(kHanning64),
-                     fft.begin() + kFftLengthBy2,
+                     fft_view.begin() + kFftLengthBy2,
                      [](float a, float b) { return a * b; });
       break;
     case Window::kSqrtHanning:
@@ -105,38 +107,39 @@ void Aec3Fft::ZeroPaddedFft(rtc::ArrayView<const float> x,
       RTC_NOTREACHED();
   }
 
-  Fft(&fft, X);
+  Fft(fft_view, X);
 }
 
-void Aec3Fft::PaddedFft(rtc::ArrayView<const float> x,
-                        rtc::ArrayView<const float> x_old,
+void Aec3Fft::PaddedFft(RTC_VIEW(const float) x,
+                        RTC_VIEW(const float) x_old,
                         Window window,
                         FftData* X) const {
   RTC_DCHECK(X);
   RTC_DCHECK_EQ(kFftLengthBy2, x.size());
   RTC_DCHECK_EQ(kFftLengthBy2, x_old.size());
-  std::array<float, kFftLength> fft;
+  float fft[kFftLength];
+  RTC_VIEW(float) fft_view = RTC_MAKE_VIEW(float)(fft);
 
   switch (window) {
     case Window::kRectangular:
-      std::copy(x_old.begin(), x_old.end(), fft.begin());
-      std::copy(x.begin(), x.end(), fft.begin() + x_old.size());
+      std::copy(x_old.begin(), x_old.end(), fft_view.begin());
+      std::copy(x.begin(), x.end(), fft_view.begin() + x_old.size());
       break;
     case Window::kHanning:
       RTC_NOTREACHED();
       break;
     case Window::kSqrtHanning:
       std::transform(x_old.begin(), x_old.end(), std::begin(kSqrtHanning128),
-                     fft.begin(), std::multiplies<float>());
+                     fft_view.begin(), std::multiplies<float>());
       std::transform(x.begin(), x.end(),
                      std::begin(kSqrtHanning128) + x_old.size(),
-                     fft.begin() + x_old.size(), std::multiplies<float>());
+                     fft_view.begin() + x_old.size(), std::multiplies<float>());
       break;
     default:
       RTC_NOTREACHED();
   }
 
-  Fft(&fft, X);
+  Fft(fft_view, X);
 }
 
 }  // namespace webrtc

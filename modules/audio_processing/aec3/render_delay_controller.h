@@ -12,7 +12,7 @@
 #define MODULES_AUDIO_PROCESSING_AEC3_RENDER_DELAY_CONTROLLER_H_
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+// #include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
 #include "modules/audio_processing/aec3/downsampled_render_buffer.h"
@@ -27,7 +27,7 @@ class RenderDelayController {
   static RenderDelayController* Create(const EchoCanceller3Config& config,
                                        int sample_rate_hz,
                                        size_t num_capture_channels);
-  virtual ~RenderDelayController() = default;
+  virtual ~RenderDelayController() {}
 
   // Resets the delay controller. If the delay confidence is reset, the reset
   // behavior is as if the call is restarted.

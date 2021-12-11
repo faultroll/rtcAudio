@@ -14,14 +14,14 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/optional.h"
 #include "modules/audio_processing/include/gain_control.h"
 // #include "modules/audio_processing/include/audio_processing.h"
 // #include "modules/audio_processing/render_queue_item_verifier.h"
+// #include "rtc_base/swap_queue.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/critical_section.h"
-#include "rtc_base/swap_queue.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
@@ -35,7 +35,7 @@ class GainControlImpl : public GainControl {
                   rtc::CriticalSection* crit_capture);
   ~GainControlImpl() override;
 
-  void ProcessRenderAudio(rtc::ArrayView<const int16_t> packed_render_audio);
+  void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio);
   int AnalyzeCaptureAudio(AudioBuffer* audio);
   int ProcessCaptureAudio(AudioBuffer* audio, bool stream_has_echo);
 
@@ -45,25 +45,24 @@ class GainControlImpl : public GainControl {
                                     std::vector<int16_t>* packed_buffer);
 
   // GainControl implementation.
+  int Enable(bool enable) override;
   bool is_enabled() const override;
-  int stream_analog_level() override;
+  int stream_analog_level() const override;
   bool is_limiter_enabled() const override;
   Mode mode() const override;
-
+  int set_mode(Mode mode) override;
   int compression_gain_db() const override;
+  int set_analog_level_limits(int minimum, int maximum) override;
+  int set_compression_gain_db(int gain) override;
+  int set_target_level_dbfs(int level) override;
+  int enable_limiter(bool enable) override;
+  int set_stream_analog_level(int level) override;
 
  private:
   struct MonoAgcState;
 
   // GainControl implementation.
-  int Enable(bool enable) override;
-  int set_stream_analog_level(int level) override;
-  int set_mode(Mode mode) override;
-  int set_target_level_dbfs(int level) override;
   int target_level_dbfs() const override;
-  int set_compression_gain_db(int gain) override;
-  int enable_limiter(bool enable) override;
-  int set_analog_level_limits(int minimum, int maximum) override;
   int analog_level_minimum() const override;
   int analog_level_maximum() const override;
   bool stream_is_saturated() const override;
@@ -75,6 +74,7 @@ class GainControlImpl : public GainControl {
 
   std::unique_ptr<ApmDataDumper> data_dumper_;
 
+  const bool use_legacy_gain_applier_;
   bool enabled_ = false;
 
   Mode mode_ RTC_GUARDED_BY(crit_capture_);

@@ -35,7 +35,7 @@ Agc::Agc()
       histogram_(LoudnessHistogram::Create(kNumAnalysisFrames)),
       inactive_histogram_(LoudnessHistogram::Create()) {}
 
-Agc::~Agc() = default;
+Agc::~Agc() {}
 
 float Agc::AnalyzePreproc(const int16_t* audio, size_t length) {
   RTC_DCHECK_GT(length, 0);

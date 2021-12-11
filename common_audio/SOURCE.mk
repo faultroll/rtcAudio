@@ -1,4 +1,6 @@
-srcs_1 += \
+srcs_c += \
+        common_audio/ring_buffer.c
+srcs += \
         common_audio/audio_converter.cc \
         common_audio/audio_ring_buffer.cc \
         common_audio/audio_util.cc \
@@ -12,14 +14,12 @@ srcs_1 += \
         common_audio/lapped_transform.cc \
         common_audio/real_fourier.cc \
         common_audio/real_fourier_ooura.cc \
-        common_audio/ring_buffer.c \
         common_audio/smoothing_filter.cc \
         common_audio/sparse_fir_filter.cc \
         common_audio/window_generator.cc \
-srcs_2 += \
         # common_audio/wav_file.cc \
         common_audio/wav_header.cc
-srcs_1 += \
+srcs += \
         common_audio/resampler/push_resampler.cc \
         common_audio/resampler/push_sinc_resampler.cc \
         common_audio/resampler/resampler.cc \
@@ -28,20 +28,12 @@ srcs_1 += \
         common_audio/resampler/sinc_resampler_neon.cc \
         common_audio/resampler/sinc_resampler_sse.cc \
         common_audio/resampler/sinusoidal_linear_chirp_source.cc
-srcs_1 += \
+srcs += \
         common_audio/third_party/ooura/fft_size_128/ooura_fft.cc \
-        common_audio/third_party/ooura/fft_size_128/ooura_fft.h \
         common_audio/third_party/ooura/fft_size_128/ooura_fft_mips.cc \
         common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc \
-        common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc \
-        common_audio/third_party/ooura/fft_size_128/ooura_fft_tables_common.h \
-        common_audio/third_party/ooura/fft_size_128/ooura_fft_tables_neon_sse2.h \
-        common_audio/third_party/ooura/fft_size_256/fft4g.cc \
-        common_audio/third_party/ooura/fft_size_256/fft4g.h \
-        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor.c \
-        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor_mips.c \
-        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor_arm.S
-srcs_1 += \
+        common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc
+srcs_c += \
         common_audio/signal_processing/auto_correlation.c \
         common_audio/signal_processing/auto_corr_to_refl_coef.c \
         common_audio/signal_processing/complex_bit_reverse.c \
@@ -88,11 +80,15 @@ srcs_1 += \
         common_audio/signal_processing/complex_bit_reverse_arm.S \
         common_audio/signal_processing/filter_ar_fast_q12_armv7.S \
         common_audio/signal_processing/dot_product_with_scale.c \
-        # common_audio/signal_processing/dot_product_with_scale.cc
-srcs_1 += \
-        common_audio/vad/vad.cc \
+        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor.c \
+        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor_mips.c \
+        common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor_arm.S \
+        common_audio/third_party/ooura/fft_size_256/fft4g.c
+srcs_c += \
         common_audio/vad/vad_core.c \
         common_audio/vad/vad_filterbank.c \
         common_audio/vad/vad_gmm.c \
         common_audio/vad/vad_sp.c \
         common_audio/vad/webrtc_vad.c
+srcs += \
+        common_audio/vad/vad.cc

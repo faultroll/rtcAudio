@@ -11,9 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_NOISE_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_NS_NOISE_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/ns_common.h"
 #include "modules/audio_processing/ns2/quantile_noise_estimator.h"
 #include "modules/audio_processing/ns2/suppression_params.h"
@@ -31,33 +31,34 @@ class NoiseEstimator {
 
   // Performs the first step of the estimator update.
   void PreUpdate(int32_t num_analyzed_frames,
-                 rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
+                 RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
                  float signal_spectral_sum);
 
   // Performs the second step of the estimator update.
   void PostUpdate(
-      rtc::ArrayView<const float> speech_probability,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum);
+      RTC_VIEW(const float) speech_probability,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum);
 
   // Returns the noise spectral estimate.
-  rtc::ArrayView<const float, kFftSizeBy2Plus1> get_noise_spectrum() const {
-    return noise_spectrum_;
+  RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ get_noise_spectrum() 
+      const {
+    return RTC_MAKE_VIEW(const float)(noise_spectrum_);
   }
 
   // Returns the noise from the previous frame.
-  rtc::ArrayView<const float, kFftSizeBy2Plus1> get_prev_noise_spectrum()
+  RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ get_prev_noise_spectrum()
       const {
-    return prev_noise_spectrum_;
+    return RTC_MAKE_VIEW(const float)(prev_noise_spectrum_);
   }
 
   // Returns a noise spectral estimate based on white and pink noise parameters.
-  rtc::ArrayView<const float, kFftSizeBy2Plus1> get_parametric_noise_spectrum()
+ RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ get_parametric_noise_spectrum()
       const {
-    return parametric_noise_spectrum_;
+    return RTC_MAKE_VIEW(const float)(parametric_noise_spectrum_);
   }
-  rtc::ArrayView<const float, kFftSizeBy2Plus1>
-  get_conservative_noise_spectrum() const {
-    return conservative_noise_spectrum_;
+  RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ get_conservative_noise_spectrum() 
+      const {
+    return RTC_MAKE_VIEW(const float)(conservative_noise_spectrum_);
   }
 
  private:
@@ -65,10 +66,10 @@ class NoiseEstimator {
   float white_noise_level_ = 0.f;
   float pink_noise_numerator_ = 0.f;
   float pink_noise_exp_ = 0.f;
-  std::array<float, kFftSizeBy2Plus1> prev_noise_spectrum_;
-  std::array<float, kFftSizeBy2Plus1> conservative_noise_spectrum_;
-  std::array<float, kFftSizeBy2Plus1> parametric_noise_spectrum_;
-  std::array<float, kFftSizeBy2Plus1> noise_spectrum_;
+  float prev_noise_spectrum_[kFftSizeBy2Plus1];
+  float conservative_noise_spectrum_[kFftSizeBy2Plus1];
+  float parametric_noise_spectrum_[kFftSizeBy2Plus1];
+  float noise_spectrum_[kFftSizeBy2Plus1];
   QuantileNoiseEstimator quantile_noise_estimator_;
 };
 

@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "modules/audio_processing/include/audio_frame_view.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -29,7 +30,7 @@ class VadLevelAnalyzer {
   // Voice Activity Detector (VAD) interface.
   class VoiceActivityDetector {
    public:
-    virtual ~VoiceActivityDetector() = default;
+    virtual ~VoiceActivityDetector() {}
     // Analyzes an audio frame and returns the speech probability.
     virtual float ComputeProbability(AudioFrameView<const float> frame) = 0;
   };
@@ -40,8 +41,6 @@ class VadLevelAnalyzer {
   // Ctor. Uses a custom `vad`.
   VadLevelAnalyzer(float vad_probability_attack,
                    std::unique_ptr<VoiceActivityDetector> vad);
-  VadLevelAnalyzer(const VadLevelAnalyzer&) = delete;
-  VadLevelAnalyzer& operator=(const VadLevelAnalyzer&) = delete;
   ~VadLevelAnalyzer();
 
   // Computes the speech probability and the level for `frame`.
@@ -51,6 +50,8 @@ class VadLevelAnalyzer {
   std::unique_ptr<VoiceActivityDetector> vad_;
   const float vad_probability_attack_;
   float vad_probability_ = 0.f;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(VadLevelAnalyzer);
 };
 
 }  // namespace webrtc

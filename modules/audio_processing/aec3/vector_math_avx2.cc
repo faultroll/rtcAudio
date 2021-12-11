@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/system/arch.h"
 #if defined(WEBRTC_HAS_AVX2)
 
 #include "modules/audio_processing/aec3/vector_math.h"
@@ -15,14 +16,14 @@
 #include <immintrin.h>
 #include <math.h>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
 namespace aec3 {
 
 // Elementwise square root.
-void VectorMath::SqrtAVX2(rtc::ArrayView<float> x) {
+void VectorMath::SqrtAVX2(RTC_VIEW(float) x) {
   const int x_size = static_cast<int>(x.size());
   const int vector_limit = x_size >> 3;
 
@@ -39,9 +40,9 @@ void VectorMath::SqrtAVX2(rtc::ArrayView<float> x) {
 }
 
 // Elementwise vector multiplication z = x * y.
-void VectorMath::MultiplyAVX2(rtc::ArrayView<const float> x,
-                              rtc::ArrayView<const float> y,
-                              rtc::ArrayView<float> z) {
+void VectorMath::MultiplyAVX2(RTC_VIEW(const float) x,
+                              RTC_VIEW(const float) y,
+                              RTC_VIEW(float) z) {
   RTC_DCHECK_EQ(z.size(), x.size());
   RTC_DCHECK_EQ(z.size(), y.size());
   const int x_size = static_cast<int>(x.size());
@@ -61,8 +62,8 @@ void VectorMath::MultiplyAVX2(rtc::ArrayView<const float> x,
 }
 
 // Elementwise vector accumulation z += x.
-void VectorMath::AccumulateAVX2(rtc::ArrayView<const float> x,
-                                rtc::ArrayView<float> z) {
+void VectorMath::AccumulateAVX2(RTC_VIEW(const float) x,
+                                RTC_VIEW(float) z) {
   RTC_DCHECK_EQ(z.size(), x.size());
   const int x_size = static_cast<int>(x.size());
   const int vector_limit = x_size >> 3;

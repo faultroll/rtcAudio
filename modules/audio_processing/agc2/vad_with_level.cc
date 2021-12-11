@@ -11,10 +11,10 @@
 #include "modules/audio_processing/agc2/vad_with_level.h"
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <cmath>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "common_audio/include/audio_util.h"
 #include "common_audio/resampler/include/push_resampler.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
@@ -32,10 +32,8 @@ using VoiceActivityDetector = VadLevelAnalyzer::VoiceActivityDetector;
 // Computes the speech probability on the first channel.
 class Vad : public VoiceActivityDetector {
  public:
-  Vad() = default;
-  Vad(const Vad&) = delete;
-  Vad& operator=(const Vad&) = delete;
-  ~Vad() = default;
+  Vad() {}
+  ~Vad() {}
 
   float ComputeProbability(AudioFrameView<const float> frame) override {
     // The source number of channels is 1, because we always use the 1st
@@ -45,21 +43,25 @@ class Vad : public VoiceActivityDetector {
         rnn_vad::kSampleRate24kHz,
         /*num_channels=*/1);
 
-    std::array<float, rnn_vad::kFrameSize10ms24kHz> work_frame;
+    float work_frame[rnn_vad::kFrameSize10ms24kHz];
+    RTC_VIEW(float) work_frame_view = RTC_MAKE_VIEW(float)(work_frame);
     // Feed the 1st channel to the resampler.
     resampler_.Resample(frame.channel(0).data(), frame.samples_per_channel(),
-                        work_frame.data(), rnn_vad::kFrameSize10ms24kHz);
+                        work_frame_view.data(), rnn_vad::kFrameSize10ms24kHz);
 
-    std::array<float, rnn_vad::kFeatureVectorSize> feature_vector;
+    float feature_vector[rnn_vad::kFeatureVectorSize];
+    RTC_VIEW(float) feature_vector_view = RTC_MAKE_VIEW(float)(feature_vector);
     const bool is_silence = features_extractor_.CheckSilenceComputeFeatures(
-        work_frame, feature_vector);
-    return rnn_vad_.ComputeVadProbability(feature_vector, is_silence);
+        work_frame, feature_vector_view);
+    return rnn_vad_.ComputeVadProbability(feature_vector_view, is_silence);
   }
 
  private:
   PushResampler<float> resampler_;
   rnn_vad::FeaturesExtractor features_extractor_;
   rnn_vad::RnnBasedVad rnn_vad_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(Vad);
 };
 
 // Returns an updated version of `p_old` by using instant decay and the given
@@ -91,7 +93,7 @@ VadLevelAnalyzer::VadLevelAnalyzer(float vad_probability_attack,
   RTC_DCHECK(vad_);
 }
 
-VadLevelAnalyzer::~VadLevelAnalyzer() = default;
+VadLevelAnalyzer::~VadLevelAnalyzer() {}
 
 VadLevelAnalyzer::Result VadLevelAnalyzer::AnalyzeFrame(
     AudioFrameView<const float> frame) {

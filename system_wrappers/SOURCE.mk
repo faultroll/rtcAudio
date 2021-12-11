@@ -1,4 +1,3 @@
-srcs_1 += \
-        system_wrappers/source/metrics_default.cc
-srcs_2 += \
+srcs += \
+        system_wrappers/source/metrics_default.cc \
         # system_wrappers/source/cpu_features.cc

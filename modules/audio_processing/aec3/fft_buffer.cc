@@ -22,6 +22,6 @@ FftBuffer::FftBuffer(size_t size, size_t num_channels)
   }
 }
 
-FftBuffer::~FftBuffer() = default;
+FftBuffer::~FftBuffer() {}
 
 }  // namespace webrtc

@@ -41,13 +41,14 @@ void FixedDigitalLevelEstimator::CheckParameterCombination() {
   RTC_DCHECK_GT(samples_in_sub_frame_, 1);
 }
 
-std::array<float, kSubFramesInFrame> FixedDigitalLevelEstimator::ComputeLevel(
+void FixedDigitalLevelEstimator::ComputeLevel(
+    RTC_VIEW(float) /* kSubFramesInFrame */ envelope,
     const AudioFrameView<const float>& float_frame) {
   RTC_DCHECK_GT(float_frame.num_channels(), 0);
   RTC_DCHECK_EQ(float_frame.samples_per_channel(), samples_in_frame_);
 
   // Compute max envelope without smoothing.
-  std::array<float, kSubFramesInFrame> envelope{{}};
+  // float envelope[kSubFramesInFrame];
   for (size_t channel_idx = 0; channel_idx < float_frame.num_channels();
        ++channel_idx) {
     const auto channel = float_frame.channel(channel_idx);
@@ -93,7 +94,7 @@ std::array<float, kSubFramesInFrame> FixedDigitalLevelEstimator::ComputeLevel(
                               envelope[sub_frame]);
   }
 
-  return envelope;
+  // return envelope;
 }
 
 void FixedDigitalLevelEstimator::SetSampleRate(size_t sample_rate_hz) {

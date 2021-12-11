@@ -11,11 +11,11 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_REVERB_DECAY_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_REVERB_DECAY_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"  // kMaxAdaptiveFilter...
 
 namespace webrtc {
@@ -29,7 +29,7 @@ class ReverbDecayEstimator {
   explicit ReverbDecayEstimator(const EchoCanceller3Config& config);
   ~ReverbDecayEstimator();
   // Updates the decay estimate.
-  void Update(rtc::ArrayView<const float> filter,
+  void Update(RTC_VIEW(const float) filter,
               const rtc::Optional<float>& filter_quality,
               int filter_delay_blocks,
               bool usable_linear_filter,
@@ -40,8 +40,8 @@ class ReverbDecayEstimator {
   void Dump(ApmDataDumper* data_dumper) const;
 
  private:
-  void EstimateDecay(rtc::ArrayView<const float> filter, int peak_block);
-  void AnalyzeFilter(rtc::ArrayView<const float> filter);
+  void EstimateDecay(RTC_VIEW(const float) filter, int peak_block);
+  void AnalyzeFilter(RTC_VIEW(const float) filter);
 
   void ResetDecayEstimation();
 

@@ -11,7 +11,7 @@
 #include "modules/audio_processing/aec3/refined_filter_update_gain.h"
 
 #include <algorithm>
-#include <functional>
+// #include <functional>
 
 #include "modules/audio_processing/aec3/adaptive_fir_filter.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -42,7 +42,7 @@ RefinedFilterUpdateGain::RefinedFilterUpdateGain(
           static_cast<int>(config_change_duration_blocks)),
       poor_excitation_counter_(kPoorExcitationCounterInitial) {
   SetConfig(config, true);
-  H_error_.fill(kHErrorInitial);
+  H_error_view_.fill(kHErrorInitial);
   RTC_DCHECK_LT(0, config_change_duration_blocks_);
   one_by_config_change_duration_blocks_ = 1.f / config_change_duration_blocks_;
 }
@@ -57,7 +57,7 @@ void RefinedFilterUpdateGain::HandleEchoPathChange(
 
   if (echo_path_variability.delay_change !=
       EchoPathVariability::DelayAdjustment::kNone) {
-    H_error_.fill(kHErrorInitial);
+    H_error_view_.fill(kHErrorInitial);
   }
 
   if (!echo_path_variability.gain_change) {
@@ -67,10 +67,10 @@ void RefinedFilterUpdateGain::HandleEchoPathChange(
 }
 
 void RefinedFilterUpdateGain::Compute(
-    const std::array<float, kFftLengthBy2Plus1>& render_power,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power,
     const RenderSignalAnalyzer& render_signal_analyzer,
     const SubtractorOutput& subtractor_output,
-    rtc::ArrayView<const float> erl,
+    RTC_VIEW(const float) erl,
     size_t size_partitions,
     bool saturated_capture_signal,
     FftData* gain_fft) {
@@ -93,49 +93,51 @@ void RefinedFilterUpdateGain::Compute(
   // Do not update the filter if the render is not sufficiently excited.
   if (++poor_excitation_counter_ < size_partitions ||
       saturated_capture_signal || call_counter_ <= size_partitions) {
-    G->re.fill(0.f);
-    G->im.fill(0.f);
+    G->re_view.fill(0.f);
+    G->im_view.fill(0.f);
   } else {
     // Corresponds to WGN of power -39 dBFS.
-    std::array<float, kFftLengthBy2Plus1> mu;
-    // mu = H_error / (0.5* H_error* X2 + n * E2).
+    float mu[kFftLengthBy2Plus1];
+    RTC_VIEW(float) mu_view = RTC_MAKE_VIEW(float)(mu);
+    // mu_view = H_error / (0.5* H_error* X2 + n * E2).
     for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
       if (X2[k] >= current_config_.noise_gate) {
-        mu[k] = H_error_[k] /
-                (0.5f * H_error_[k] * X2[k] + size_partitions * E2_refined[k]);
+        mu_view[k] = H_error_view_[k] /
+                (0.5f * H_error_view_[k] * X2[k] + size_partitions * E2_refined[k]);
       } else {
-        mu[k] = 0.f;
+        mu_view[k] = 0.f;
       }
     }
 
     // Avoid updating the filter close to narrow bands in the render signals.
-    render_signal_analyzer.MaskRegionsAroundNarrowBands(&mu);
+    render_signal_analyzer.MaskRegionsAroundNarrowBands(mu_view);
 
-    // H_error = H_error - 0.5 * mu * X2 * H_error.
+    // H_error = H_error - 0.5 * mu_view * X2 * H_error.
     for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-      H_error_[k] -= 0.5f * mu[k] * X2[k] * H_error_[k];
+      H_error_view_[k] -= 0.5f * mu_view[k] * X2[k] * H_error_view_[k];
     }
 
-    // G = mu * E.
+    // G = mu_view * E.
     for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-      G->re[k] = mu[k] * E_refined.re[k];
-      G->im[k] = mu[k] * E_refined.im[k];
+      G->re_view[k] = mu_view[k] * E_refined.re_view[k];
+      G->im_view[k] = mu_view[k] * E_refined.im_view[k];
     }
   }
 
   // H_error = H_error + factor * erl.
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
     if (E2_coarse[k] >= E2_refined[k]) {
-      H_error_[k] += current_config_.leakage_converged * erl[k];
+      H_error_view_[k] += current_config_.leakage_converged * erl[k];
     } else {
-      H_error_[k] += current_config_.leakage_diverged * erl[k];
+      H_error_view_[k] += current_config_.leakage_diverged * erl[k];
     }
 
-    H_error_[k] = std::max(H_error_[k], current_config_.error_floor);
-    H_error_[k] = std::min(H_error_[k], current_config_.error_ceil);
+    H_error_view_[k] = std::max(H_error_view_[k], current_config_.error_floor);
+    H_error_view_[k] = std::min(H_error_view_[k], current_config_.error_ceil);
   }
 
-  data_dumper_->DumpRaw("aec3_refined_gain_H_error", H_error_);
+  data_dumper_->DumpRaw(
+      "aec3_refined_gain_H_error", RTC_MAKE_VIEW(const float)(H_error_view_));
 }
 
 void RefinedFilterUpdateGain::UpdateCurrentConfig() {

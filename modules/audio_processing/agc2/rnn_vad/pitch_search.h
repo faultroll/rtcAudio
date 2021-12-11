@@ -14,11 +14,12 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/auto_correlation.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_info.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_search_internal.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -27,20 +28,20 @@ namespace rnn_vad {
 class PitchEstimator {
  public:
   PitchEstimator();
-  PitchEstimator(const PitchEstimator&) = delete;
-  PitchEstimator& operator=(const PitchEstimator&) = delete;
   ~PitchEstimator();
   // Estimates the pitch period and gain. Returns the pitch estimation data for
   // 48 kHz.
-  PitchInfo Estimate(rtc::ArrayView<const float, kBufSize24kHz> pitch_buf);
+  PitchInfo Estimate(RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf);
 
  private:
   PitchInfo last_pitch_48kHz_;
   AutoCorrelationCalculator auto_corr_calculator_;
   std::vector<float> pitch_buf_decimated_;
-  rtc::ArrayView<float, kBufSize12kHz> pitch_buf_decimated_view_;
+  RTC_VIEW(float) /* kBufSize12kHz */ pitch_buf_decimated_view_;
   std::vector<float> auto_corr_;
-  rtc::ArrayView<float, kNumInvertedLags12kHz> auto_corr_view_;
+  RTC_VIEW(float) /* kNumInvertedLags12kHz */ auto_corr_view_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(PitchEstimator);
 };
 
 }  // namespace rnn_vad

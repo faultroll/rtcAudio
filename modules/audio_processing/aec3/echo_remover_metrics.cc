@@ -52,9 +52,9 @@ EchoRemoverMetrics::EchoRemoverMetrics() {
 }
 
 void EchoRemoverMetrics::ResetMetrics() {
-  erl_.fill(DbMetric(0.f, 10000.f, 0.000f));
+  erl_view_.fill(DbMetric(0.f, 10000.f, 0.000f));
   erl_time_domain_ = DbMetric(0.f, 10000.f, 0.000f);
-  erle_.fill(DbMetric(0.f, 0.f, 1000.f));
+  erle_view_.fill(DbMetric(0.f, 0.f, 1000.f));
   erle_time_domain_ = DbMetric(0.f, 0.f, 1000.f);
   /* comfort_noise_.fill(DbMetric(0.f, 100000000.f, 0.f));
   suppressor_gain_.fill(DbMetric(0.f, 1.f, 0.f)); */
@@ -64,13 +64,13 @@ void EchoRemoverMetrics::ResetMetrics() {
 
 void EchoRemoverMetrics::Update(
     const AecState& aec_state,
-    const std::array<float, kFftLengthBy2Plus1>& comfort_noise_spectrum,
-    const std::array<float, kFftLengthBy2Plus1>& suppressor_gain) {
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ comfort_noise_spectrum,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ suppressor_gain) {
   metrics_reported_ = false;
   if (++block_counter_ <= kMetricsCollectionBlocks) {
-    aec3::UpdateDbMetric(aec_state.Erl(), &erl_);
+    aec3::UpdateDbMetric(aec_state.Erl(), erl_view_);
     erl_time_domain_.UpdateInstant(aec_state.ErlTimeDomain());
-    aec3::UpdateDbMetric(aec_state.Erle()[0], &erle_);
+    aec3::UpdateDbMetric(aec_state.Erle()[0], erle_view_);
     erle_time_domain_.UpdateInstant(aec_state.FullBandErleLog2());
     /* aec3::UpdateDbMetric(comfort_noise_spectrum, &comfort_noise_);
     aec3::UpdateDbMetric(suppressor_gain, &suppressor_gain_); */
@@ -87,17 +87,17 @@ void EchoRemoverMetrics::Update(
             "WebRTC.Audio.EchoCanceller.ErleBand0.Average",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f,
                                                 kOneByMetricsCollectionBlocks,
-                                                erle_[0].sum_value),
+                                                erle_view_[0].sum_value),
             0, 19, 20);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErleBand0.Max",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f, 1.f,
-                                                erle_[0].ceil_value),
+                                                erle_view_[0].ceil_value),
             0, 19, 20);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErleBand0.Min",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f, 1.f,
-                                                erle_[0].floor_value),
+                                                erle_view_[0].floor_value),
             0, 19, 20);
         break;
       case kMetricsCollectionBlocks + 2:
@@ -105,17 +105,17 @@ void EchoRemoverMetrics::Update(
             "WebRTC.Audio.EchoCanceller.ErleBand1.Average",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f,
                                                 kOneByMetricsCollectionBlocks,
-                                                erle_[1].sum_value),
+                                                erle_view_[1].sum_value),
             0, 19, 20);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErleBand1.Max",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f, 1.f,
-                                                erle_[1].ceil_value),
+                                                erle_view_[1].ceil_value),
             0, 19, 20);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErleBand1.Min",
             aec3::TransformDbMetricForReporting(true, 0.f, 19.f, 0.f, 1.f,
-                                                erle_[1].floor_value),
+                                                erle_view_[1].floor_value),
             0, 19, 20);
         break;
       case kMetricsCollectionBlocks + 3:
@@ -123,17 +123,17 @@ void EchoRemoverMetrics::Update(
             "WebRTC.Audio.EchoCanceller.ErlBand0.Average",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f,
                                                 kOneByMetricsCollectionBlocks,
-                                                erl_[0].sum_value),
+                                                erl_view_[0].sum_value),
             0, 59, 30);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErlBand0.Max",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f, 1.f,
-                                                erl_[0].ceil_value),
+                                                erl_view_[0].ceil_value),
             0, 59, 30);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErlBand0.Min",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f, 1.f,
-                                                erl_[0].floor_value),
+                                                erl_view_[0].floor_value),
             0, 59, 30);
         break;
       case kMetricsCollectionBlocks + 4:
@@ -141,17 +141,17 @@ void EchoRemoverMetrics::Update(
             "WebRTC.Audio.EchoCanceller.ErlBand1.Average",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f,
                                                 kOneByMetricsCollectionBlocks,
-                                                erl_[1].sum_value),
+                                                erl_view_[1].sum_value),
             0, 59, 30);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErlBand1.Max",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f, 1.f,
-                                                erl_[1].ceil_value),
+                                                erl_view_[1].ceil_value),
             0, 59, 30);
         RTC_HISTOGRAM_COUNTS_LINEAR(
             "WebRTC.Audio.EchoCanceller.ErlBand1.Min",
             aec3::TransformDbMetricForReporting(true, 0.f, 59.f, 30.f, 1.f,
-                                                erl_[1].floor_value),
+                                                erl_view_[1].floor_value),
             0, 59, 30);
         break;
       case kMetricsCollectionBlocks + 5:
@@ -293,21 +293,21 @@ void EchoRemoverMetrics::Update(
 
 namespace aec3 {
 
-void UpdateDbMetric(const std::array<float, kFftLengthBy2Plus1>& value,
-                    std::array<EchoRemoverMetrics::DbMetric, 2>* statistic) {
-  RTC_DCHECK(statistic);
+void UpdateDbMetric(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ value,
+                    RTC_VIEW(EchoRemoverMetrics::DbMetric) /* 2 */ statistic) {
+  // RTC_DCHECK(statistic);
   // Truncation is intended in the band width computation.
   constexpr int kNumBands = 2;
   constexpr int kBandWidth = 65 / kNumBands;
   constexpr float kOneByBandWidth = 1.f / kBandWidth;
-  RTC_DCHECK_EQ(kNumBands, statistic->size());
+  RTC_DCHECK_EQ(kNumBands, statistic.size());
   RTC_DCHECK_EQ(65, value.size());
-  for (size_t k = 0; k < statistic->size(); ++k) {
+  for (size_t k = 0; k < statistic.size(); ++k) {
     float average_band =
         std::accumulate(value.begin() + kBandWidth * k,
                         value.begin() + kBandWidth * (k + 1), 0.f) *
         kOneByBandWidth;
-    (*statistic)[k].Update(average_band);
+    statistic[k].Update(average_band);
   }
 }
 

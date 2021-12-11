@@ -17,7 +17,7 @@ SequenceCheckerImpl::SequenceCheckerImpl()
       valid_queue_(TaskQueueBase::Current()) *//* ,
       valid_system_queue_(GetSystemQueueRef()) */ {}
 
-SequenceCheckerImpl::~SequenceCheckerImpl() = default;
+SequenceCheckerImpl::~SequenceCheckerImpl() {}
 
 bool SequenceCheckerImpl::IsCurrent() const {
   const Thrd current_thread = ThrdCurrent();

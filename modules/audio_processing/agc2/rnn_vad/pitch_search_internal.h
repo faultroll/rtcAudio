@@ -13,10 +13,10 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
-// #include "common_audio/real_fourier.h"
+#include "rtc_base/view.h"
+#include "common_audio/real_fourier.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_info.h"
 
@@ -24,8 +24,8 @@ namespace webrtc {
 namespace rnn_vad {
 
 // Performs 2x decimation without any anti-aliasing filter.
-void Decimate2x(rtc::ArrayView<const float, kBufSize24kHz> src,
-                rtc::ArrayView<float, kBufSize12kHz> dst);
+void Decimate2x(RTC_VIEW(const float) /* kBufSize24kHz */ src,
+                RTC_VIEW(float) /* kBufSize12kHz */ dst);
 
 // Computes a gain threshold for a candidate pitch period given the initial and
 // the previous pitch period and gain estimates and the pitch period ratio used
@@ -47,8 +47,8 @@ float ComputePitchGainThreshold(int candidate_pitch_period,
 // most recent ones. The size of "a" corresponds to the maximum pitch period,
 // that of "b" to the frame size (e.g., 16 ms and 20 ms respectively).
 void ComputeSlidingFrameSquareEnergies(
-    rtc::ArrayView<const float, kBufSize24kHz> pitch_buf,
-    rtc::ArrayView<float, kMaxPitch24kHz + 1> yy_values);
+    RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf,
+    RTC_VIEW(float) /* kMaxPitch24kHz + 1 */ yy_values);
 
 // Computes the auto-correlation coefficients for a given pitch interval.
 // |auto_corr| indexes are inverted lags.
@@ -63,31 +63,31 @@ void ComputeSlidingFrameSquareEnergies(
 // for the maximum pitch period. Hence, the first value in |auto_corr| has an
 // inverted lag equal to 0 that corresponds to a lag equal to the maximum pitch
 // period.
-/* void ComputePitchAutoCorrelation(
-    rtc::ArrayView<const float, kBufSize12kHz> pitch_buf,
-    size_t max_pitch_period,
-    rtc::ArrayView<float, kNumInvertedLags12kHz> auto_corr,
-    webrtc::RealFourier* fft); */
+// void ComputePitchAutoCorrelation(
+//     RTC_VIEW(const float) /* kBufSize12kHz */ pitch_buf,
+//     size_t max_pitch_period,
+//     RTC_VIEW(float) /* kNumInvertedLags12kHz */ auto_corr,
+//     webrtc::RealFourier* fft);
 
 // Given the auto-correlation coefficients stored according to
 // ComputePitchAutoCorrelation() (i.e., using inverted lags), returns the best
 // and the second best pitch periods.
 std::array<size_t, 2> FindBestPitchPeriods(
-    rtc::ArrayView<const float> auto_corr,
-    rtc::ArrayView<const float> pitch_buf,
+    RTC_VIEW(const float) auto_corr,
+    RTC_VIEW(const float) pitch_buf,
     size_t max_pitch_period);
 
 // Refines the pitch period estimation given the pitch buffer |pitch_buf| and
 // the initial pitch period estimation |inv_lags|. Returns an inverted lag at
 // 48 kHz.
 size_t RefinePitchPeriod48kHz(
-    rtc::ArrayView<const float, kBufSize24kHz> pitch_buf,
-    rtc::ArrayView<const size_t, 2> inv_lags);
+    RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf,
+    RTC_VIEW(const size_t) /* 2 */ inv_lags);
 
 // Refines the pitch period estimation and compute the pitch gain. Returns the
 // refined pitch estimation data at 48 kHz.
 PitchInfo CheckLowerPitchPeriodsAndComputePitchGain(
-    rtc::ArrayView<const float, kBufSize24kHz> pitch_buf,
+    RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf,
     int initial_pitch_period_48kHz,
     PitchInfo prev_pitch_48kHz);
 

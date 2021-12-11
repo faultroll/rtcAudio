@@ -12,17 +12,18 @@
 #define MODULES_AUDIO_PROCESSING_NS_SUPPRESSION_PARAMS_H_
 
 #include "modules/audio_processing/ns2/ns_config.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 struct SuppressionParams {
   explicit SuppressionParams(NsConfig::SuppressionLevel suppression_level);
-  SuppressionParams(const SuppressionParams&) = delete;
-  SuppressionParams& operator=(const SuppressionParams&) = delete;
 
   float over_subtraction_factor;
   float minimum_attenuating_gain;
   bool use_attenuation_adjustment;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SuppressionParams);
 };
 
 }  // namespace webrtc

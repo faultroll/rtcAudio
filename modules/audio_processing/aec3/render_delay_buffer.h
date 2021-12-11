@@ -36,7 +36,7 @@ class RenderDelayBuffer {
   static RenderDelayBuffer* Create(const EchoCanceller3Config& config,
                                    int sample_rate_hz,
                                    size_t num_render_channels);
-  virtual ~RenderDelayBuffer() = default;
+  virtual ~RenderDelayBuffer() {}
 
   // Resets the buffer alignment.
   virtual void Reset() = 0;

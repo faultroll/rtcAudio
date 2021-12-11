@@ -2,7 +2,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_COMMON_H_
 #define MODULES_AUDIO_PROCESSING_COMMON_H_
 
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 namespace AudioProcessing {

@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "rtc_base/optional.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
 #include "modules/audio_processing/aec3/matched_filter.h"
@@ -40,12 +41,13 @@ class MatchedFilterLagAggregator {
 
   // Aggregates the provided lag estimates.
   rtc::Optional<DelayEstimate> Aggregate(
-      rtc::ArrayView<const MatchedFilter::LagEstimate> lag_estimates);
+      RTC_VIEW(const MatchedFilter::LagEstimate) lag_estimates);
 
  private:
   ApmDataDumper* const data_dumper_;
   std::vector<int> histogram_;
-  std::array<int, 250> histogram_data_;
+  int histogram_data_[250];
+  RTC_VIEW(int) /* 250 */ histogram_data_view_ = RTC_VIEW(int)(histogram_data_);
   int histogram_data_index_ = 0;
   bool significant_candidate_found_ = false;
   const EchoCanceller3Config::Delay::DelaySelectionThresholds thresholds_;

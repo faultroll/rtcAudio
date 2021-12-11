@@ -16,14 +16,14 @@
 
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/optional.h"
-#include "modules/audio_processing/include/common.h"
-// #include "modules/audio_processing/include/audio_processing.h"
-#include "modules/audio_processing/agc2/gain_applier.h"
-#include "modules/audio_processing/agc2/gain_selector.h"
+#include "modules/audio_processing/agc2/agc2_config.h"
+#include "modules/audio_processing/agc2/legacy/gain_applier.h"
+#include "modules/audio_processing/agc2/legacy/gain_selector.h"
 #include "modules/audio_processing/agc2/noise_level_estimator.h"
-#include "modules/audio_processing/agc2/peak_level_estimator.h"
-#include "modules/audio_processing/agc2/saturating_gain_estimator.h"
+#include "modules/audio_processing/agc2/legacy/peak_level_estimator.h"
+#include "modules/audio_processing/agc2/legacy/saturating_gain_estimator.h"
 #include "modules/audio_processing/agc2/signal_classifier.h"
+#include "modules/audio_processing/include/common.h"
 
 namespace webrtc {
 
@@ -42,12 +42,7 @@ class LevelController {
   // TODO(peah): This method is a temporary solution as the the aim is to
   // instead apply the config inside the constructor. Therefore this is likely
   // to change.
-  /* void ApplyConfig(const AudioProcessing::Config::LevelController& config);
-  // Validates a config.
-  static bool Validate(const AudioProcessing::Config::LevelController& config);
-  // Dumps a config to a string.
-  static std::string ToString(
-      const AudioProcessing::Config::LevelController& config); */
+  void ApplyConfig(const Agc2Config& config);
 
  private:
   class Metrics {
@@ -86,7 +81,7 @@ class LevelController {
   float dc_forgetting_factor_;
   float last_gain_;
   bool gain_jumpstart_ = false;
-  /* AudioProcessing::Config::LevelController config_; */
+  Agc2Config config_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(LevelController);
 };

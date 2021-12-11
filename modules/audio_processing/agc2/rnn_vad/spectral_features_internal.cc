@@ -23,8 +23,8 @@ namespace {
 // Weights for each FFT coefficient for each Opus band (Nyquist frequency
 // excluded). The size of each band is specified in
 // |kOpusScaleNumBins24kHz20ms|.
-constexpr std::array<float, kFrameSize20ms24kHz / 2> kOpusBandWeights24kHz20ms =
-    {{
+constexpr float kOpusBandWeights24kHz20ms[kFrameSize20ms24kHz / 2] =
+    {
         0.f,       0.25f,      0.5f,       0.75f,  // Band 0
         0.f,       0.25f,      0.5f,       0.75f,  // Band 1
         0.f,       0.25f,      0.5f,       0.75f,  // Band 2
@@ -80,26 +80,29 @@ constexpr std::array<float, kFrameSize20ms24kHz / 2> kOpusBandWeights24kHz20ms =
         0.729167f, 0.75f,      0.770833f,  0.791667f, 0.8125f,
         0.833333f, 0.854167f,  0.875f,     0.895833f, 0.916667f,
         0.9375f,   0.958333f,  0.979167f  // Band 18
-    }};
+    };
+
+const RTC_VIEW(const float) kOpusBandWeights24kHz20msView = 
+    RTC_MAKE_VIEW(const float)(kOpusBandWeights24kHz20ms);
 
 }  // namespace
 
 SpectralCorrelator::SpectralCorrelator()
-    : weights_(kOpusBandWeights24kHz20ms.begin(),
-               kOpusBandWeights24kHz20ms.end()) {}
+    : weights_(kOpusBandWeights24kHz20msView.begin(),
+               kOpusBandWeights24kHz20msView.end()) {}
 
-SpectralCorrelator::~SpectralCorrelator() = default;
+SpectralCorrelator::~SpectralCorrelator() {}
 
 void SpectralCorrelator::ComputeAutoCorrelation(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float, kOpusBands24kHz> auto_corr) const {
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) /* kOpusBands24kHz */ auto_corr) const {
   ComputeCrossCorrelation(x, x, auto_corr);
 }
 
 void SpectralCorrelator::ComputeCrossCorrelation(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<const float> y,
-    rtc::ArrayView<float, kOpusBands24kHz> cross_corr) const {
+    RTC_VIEW(const float) x,
+    RTC_VIEW(const float) y,
+    RTC_VIEW(float) /* kOpusBands24kHz */ cross_corr) const {
   RTC_DCHECK_EQ(x.size(), kFrameSize20ms24kHz);
   RTC_DCHECK_EQ(x.size(), y.size());
   RTC_DCHECK_EQ(x[1], 0.f) /* << "The Nyquist coefficient must be zeroed." */;
@@ -122,8 +125,8 @@ void SpectralCorrelator::ComputeCrossCorrelation(
 }
 
 void ComputeSmoothedLogMagnitudeSpectrum(
-    rtc::ArrayView<const float> bands_energy,
-    rtc::ArrayView<float, kNumBands> log_bands_energy) {
+    RTC_VIEW(const float) bands_energy,
+    RTC_VIEW(float) /* kNumBands */ log_bands_energy) {
   RTC_DCHECK_LE(bands_energy.size(), kNumBands);
   constexpr float kOneByHundred = 1e-2f;
   constexpr float kLogOneByHundred = -2.f;
@@ -146,20 +149,20 @@ void ComputeSmoothedLogMagnitudeSpectrum(
   }
 }
 
-std::array<float, kNumBands * kNumBands> ComputeDctTable() {
-  std::array<float, kNumBands * kNumBands> dct_table;
+void ComputeDctTable(RTC_VIEW(float) /* kNumBands * kNumBands */ dct_table) {
+  // float dct_table[kNumBands * kNumBands];
   const double k = std::sqrt(0.5);
   for (size_t i = 0; i < kNumBands; ++i) {
     for (size_t j = 0; j < kNumBands; ++j)
       dct_table[i * kNumBands + j] = std::cos((i + 0.5) * j * kPi / kNumBands);
     dct_table[i * kNumBands] *= k;
   }
-  return dct_table;
+  // return dct_table;
 }
 
-void ComputeDct(rtc::ArrayView<const float> in,
-                rtc::ArrayView<const float, kNumBands * kNumBands> dct_table,
-                rtc::ArrayView<float> out) {
+void ComputeDct(RTC_VIEW(const float) in,
+                RTC_VIEW(const float) /* kNumBands * kNumBands */ dct_table,
+                RTC_VIEW(float) out) {
   // DCT scaling factor - i.e., sqrt(2 / kNumBands).
   constexpr float kDctScalingFactor = 0.301511345f;
   constexpr float kDctScalingFactorError =

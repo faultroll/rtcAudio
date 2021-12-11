@@ -11,11 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_SPEECH_PROBABILITY_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_NS_SPEECH_PROBABILITY_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/ns_common.h"
 #include "modules/audio_processing/ns2/signal_model_estimator.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -23,27 +24,26 @@ namespace webrtc {
 class SpeechProbabilityEstimator {
  public:
   SpeechProbabilityEstimator();
-  SpeechProbabilityEstimator(const SpeechProbabilityEstimator&) = delete;
-  SpeechProbabilityEstimator& operator=(const SpeechProbabilityEstimator&) =
-      delete;
 
   // Compute speech probability.
   void Update(
       int32_t num_analyzed_frames,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> prior_snr,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> post_snr,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> conservative_noise_spectrum,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ prior_snr,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ post_snr,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ conservative_noise_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
       float signal_spectral_sum,
       float signal_energy);
 
   float get_prior_probability() const { return prior_speech_prob_; }
-  rtc::ArrayView<const float> get_probability() { return speech_probability_; }
+  RTC_VIEW(const float) get_probability() { return RTC_MAKE_VIEW(const float)(speech_probability_); }
 
  private:
   SignalModelEstimator signal_model_estimator_;
   float prior_speech_prob_ = .5f;
-  std::array<float, kFftSizeBy2Plus1> speech_probability_;
+  float speech_probability_[kFftSizeBy2Plus1];
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SpeechProbabilityEstimator);
 };
 
 }  // namespace webrtc

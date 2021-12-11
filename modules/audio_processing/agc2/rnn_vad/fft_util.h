@@ -11,12 +11,13 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_FFT_UTIL_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_FFT_UTIL_H_
 
-#include <array>
+// #include <array>
 #include <complex>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "third_party/rnnoise/src/kiss_fft.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -29,20 +30,22 @@ namespace rnn_vad {
 class BandAnalysisFft {
  public:
   BandAnalysisFft();
-  BandAnalysisFft(const BandAnalysisFft&) = delete;
-  BandAnalysisFft& operator=(const BandAnalysisFft&) = delete;
   ~BandAnalysisFft();
   // Applies a windowing function to |samples|, computes the real forward FFT
   // and writes the result in |dst|.
-  void ForwardFft(rtc::ArrayView<const float> samples,
-                  rtc::ArrayView<std::complex<float>> dst);
+  void ForwardFft(RTC_VIEW(const float) samples,
+                  RTC_VIEW(std::complex<float>) dst);
 
  private:
   static_assert((kFrameSize20ms24kHz & 1) == 0,
                 "kFrameSize20ms24kHz must be even.");
-  const std::array<float, kFrameSize20ms24kHz / 2> half_window_;
-  std::array<std::complex<float>, kFrameSize20ms24kHz> input_buf_{{}};
+  const float half_window_[kFrameSize20ms24kHz / 2];
+  RTC_VIEW(const float) half_window_view_;
+  std::complex<float> input_buf_[kFrameSize20ms24kHz];
+  RTC_VIEW(std::complex<float>) input_buf_view_;
   rnnoise::KissFft fft_;
+  
+  RTC_DISALLOW_COPY_AND_ASSIGN(BandAnalysisFft);
 };
 
 }  // namespace rnn_vad

@@ -15,7 +15,6 @@
 #include <numeric>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
@@ -42,7 +41,7 @@ FullBandErleEstimator::FullBandErleEstimator(
   Reset();
 }
 
-FullBandErleEstimator::~FullBandErleEstimator() = default;
+FullBandErleEstimator::~FullBandErleEstimator() {}
 
 void FullBandErleEstimator::Reset() {
   for (auto& instantaneous_erle_ch : instantaneous_erle_) {
@@ -57,9 +56,9 @@ void FullBandErleEstimator::Reset() {
 }
 
 void FullBandErleEstimator::Update(
-    rtc::ArrayView<const float> X2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+    RTC_VIEW(const float) X2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
     const std::vector<bool>& converged_filters) {
   for (size_t ch = 0; ch < Y2.size(); ++ch) {
     if (converged_filters[ch]) {
@@ -95,7 +94,8 @@ void FullBandErleEstimator::Update(
 
 void FullBandErleEstimator::Dump(
     const std::unique_ptr<ApmDataDumper>& data_dumper) const {
-  data_dumper->DumpRaw("aec3_fullband_erle_log2", FullbandErleLog2());
+  data_dumper->DumpRaw(
+      "aec3_fullband_erle_log2", FullbandErleLog2());
   instantaneous_erle_[0].Dump(data_dumper);
 }
 
@@ -113,7 +113,7 @@ FullBandErleEstimator::ErleInstantaneous::ErleInstantaneous(
   Reset();
 }
 
-FullBandErleEstimator::ErleInstantaneous::~ErleInstantaneous() = default;
+FullBandErleEstimator::ErleInstantaneous::~ErleInstantaneous() {}
 
 bool FullBandErleEstimator::ErleInstantaneous::Update(const float Y2_sum,
                                                       const float E2_sum) {
@@ -155,13 +155,14 @@ void FullBandErleEstimator::ErleInstantaneous::ResetAccumulators() {
 
 void FullBandErleEstimator::ErleInstantaneous::Dump(
     const std::unique_ptr<ApmDataDumper>& data_dumper) const {
-  data_dumper->DumpRaw("aec3_fullband_erle_inst_log2",
-                       erle_log2_ ? *erle_log2_ : -10.f);
   data_dumper->DumpRaw(
-      "aec3_erle_instantaneous_quality",
-      GetQualityEstimate() ? GetQualityEstimate().value() : 0.f);
-  data_dumper->DumpRaw("aec3_fullband_erle_max_log2", max_erle_log2_);
-  data_dumper->DumpRaw("aec3_fullband_erle_min_log2", min_erle_log2_);
+      "aec3_fullband_erle_inst_log2", erle_log2_ ? *erle_log2_ : -10.f);
+  data_dumper->DumpRaw(
+      "aec3_erle_instantaneous_quality", GetQualityEstimate() ? GetQualityEstimate().value() : 0.f);
+  data_dumper->DumpRaw(
+      "aec3_fullband_erle_max_log2", max_erle_log2_);
+  data_dumper->DumpRaw(
+      "aec3_fullband_erle_min_log2", min_erle_log2_);
 }
 
 void FullBandErleEstimator::ErleInstantaneous::UpdateMaxMin() {

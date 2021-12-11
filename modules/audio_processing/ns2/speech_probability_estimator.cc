@@ -15,19 +15,21 @@
 
 #include "modules/audio_processing/ns2/fast_math.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
 SpeechProbabilityEstimator::SpeechProbabilityEstimator() {
-  speech_probability_.fill(0.f);
+  RTC_VIEW(float) speech_probability_view = RTC_MAKE_VIEW(float)(speech_probability_);
+  speech_probability_view.fill(0.f);
 }
 
 void SpeechProbabilityEstimator::Update(
     int32_t num_analyzed_frames,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> prior_snr,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> post_snr,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> conservative_noise_spectrum,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ prior_snr,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ post_snr,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ conservative_noise_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
     float signal_spectral_sum,
     float signal_energy) {
   // Update models.
@@ -93,7 +95,7 @@ void SpeechProbabilityEstimator::Update(
   float gain_prior =
       (1.f - prior_speech_prob_) / (prior_speech_prob_ + 0.0001f);
 
-  std::array<float, kFftSizeBy2Plus1> inv_lrt;
+  float inv_lrt[kFftSizeBy2Plus1];
   ExpApproximationSignFlip(model.avg_log_lrt, inv_lrt);
   for (size_t i = 0; i < kFftSizeBy2Plus1; ++i) {
     speech_probability_[i] = 1.f / (1.f + gain_prior * inv_lrt[i]);

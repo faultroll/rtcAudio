@@ -7,6 +7,7 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
+// Same as limiter.h
 
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_GAIN_CURVE_APPLIER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_GAIN_CURVE_APPLIER_H_
@@ -48,9 +49,10 @@ class GainCurveApplier {
   ApmDataDumper* const apm_data_dumper_ = nullptr;
 
   // Work array containing the sub-frame scaling factors to be interpolated.
-  std::array<float, kSubFramesInFrame + 1> scaling_factors_ = {{}};
-  std::array<float, kMaximalNumberOfSamplesPerChannel>
-      per_sample_scaling_factors_ = {{}};
+  float scaling_factors_[kSubFramesInFrame + 1];
+  RTC_VIEW(float) scaling_factors_view_;
+  float per_sample_scaling_factors_[kMaximalNumberOfSamplesPerChannel];
+  RTC_VIEW(float) per_sample_scaling_factors_view_;
   float last_scaling_factor_ = 1.f;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(GainCurveApplier);

@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/include/echo_control.h"
 // #include "modules/audio_processing/include/audio_processing.h"
 // #include "modules/audio_processing/render_queue_item_verifier.h"
@@ -36,7 +36,7 @@ class EchoControlMobileImpl : public EchoControlMobile {
 
   ~EchoControlMobileImpl() override;
 
-  void ProcessRenderAudio(rtc::ArrayView<const int16_t> packed_render_audio);
+  void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio);
   int ProcessCaptureAudio(AudioBuffer* audio, int stream_delay_ms);
 
   // EchoControlMobile implementation.

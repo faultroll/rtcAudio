@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/ns2/noise_estimator.h"
 #include "modules/audio_processing/ns2/ns_common.h"
@@ -22,6 +22,7 @@
 #include "modules/audio_processing/ns2/ns_fft.h"
 #include "modules/audio_processing/ns2/speech_probability_estimator.h"
 #include "modules/audio_processing/ns2/wiener_filter.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -31,8 +32,6 @@ class NoiseSuppressor {
   NoiseSuppressor(const NsConfig& config,
                   size_t sample_rate_hz,
                   size_t num_channels);
-  NoiseSuppressor(const NoiseSuppressor&) = delete;
-  NoiseSuppressor& operator=(const NoiseSuppressor&) = delete;
 
   // Analyses the signal (typically applied before the AEC to avoid analyzing
   // any comfort noise signal).
@@ -54,17 +53,17 @@ class NoiseSuppressor {
     SpeechProbabilityEstimator speech_probability_estimator;
     WienerFilter wiener_filter;
     NoiseEstimator noise_estimator;
-    std::array<float, kFftSizeBy2Plus1> prev_analysis_signal_spectrum;
-    std::array<float, kFftSize - kNsFrameSize> analyze_analysis_memory;
-    std::array<float, kOverlapSize> process_analysis_memory;
-    std::array<float, kOverlapSize> process_synthesis_memory;
+    float prev_analysis_signal_spectrum[kFftSizeBy2Plus1];
+    float analyze_analysis_memory[kFftSize - kNsFrameSize];
+    float process_analysis_memory[kOverlapSize];
+    float process_synthesis_memory[kOverlapSize];
     std::vector<std::array<float, kOverlapSize>> process_delay_memory;
   };
 
   struct FilterBankState {
-    std::array<float, kFftSize> real;
-    std::array<float, kFftSize> imag;
-    std::array<float, kFftSize> extended_frame;
+    float real[kFftSize];
+    float imag[kFftSize];
+    float extended_frame[kFftSize];
   };
 
   std::vector<FilterBankState> filter_bank_states_heap_;
@@ -75,7 +74,9 @@ class NoiseSuppressor {
 
   // Aggregates the Wiener filters into a single filter to use.
   void AggregateWienerFilters(
-      rtc::ArrayView<float, kFftSizeBy2Plus1> filter) const;
+      RTC_VIEW(float) /* kFftSizeBy2Plus1 */ filter) const;
+  
+  RTC_DISALLOW_COPY_AND_ASSIGN(NoiseSuppressor);
 };
 
 }  // namespace webrtc

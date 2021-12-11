@@ -13,6 +13,7 @@
 #include <atomic>
 
 #include "rtc_base/ref_count.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace webrtc_impl {
@@ -20,7 +21,6 @@ namespace webrtc_impl {
 class RefCounter {
  public:
   explicit RefCounter(int ref_count) : ref_count_(ref_count) {}
-  RefCounter() = delete;
 
   void IncRef() {
     // Relaxed memory order: The current thread is allowed to act on the
@@ -67,6 +67,8 @@ class RefCounter {
 
  private:
   std::atomic<int> ref_count_;
+
+  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RefCounter);
 };
 
 }  // namespace webrtc_impl

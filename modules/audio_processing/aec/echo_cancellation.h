@@ -11,16 +11,16 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC_ECHO_CANCELLATION_H_
 #define MODULES_AUDIO_PROCESSING_AEC_ECHO_CANCELLATION_H_
 
-#include <memory>
-
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-extern "C" {
-#include "common_audio/ring_buffer.h"
-}
 #include "modules/audio_processing/aec/aec_core.h"
 
-namespace webrtc {
+#ifdef __cplusplus
+// namespace webrtc {
+extern "C" {
+#endif
 
 // Errors
 #define AEC_UNSPECIFIED_ERROR 12000
@@ -59,58 +59,7 @@ typedef struct {
   float divergent_filter_fraction;
 } AecMetrics;
 
-struct AecCore;
-
-class ApmDataDumper;
-
-typedef struct Aec {
-  Aec();
-  ~Aec();
-
-  std::unique_ptr<ApmDataDumper> data_dumper;
-
-  int delayCtr;
-  int sampFreq;
-  int splitSampFreq;
-  int scSampFreq;
-  float sampFactor;  // scSampRate / sampFreq
-  short skewMode;
-  int bufSizeStart;
-  int knownDelay;
-  int rate_factor;
-
-  short initFlag;  // indicates if AEC has been initialized
-
-  // Variables used for averaging far end buffer size
-  short counter;
-  int sum;
-  short firstVal;
-  short checkBufSizeCtr;
-
-  // Variables used for delay shifts
-  short msInSndCardBuf;
-  short filtDelay;  // Filtered delay estimate.
-  int timeForDelayChange;
-  int startup_phase;
-  int checkBuffSize;
-  short lastDelayDiff;
-
-  // Structures
-  void* resampler;
-
-  int skewFrCtr;
-  int resample;  // if the skew is small enough we don't resample
-  int highSkewCtr;
-  float skew;
-
-  RingBuffer* far_pre_buf;  // Time domain far-end pre-buffer.
-
-  int farend_started;
-
-  // Aec instance counter.
-  static int instance_count;
-  AecCore* aec;
-} Aec;
+// struct AecCore;
 
 /*
  * Allocates the memory needed by the AEC. The memory needs to be initialized
@@ -291,8 +240,11 @@ int WebRtcAec_GetDelayMetrics(void* handle,
 // Return value:
 //  - AecCore pointer           : NULL for error.
 //
-struct AecCore* WebRtcAec_aec_core(void* handle);
+/* struct */ AecCore* WebRtcAec_aec_core(void* handle);
 
-}  // namespace webrtc
+#ifdef __cplusplus
+} // extern "C"
+// } // namespace webrtc
+#endif
 
 #endif  // MODULES_AUDIO_PROCESSING_AEC_ECHO_CANCELLATION_H_

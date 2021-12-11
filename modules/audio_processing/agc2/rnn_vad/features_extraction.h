@@ -13,13 +13,14 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/biquad_filter.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_info.h"
 #include "modules/audio_processing/agc2/rnn_vad/pitch_search.h"
 #include "modules/audio_processing/agc2/rnn_vad/sequence_buffer.h"
 #include "modules/audio_processing/agc2/rnn_vad/spectral_features.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -28,8 +29,6 @@ namespace rnn_vad {
 class FeaturesExtractor {
  public:
   FeaturesExtractor();
-  FeaturesExtractor(const FeaturesExtractor&) = delete;
-  FeaturesExtractor& operator=(const FeaturesExtractor&) = delete;
   ~FeaturesExtractor();
   void Reset();
   // Analyzes the samples, computes the feature vector and returns true if
@@ -37,8 +36,8 @@ class FeaturesExtractor {
   // |feature_vector| is partially written and therefore must not be used to
   // feed the VAD RNN.
   bool CheckSilenceComputeFeatures(
-      rtc::ArrayView<const float, kFrameSize10ms24kHz> samples,
-      rtc::ArrayView<float, kFeatureVectorSize> feature_vector);
+      RTC_VIEW(const float) /* kFrameSize10ms24kHz */ samples,
+      RTC_VIEW(float) /* kFeatureVectorSize */ feature_vector);
 
  private:
   const bool use_high_pass_filter_;
@@ -47,13 +46,15 @@ class FeaturesExtractor {
   BiQuadFilter hpf_;
   SequenceBuffer<float, kBufSize24kHz, kFrameSize10ms24kHz, kFrameSize20ms24kHz>
       pitch_buf_24kHz_;
-  rtc::ArrayView<const float, kBufSize24kHz> pitch_buf_24kHz_view_;
+  RTC_VIEW(const float) /* kBufSize24kHz */ pitch_buf_24kHz_view_;
   std::vector<float> lp_residual_;
-  rtc::ArrayView<float, kBufSize24kHz> lp_residual_view_;
+  RTC_VIEW(float) /* kBufSize24kHz */ lp_residual_view_;
   PitchEstimator pitch_estimator_;
-  rtc::ArrayView<const float, kFrameSize20ms24kHz> reference_frame_view_;
+  RTC_VIEW(const float) /* kFrameSize20ms24kHz */ reference_frame_view_;
   SpectralFeaturesExtractor spectral_features_extractor_;
   PitchInfo pitch_info_48kHz_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(FeaturesExtractor);
 };
 
 }  // namespace rnn_vad

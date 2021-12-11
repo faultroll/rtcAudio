@@ -11,7 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_FIXED_DIGITAL_LEVEL_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_FIXED_DIGITAL_LEVEL_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 #include <vector>
 
 #include "modules/audio_processing/agc2/agc2_common.h"
@@ -38,7 +38,7 @@ class FixedDigitalLevelEstimator {
   // produce similarly scaled output. A frame of with kFrameDurationMs
   // ms of audio produces a level estimates in the same scale. The
   // level estimate contains kSubFramesInFrame values.
-  std::array<float, kSubFramesInFrame> ComputeLevel(
+  void ComputeLevel(RTC_VIEW(float) /* kSubFramesInFrame */ envelope,
       const AudioFrameView<const float>& float_frame);
 
   // Rate may be changed at any time (but not concurrently) from the

@@ -11,13 +11,17 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SEQUENCE_BUFFER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SEQUENCE_BUFFER_H_
 
+#include <stddef.h>
+#include <string.h>
+
 #include <algorithm>
-#include <cstring>
-#include <type_traits>
+// #include <cstring>
+// #include <type_traits>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -34,43 +38,43 @@ class SequenceBuffer {
   static_assert(N <= S,
                 "The new chunk size cannot be larger than the sequence buffer "
                 "size.");
-  static_assert(std::is_arithmetic<T>::value,
-                "Integral or floating point required.");
+  // static_assert(std::is_arithmetic<T>::value,
+  //               "Integral or floating point required.");
 
  public:
   SequenceBuffer() : buffer_(S) {
     RTC_DCHECK_EQ(S, buffer_.size());
     Reset();
   }
-  SequenceBuffer(const SequenceBuffer&) = delete;
-  SequenceBuffer& operator=(const SequenceBuffer&) = delete;
-  ~SequenceBuffer() = default;
+  ~SequenceBuffer() {}
   size_t size() const { return S; }
   size_t chunks_size() const { return N; }
   // Sets the sequence buffer values to zero.
   void Reset() { std::fill(buffer_.begin(), buffer_.end(), 0); }
   // Returns a view on the whole buffer.
-  rtc::ArrayView<const T, S> GetBufferView() const {
-    return {buffer_.data(), S};
+  RTC_VIEW(T) /* S */ GetBufferView() const {
+    return RTC_MAKE_VIEW(T)(buffer_.data(), S);
   }
   // Returns a view on the M most recent values of the buffer.
-  rtc::ArrayView<const T, M> GetMostRecentValuesView() const {
+  RTC_VIEW(T) /* M */ GetMostRecentValuesView() const {
     static_assert(M <= S,
                   "The number of most recent values cannot be larger than the "
                   "sequence buffer size.");
-    return {buffer_.data() + S - M, M};
+    return RTC_MAKE_VIEW(T)(buffer_.data() + S - M, M);
   }
   // Shifts left the buffer by N items and add new N items at the end.
-  void Push(rtc::ArrayView<const T, N> new_values) {
+  void Push(RTC_VIEW(T) /* N */ new_values) {
     // Make space for the new values.
     if (S > N)
-      std::memmove(buffer_.data(), buffer_.data() + N, (S - N) * sizeof(T));
+      memmove(buffer_.data(), buffer_.data() + N, (S - N) * sizeof(T));
     // Copy the new values at the end of the buffer.
-    std::memcpy(buffer_.data() + S - N, new_values.data(), N * sizeof(T));
+    memcpy(buffer_.data() + S - N, new_values.data(), N * sizeof(T));
   }
 
  private:
   std::vector<T> buffer_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SequenceBuffer);
 };
 
 }  // namespace rnn_vad

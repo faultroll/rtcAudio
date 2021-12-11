@@ -13,12 +13,12 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/fullband_erle_estimator.h"
 #include "modules/audio_processing/aec3/render_buffer.h"
@@ -44,18 +44,15 @@ class ErleEstimator {
   // Updates the ERLE estimates.
   void Update(
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
           filter_frequency_responses,
-      rtc::ArrayView<const float, kFftLengthBy2Plus1>
-          avg_render_spectrum_with_reverb,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
-          capture_spectra,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
-          subtractor_spectra,
+      RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ avg_render_spectrum_with_reverb,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& capture_spectra,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& subtractor_spectra,
       const std::vector<bool>& converged_filters);
 
   // Returns the most recent subband ERLE estimates.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle() const {
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& Erle() const {
     return signal_dependent_erle_estimator_
                ? signal_dependent_erle_estimator_->Erle()
                : subband_erle_estimator_.Erle();
@@ -63,7 +60,7 @@ class ErleEstimator {
 
   // Returns the subband ERLE that are estimated during onsets (only used for
   // testing).
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleOnsets()
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& ErleOnsets()
       const {
     return subband_erle_estimator_.ErleOnsets();
   }
@@ -78,7 +75,7 @@ class ErleEstimator {
   // vector with content between 0 and 1 where 1 indicates that, at this current
   // time instant, the linear filter is reaching its maximum subtraction
   // performance.
-  rtc::ArrayView<const rtc::Optional<float>> GetInstLinearQualityEstimates()
+  RTC_VIEW(const rtc::Optional<float>) GetInstLinearQualityEstimates()
       const {
     return fullband_erle_estimator_.GetInstLinearQualityEstimates();
   }
@@ -89,8 +86,7 @@ class ErleEstimator {
   const size_t startup_phase_length_blocks_;
   FullBandErleEstimator fullband_erle_estimator_;
   SubbandErleEstimator subband_erle_estimator_;
-  std::unique_ptr<SignalDependentErleEstimator>
-      signal_dependent_erle_estimator_;
+  std::unique_ptr<SignalDependentErleEstimator> signal_dependent_erle_estimator_;
   size_t blocks_since_reset_ = 0;
 };
 

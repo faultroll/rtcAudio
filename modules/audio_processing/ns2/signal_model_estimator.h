@@ -11,31 +11,30 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_SIGNAL_MODEL_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_NS_SIGNAL_MODEL_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/histograms.h"
 #include "modules/audio_processing/ns2/ns_common.h"
 #include "modules/audio_processing/ns2/prior_signal_model.h"
 #include "modules/audio_processing/ns2/prior_signal_model_estimator.h"
 #include "modules/audio_processing/ns2/signal_model.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 class SignalModelEstimator {
  public:
   SignalModelEstimator();
-  SignalModelEstimator(const SignalModelEstimator&) = delete;
-  SignalModelEstimator& operator=(const SignalModelEstimator&) = delete;
 
   // Compute signal normalization during the initial startup phase.
   void AdjustNormalization(int32_t num_analyzed_frames, float signal_energy);
 
   void Update(
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> prior_snr,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> post_snr,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> conservative_noise_spectrum,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ prior_snr,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ post_snr,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ conservative_noise_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
       float signal_spectral_sum,
       float signal_energy);
 
@@ -51,6 +50,8 @@ class SignalModelEstimator {
   int histogram_analysis_counter_ = 500;
   PriorSignalModelEstimator prior_model_estimator_;
   SignalModel features_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SignalModelEstimator);
 };
 
 }  // namespace webrtc

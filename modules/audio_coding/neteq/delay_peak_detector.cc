@@ -24,7 +24,7 @@ namespace webrtc {
 // peak-mode is engaged and the DelayManager asks the DelayPeakDetector for
 // the worst peak height.
 
-DelayPeakDetector::~DelayPeakDetector() = default;
+DelayPeakDetector::~DelayPeakDetector() {}
 
 DelayPeakDetector::DelayPeakDetector(const TickTimer* tick_timer,
                                      bool ignore_reordered_packets)

@@ -69,23 +69,23 @@ CascadedBiQuadFilter::CascadedBiQuadFilter(
   }
 }
 
-CascadedBiQuadFilter::~CascadedBiQuadFilter() = default;
+CascadedBiQuadFilter::~CascadedBiQuadFilter() {}
 
-void CascadedBiQuadFilter::Process(rtc::ArrayView<const float> x,
-                                   rtc::ArrayView<float> y) {
+void CascadedBiQuadFilter::Process(RTC_VIEW(const float) x,
+                                   RTC_VIEW(float) y) {
   if (biquads_.size() > 0) {
     ApplyBiQuad(x, y, &biquads_[0]);
     for (size_t k = 1; k < biquads_.size(); ++k) {
-      ApplyBiQuad(y, y, &biquads_[k]);
+      ApplyBiQuad(RTC_MAKE_VIEW(const float)(y.data(), y.size()), y, &biquads_[k]);
     }
   } else {
     std::copy(x.begin(), x.end(), y.begin());
   }
 }
 
-void CascadedBiQuadFilter::Process(rtc::ArrayView<float> y) {
+void CascadedBiQuadFilter::Process(RTC_VIEW(float) y) {
   for (auto& biquad : biquads_) {
-    ApplyBiQuad(y, y, &biquad);
+    ApplyBiQuad(RTC_MAKE_VIEW(const float)(y.data(), y.size()), y, &biquad);
   }
 }
 
@@ -95,8 +95,8 @@ void CascadedBiQuadFilter::Reset() {
   }
 }
 
-void CascadedBiQuadFilter::ApplyBiQuad(rtc::ArrayView<const float> x,
-                                       rtc::ArrayView<float> y,
+void CascadedBiQuadFilter::ApplyBiQuad(RTC_VIEW(const float) x,
+                                       RTC_VIEW(float) y,
                                        CascadedBiQuadFilter::BiQuad* biquad) {
   RTC_DCHECK_EQ(x.size(), y.size());
   const auto* c_b = biquad->coefficients.b;

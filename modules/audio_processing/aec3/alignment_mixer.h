@@ -13,7 +13,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
@@ -33,8 +33,8 @@ class AlignmentMixer {
                  float excitation_limit,
                  bool prefer_first_two_channels);
 
-  void ProduceOutput(rtc::ArrayView<const std::vector<float>> x,
-                     rtc::ArrayView<float, kBlockSize> y);
+  void ProduceOutput(RTC_VIEW(const std::vector<float>) x,
+                     RTC_VIEW(float) /* kBlockSize */ y);
 
   enum class MixingVariant { kDownmix, kAdaptive, kFixed };
 
@@ -44,14 +44,15 @@ class AlignmentMixer {
   const float excitation_energy_threshold_;
   const bool prefer_first_two_channels_;
   const MixingVariant selection_variant_;
-  std::array<size_t, 2> strong_block_counters_;
+  size_t strong_block_counters_[2];
+  RTC_VIEW(size_t) /* 2 */ strong_block_counters_view_ = RTC_VIEW(size_t)(strong_block_counters_);
   std::vector<float> cumulative_energies_;
   int selected_channel_ = 0;
   size_t block_counter_ = 0;
 
-  void Downmix(const rtc::ArrayView<const std::vector<float>> x,
-               rtc::ArrayView<float, kBlockSize> y) const;
-  int SelectChannel(rtc::ArrayView<const std::vector<float>> x);
+  void Downmix(RTC_VIEW(const std::vector<float>) x,
+               RTC_VIEW(float) /* kBlockSize */ y) const;
+  int SelectChannel(RTC_VIEW(const std::vector<float>) x);
 };
 }  // namespace webrtc
 

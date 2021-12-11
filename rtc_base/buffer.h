@@ -19,10 +19,11 @@
 #include <type_traits>
 #include <utility>
 
-// #include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 // #include "rtc_base/type_traits.h"
 // #include "rtc_base/zero_memory.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace rtc {
 
@@ -73,8 +74,7 @@ class BufferT {
 
   // Disable copy construction and copy assignment, since copying a buffer is
   // expensive enough that we want to force the user to be explicit about it.
-  BufferT(const BufferT&) = delete;
-  BufferT& operator=(const BufferT&) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(BufferT);
 
   BufferT(BufferT&& buf)
       : size_(buf.size()),
@@ -241,7 +241,7 @@ class BufferT {
   // |max_elements| that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
-  /* template <typename U = T,
+  template <typename U = T,
             typename F,
             typename std::enable_if<
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
@@ -254,7 +254,7 @@ class BufferT {
       ZeroTrailingData(old_size - size_);
     }
     return written;
-  } */
+  }
 
   // The AppendData functions add data to the end of the buffer. They accept
   // the same input types as the constructors.
@@ -303,7 +303,7 @@ class BufferT {
   // |max_elements| that describes the area where it should write the data; it
   // should return the number of elements actually written. (If it doesn't fill
   // the whole ArrayView, it should leave the unused space at the end.)
-  /* template <typename U = T,
+  template <typename U = T,
             typename F,
             typename std::enable_if<
                 internal::BufferCompat<T, U>::value>::type* = nullptr>
@@ -312,13 +312,13 @@ class BufferT {
     const size_t old_size = size_;
     SetSize(old_size + max_elements);
     U* base_ptr = data<U>() + old_size;
-    size_t written_elements = setter(rtc::ArrayView<U>(base_ptr, max_elements));
+    size_t written_elements = setter(RTC_VIEW(U)(base_ptr, max_elements));
 
     RTC_CHECK_LE(written_elements, max_elements);
     size_ = old_size + written_elements;
     RTC_DCHECK(IsConsistent());
     return written_elements;
-  } */
+  }
 
   // Sets the size of the buffer. If the new size is smaller than the old, the
   // buffer contents will be kept but truncated; if the new size is greater,

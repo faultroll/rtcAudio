@@ -11,8 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_SATURATION_PROTECTOR_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_SATURATION_PROTECTOR_H_
 
-#include <array>
+// #include <array>
 
+#include "rtc_base/view.h"
 #include "rtc_base/optional.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "rtc_base/numerics/safe_compare.h"
@@ -27,7 +28,7 @@ class RingBuffer {
   inline bool operator!=(const RingBuffer& b) const { return !(*this == b); }
 
   // Maximum number of values that the buffer can contain.
-  int Capacity() const { return buffer_.size(); }
+  int Capacity() const { return buffer_view_.size(); }
   // Number of values in the buffer.
   int Size() const { return size_; }
 
@@ -40,11 +41,12 @@ class RingBuffer {
 
  private:
   inline int FrontIndex() const {
-    return rtc::SafeEq(size_, buffer_.size()) ? next_ : 0;
+    return rtc::SafeEq(size_, buffer_view_.size()) ? next_ : 0;
   }
   // `buffer_` has `size_` elements (up to the size of `buffer_`) and `next_` is
   // the position where the next new value is written in `buffer_`.
-  std::array<float, kPeakEnveloperBufferSize> buffer_;
+  float buffer_[kPeakEnveloperBufferSize];
+  RTC_VIEW(float) buffer_view_ = RTC_MAKE_VIEW(float)(buffer_);
   int next_ = 0;
   size_t size_ = 0;
 };

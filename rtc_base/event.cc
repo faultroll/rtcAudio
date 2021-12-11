@@ -20,6 +20,9 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/time_utils.h"
+#include "rtc_base/optional.h"
+// #include "rtc_base/synchronization/yield_policy.h"
+// #include "rtc_base/system/warn_current_thread_is_deadlocked.h"
 
 namespace rtc {
 
@@ -44,18 +47,41 @@ void Event::Reset() {
   ResetEvent(event_handle_);
 }
 
-bool Event::Wait(int milliseconds) {
-  DWORD ms = (milliseconds == kForever) ? INFINITE : milliseconds;
+bool Event::Wait(const int give_up_after_ms, int /*warn_after_ms*/) {
+  // ScopedYieldPolicy::YieldExecution();
+  const DWORD ms = give_up_after_ms == kForever ? INFINITE : give_up_after_ms;
   return (WaitForSingleObject(event_handle_, ms) == WAIT_OBJECT_0);
 }
 
 #elif defined(WEBRTC_POSIX)
 
+// On MacOS, clock_gettime is available from version 10.12, and on
+// iOS, from version 10.0. So we can't use it yet.
+#if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
+#define USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP 0
+// On Android, pthread_condattr_setclock is available from version 21. By
+// default, we target a new enough version for 64-bit platforms but not for
+// 32-bit platforms. For older versions, use
+// pthread_cond_timedwait_monotonic_np.
+#elif defined(WEBRTC_ANDROID) && (__ANDROID_API__ < 21)
+#define USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP 1
+#else
+#define USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP 0
+#endif
+
 Event::Event(bool manual_reset, bool initially_signaled)
     : is_manual_reset_(manual_reset),
       event_status_(initially_signaled) {
+  // cannot use PTHREAD_MUTEX_RECURSIVE here
+  // cond_wait only unlocks one level mutex
   RTC_CHECK(pthread_mutex_init(&event_mutex_, nullptr) == 0);
-  RTC_CHECK(pthread_cond_init(&event_cond_, nullptr) == 0);
+  pthread_condattr_t cond_attr;
+  RTC_CHECK(pthread_condattr_init(&cond_attr) == 0);
+#if !USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
+  RTC_CHECK(pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC) == 0);
+#endif
+  RTC_CHECK(pthread_cond_init(&event_cond_, &cond_attr) == 0);
+  pthread_condattr_destroy(&cond_attr);
 }
 
 Event::~Event() {
@@ -76,39 +102,65 @@ void Event::Reset() {
   pthread_mutex_unlock(&event_mutex_);
 }
 
-bool Event::Wait(int milliseconds) {
-  int error = 0;
+namespace {
 
-  struct timespec ts;
-  if (milliseconds != kForever) {
-    /* // Converting from seconds and microseconds (1e-6) plus
-    // milliseconds (1e-3) to seconds and nanoseconds (1e-9).
+timespec GetTimespec(const int milliseconds_from_now) {
+  struct timespec ts, ts_elapsed;
+  Timespec(&ts);
+  TimeToTimespec(&ts_elapsed, milliseconds_from_now);
+  TimespecAfter(&ts, &ts_elapsed);
 
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
+  return ts;
+}
 
-    ts.tv_sec = tv.tv_sec + (milliseconds / 1000);
-    ts.tv_nsec = tv.tv_usec * 1000 + (milliseconds % 1000) * 1000000;
+}  // namespace
 
-    // Handle overflow.
-    if (ts.tv_nsec >= 1000000000) {
-      ts.tv_sec++;
-      ts.tv_nsec -= 1000000000;
-    } */
-    struct timespec ts_elapsed;
-    Timespec(&ts);
-    TimeToTimespec(&ts_elapsed, milliseconds);
-    TimespecAfter(&ts, &ts_elapsed);
-  }
+bool Event::Wait(const int give_up_after_ms, const int warn_after_ms) {
+  // Instant when we'll log a warning message (because we've been waiting so
+  // long it might be a bug), but not yet give up waiting. nullopt if we
+  // shouldn't log a warning.
+  const rtc::Optional<timespec> warn_ts =
+      warn_after_ms == kForever ||
+              (give_up_after_ms != kForever && warn_after_ms > give_up_after_ms)
+          ? rtc::nullopt
+          : rtc::Optional<timespec>(GetTimespec(warn_after_ms));
+  // Instant when we'll stop waiting and return an error. nullopt if we should
+  // never give up.
+  const rtc::Optional<timespec> give_up_ts =
+      give_up_after_ms == kForever
+          ? rtc::nullopt
+          : rtc::Optional<timespec>(GetTimespec(give_up_after_ms));
 
+  // ScopedYieldPolicy::YieldExecution();
   pthread_mutex_lock(&event_mutex_);
-  if (milliseconds != kForever) {
+
+  // Wait for `event_cond_` to trigger and `event_status_` to be set, with the
+  // given timeout (or without a timeout if none is given).
+  const auto wait = [&](const rtc::Optional<timespec> timeout_ts) {
+    int error = 0;
     while (!event_status_ && error == 0) {
-      error = pthread_cond_timedwait(&event_cond_, &event_mutex_, &ts);
+      if (timeout_ts == rtc::nullopt) {
+        error = pthread_cond_wait(&event_cond_, &event_mutex_);
+      } else {
+#if USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
+        error = pthread_cond_timedwait_monotonic_np(&event_cond_, &event_mutex_, &*timeout_ts);
+#else
+        error = pthread_cond_timedwait(&event_cond_, &event_mutex_, &*timeout_ts);
+#endif
+      }
     }
+    return error;
+  };
+
+  int error;
+  if (warn_ts == rtc::nullopt) {
+    error = wait(give_up_ts);
   } else {
-    while (!event_status_ && error == 0)
-      error = pthread_cond_wait(&event_cond_, &event_mutex_);
+    error = wait(warn_ts);
+    if (error == ETIMEDOUT) {
+      // webrtc::WarnThatTheCurrentThreadIsProbablyDeadlocked();
+      error = wait(give_up_ts);
+    }
   }
 
   // NOTE(liulk): Exactly one thread will auto-reset this event. All

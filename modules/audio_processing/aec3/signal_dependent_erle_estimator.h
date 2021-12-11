@@ -11,10 +11,11 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_SIGNAL_DEPENDENT_ERLE_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_SIGNAL_DEPENDENT_ERLE_ESTIMATOR_H_
 
+// #include <array>
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/render_buffer.h"
@@ -37,7 +38,7 @@ class SignalDependentErleEstimator {
   void Reset();
 
   // Returns the Erle per frequency subband.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle() const {
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& Erle() const {
     return erle_;
   }
 
@@ -45,12 +46,12 @@ class SignalDependentErleEstimator {
   // to be an estimation of the average Erle achieved by the linear filter.
   void Update(
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
-          filter_frequency_response,
-      rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> average_erle,
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
+          filter_frequency_responses,
+      RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& average_erle,
       const std::vector<bool>& converged_filters);
 
   void Dump(const std::unique_ptr<ApmDataDumper>& data_dumper) const;
@@ -60,18 +61,18 @@ class SignalDependentErleEstimator {
  private:
   void ComputeNumberOfActiveFilterSections(
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
           filter_frequency_responses);
 
   void UpdateCorrectionFactors(
-      rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+      RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
       const std::vector<bool>& converged_filters);
 
   void ComputeEchoEstimatePerFilterSection(
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
           filter_frequency_responses);
 
   void ComputeActiveFilterSections();
@@ -84,8 +85,7 @@ class SignalDependentErleEstimator {
   const std::array<float, kSubbands> max_erle_;
   const std::vector<size_t> section_boundaries_blocks_;
   std::vector<std::array<float, kFftLengthBy2Plus1>> erle_;
-  std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>
-      S2_section_accum_;
+  std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>> S2_section_accum_;
   std::vector<std::vector<std::array<float, kSubbands>>> erle_estimators_;
   std::vector<std::array<float, kSubbands>> erle_ref_;
   std::vector<std::vector<std::array<float, kSubbands>>> correction_factors_;

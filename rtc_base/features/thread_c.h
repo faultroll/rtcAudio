@@ -123,6 +123,13 @@ extern "C" {
         // #define thrd_check_return(result) do { return ((0 == (result)) ? thrd_success : thrd_error); } while(0)
         typedef pthread_t thrd_t;
         static const thrd_t thrd_null = (thrd_t)(0);
+        enum {
+            thrd_priority_low = 1,
+            thrd_priority_normal = 2,
+            thrd_priority_high = 3,
+            thrd_priority_highest = 4,
+            thrd_priority_realtime = 5,
+        };
     #elif defined(_THREAD_C_USE_WIN)
         // Include winsock2.h before including <windows.h> to maintain consistency with
         // win32.h.  We can't include win32.h directly here since it pulls in
@@ -142,6 +149,13 @@ extern "C" {
         // #define thrd_check_return(result) do { return (((result) != 0) ? thrd_success : thrd_error); } while(0)
         typedef HANDLE thrd_t;
         static const thrd_t thrd_null = (thrd_t)(0);
+        enum {
+            thrd_priority_low = THREAD_PRIORITY_BELOW_NORMAL,
+            thrd_priority_normal = THREAD_PRIORITY_NORMAL,
+            thrd_priority_high = THREAD_PRIORITY_ABOVE_NORMAL,
+            thrd_priority_highest = THREAD_PRIORITY_HIGHEST,
+            thrd_priority_realtime = THREAD_PRIORITY_TIME_CRITICAL,
+        };
     #elif defined(_THREAD_C_USE_NONE)
         // use coroutine
         // rtos |taskDelay| ...
@@ -170,6 +184,10 @@ extern "C" {
     // Yield execution to another thread. Permit other threads to run,
     // even if current thread would ordinarily continue to run.
     extern void thrd_yield(void);
+    // Set the priority of the thread. Must be called when thread is running.
+    extern int thrd_set_priority(thrd_t thr, int prio);
+    // Sets the current thread name.
+    extern void thrd_set_name(const char *name);
     /**
      * tss
      * 

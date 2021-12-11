@@ -15,10 +15,10 @@
 #endif
 #include <stdlib.h>
 
-extern "C" {
+// extern "C" {
 #include "common_audio/ring_buffer.h"
 #include "common_audio/signal_processing/include/signal_processing_library.h"
-}
+// }
 #include "modules/audio_processing/aecm/aecm_core.h"
 
 #define BUF_SIZE_FRAMES 50  // buffer size (frames)
@@ -81,7 +81,7 @@ static int WebRtcAecm_EstBufDelay(AecMobile* aecm, short msInSndCardBuf);
 static int WebRtcAecm_DelayComp(AecMobile* aecm);
 
 void* WebRtcAecm_Create() {
-  AecMobile* aecm = static_cast<AecMobile*>(malloc(sizeof(AecMobile)));
+  AecMobile* aecm = /* static_cast<AecMobile*> */(malloc(sizeof(AecMobile)));
 
   WebRtcSpl_Init();
 
@@ -114,7 +114,7 @@ void* WebRtcAecm_Create() {
 }
 
 void WebRtcAecm_Free(void* aecmInst) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
 
   if (aecm == NULL) {
     return;
@@ -137,7 +137,7 @@ void WebRtcAecm_Free(void* aecmInst) {
 }
 
 int32_t WebRtcAecm_Init(void* aecmInst, int32_t sampFreq) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
   AecmConfig aecConfig;
 
   if (aecm == NULL) {
@@ -192,7 +192,7 @@ int32_t WebRtcAecm_Init(void* aecmInst, int32_t sampFreq) {
 int32_t WebRtcAecm_GetBufferFarendError(void* aecmInst,
                                         const int16_t* farend,
                                         size_t nrOfSamples) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
 
   if (aecm == NULL)
     return -1;
@@ -212,7 +212,7 @@ int32_t WebRtcAecm_GetBufferFarendError(void* aecmInst,
 int32_t WebRtcAecm_BufferFarend(void* aecmInst,
                                 const int16_t* farend,
                                 size_t nrOfSamples) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
 
   const int32_t err =
       WebRtcAecm_GetBufferFarendError(aecmInst, farend, nrOfSamples);
@@ -236,7 +236,7 @@ int32_t WebRtcAecm_Process(void* aecmInst,
                            int16_t* out,
                            size_t nrOfSamples,
                            int16_t msInSndCardBuf) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
   int32_t retVal = 0;
   size_t i;
   short nmbrOfFilledBuffers;
@@ -405,7 +405,7 @@ int32_t WebRtcAecm_Process(void* aecmInst,
 }
 
 int32_t WebRtcAecm_set_config(void* aecmInst, AecmConfig config) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
 
   if (aecm == NULL) {
     return -1;
@@ -478,8 +478,8 @@ int32_t WebRtcAecm_set_config(void* aecmInst, AecmConfig config) {
 int32_t WebRtcAecm_InitEchoPath(void* aecmInst,
                                 const void* echo_path,
                                 size_t size_bytes) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
-  const int16_t* echo_path_ptr = static_cast<const int16_t*>(echo_path);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
+  const int16_t* echo_path_ptr = /* static_cast<const int16_t*> */(echo_path);
 
   if (aecmInst == NULL) {
     return -1;
@@ -503,8 +503,8 @@ int32_t WebRtcAecm_InitEchoPath(void* aecmInst,
 int32_t WebRtcAecm_GetEchoPath(void* aecmInst,
                                void* echo_path,
                                size_t size_bytes) {
-  AecMobile* aecm = static_cast<AecMobile*>(aecmInst);
-  int16_t* echo_path_ptr = static_cast<int16_t*>(echo_path);
+  AecMobile* aecm = /* static_cast<AecMobile*> */(aecmInst);
+  int16_t* echo_path_ptr = /* static_cast<int16_t*> */(echo_path);
 
   if (aecmInst == NULL) {
     return -1;

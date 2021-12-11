@@ -11,7 +11,7 @@
 #include "modules/audio_processing/agc2/rnn_vad/lp_residual.h"
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <cmath>
 #include <numeric>
 
@@ -28,10 +28,10 @@ namespace {
 // for a lag l have both size "size of |x| - l" - i.e., the longest sub-array is
 // used. |x| and |y| must have the same size.
 void ComputeCrossCorrelation(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<const float> y,
-    rtc::ArrayView<float, kNumLpcCoefficients> x_corr) {
-  constexpr size_t max_lag = x_corr.size();
+    RTC_VIEW(const float) x,
+    RTC_VIEW(const float) y,
+    RTC_VIEW(float) /* kNumLpcCoefficients */ x_corr) {
+  const size_t max_lag = x_corr.size();
   RTC_DCHECK_EQ(x.size(), y.size());
   RTC_DCHECK_LT(max_lag, x.size());
   for (size_t lag = 0; lag < max_lag; ++lag) {
@@ -42,7 +42,7 @@ void ComputeCrossCorrelation(
 
 // Applies denoising to the auto-correlation coefficients.
 void DenoiseAutoCorrelation(
-    rtc::ArrayView<float, kNumLpcCoefficients> auto_corr) {
+    RTC_VIEW(float) /* kNumLpcCoefficients */ auto_corr) {
   // Assume -40 dB white noise floor.
   auto_corr[0] *= 1.0001f;
   for (size_t i = 1; i < kNumLpcCoefficients; ++i) {
@@ -53,8 +53,8 @@ void DenoiseAutoCorrelation(
 // Computes the initial inverse filter coefficients given the auto-correlation
 // coefficients of an input frame.
 void ComputeInitialInverseFilterCoefficients(
-    rtc::ArrayView<const float, kNumLpcCoefficients> auto_corr,
-    rtc::ArrayView<float, kNumLpcCoefficients - 1> lpc_coeffs) {
+    RTC_VIEW(const float) /* kNumLpcCoefficients */ auto_corr,
+    RTC_VIEW(float) /* kNumLpcCoefficients - 1 */ lpc_coeffs) {
   float error = auto_corr[0];
   for (size_t i = 0; i < kNumLpcCoefficients - 1; ++i) {
     float reflection_coeff = 0.f;
@@ -88,17 +88,19 @@ void ComputeInitialInverseFilterCoefficients(
 }  // namespace
 
 void ComputeAndPostProcessLpcCoefficients(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float, kNumLpcCoefficients> lpc_coeffs) {
-  std::array<float, kNumLpcCoefficients> auto_corr;
-  ComputeCrossCorrelation(x, x, {auto_corr.data(), auto_corr.size()});
-  if (auto_corr[0] == 0.f) {  // Empty frame.
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) /* kNumLpcCoefficients */ lpc_coeffs) {
+  float auto_corr[kNumLpcCoefficients];
+  RTC_VIEW(float) auto_corr_view = RTC_MAKE_VIEW(float)(auto_corr);
+  ComputeCrossCorrelation(x, x, {auto_corr_view.data(), auto_corr_view.size()});
+  if (auto_corr_view[0] == 0.f) {  // Empty frame.
     std::fill(lpc_coeffs.begin(), lpc_coeffs.end(), 0);
     return;
   }
-  DenoiseAutoCorrelation({auto_corr.data(), auto_corr.size()});
-  std::array<float, kNumLpcCoefficients - 1> lpc_coeffs_pre{{}};
-  ComputeInitialInverseFilterCoefficients(auto_corr, lpc_coeffs_pre);
+  DenoiseAutoCorrelation(auto_corr_view);
+  float lpc_coeffs_pre[kNumLpcCoefficients - 1];
+  ComputeInitialInverseFilterCoefficients(
+      RTC_MAKE_VIEW(const float)(auto_corr_view), lpc_coeffs_pre);
   // LPC coefficients post-processing.
   // TODO(bugs.webrtc.org/9076): Consider removing these steps.
   float c1 = 1.f;
@@ -115,20 +117,21 @@ void ComputeAndPostProcessLpcCoefficients(
 }
 
 void ComputeLpResidual(
-    rtc::ArrayView<const float, kNumLpcCoefficients> lpc_coeffs,
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float> y) {
+    RTC_VIEW(const float) /* kNumLpcCoefficients */ lpc_coeffs,
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) y) {
   RTC_DCHECK_LT(kNumLpcCoefficients, x.size());
   RTC_DCHECK_EQ(x.size(), y.size());
-  std::array<float, kNumLpcCoefficients> input_chunk;
-  input_chunk.fill(0.f);
+  float input_chunk[kNumLpcCoefficients];
+  RTC_VIEW(float) input_chunk_view = RTC_MAKE_VIEW(float)(input_chunk);
+  input_chunk_view.fill(0.f);
   for (size_t i = 0; i < y.size(); ++i) {
-    const float sum = std::inner_product(input_chunk.begin(), input_chunk.end(),
+    const float sum = std::inner_product(input_chunk_view.begin(), input_chunk_view.end(),
                                          lpc_coeffs.begin(), x[i]);
     // Circular shift and add a new sample.
     for (size_t j = kNumLpcCoefficients - 1; j > 0; --j)
-      input_chunk[j] = input_chunk[j - 1];
-    input_chunk[0] = x[i];
+      input_chunk_view[j] = input_chunk_view[j - 1];
+    input_chunk_view[0] = x[i];
     // Copy result.
     y[i] = sum;
   }

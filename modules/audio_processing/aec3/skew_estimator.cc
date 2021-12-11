@@ -18,7 +18,7 @@ SkewEstimator::SkewEstimator(size_t skew_history_size_log2)
     : skew_history_size_log2_(static_cast<int>(skew_history_size_log2)),
       skew_history_(1ULL << skew_history_size_log2_, 0) {}
 
-SkewEstimator::~SkewEstimator() = default;
+SkewEstimator::~SkewEstimator() {}
 
 void SkewEstimator::Reset() {
   skew_ = 0;

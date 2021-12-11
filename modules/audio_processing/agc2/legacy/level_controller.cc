@@ -8,22 +8,22 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/level_controller.h"
+#include "modules/audio_processing/agc2/legacy/level_controller.h"
 
 #include <math.h>
 #include <algorithm>
 #include <numeric>
 
-#include "rtc_base/array_view.h"
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 // #include "rtc_base/logging.h"
 #include "modules/audio_processing/audio_buffer.h"
-#include "modules/audio_processing/agc2/gain_applier.h"
-#include "modules/audio_processing/agc2/gain_selector.h"
+#include "modules/audio_processing/include/common.h"
+#include "modules/audio_processing/agc2/legacy/gain_applier.h"
+#include "modules/audio_processing/agc2/legacy/gain_selector.h"
 #include "modules/audio_processing/agc2/noise_level_estimator.h"
-#include "modules/audio_processing/agc2/peak_level_estimator.h"
-#include "modules/audio_processing/agc2/saturating_gain_estimator.h"
+#include "modules/audio_processing/agc2/legacy/peak_level_estimator.h"
+#include "modules/audio_processing/agc2/legacy/saturating_gain_estimator.h"
 #include "modules/audio_processing/agc2/signal_classifier.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "system_wrappers/include/metrics.h"
@@ -33,7 +33,7 @@ namespace {
 
 void UpdateAndRemoveDcLevel(float forgetting_factor,
                             float* dc_level,
-                            rtc::ArrayView<float> x) {
+                            RTC_VIEW(float) x) {
   RTC_DCHECK(!x.empty());
   float mean =
       std::accumulate(x.begin(), x.end(), 0.0f) / static_cast<float>(x.size());
@@ -220,7 +220,7 @@ void LevelController::Process(AudioBuffer* audio) {
   for (size_t k = 0; k < audio->num_channels(); ++k) {
     UpdateAndRemoveDcLevel(
         dc_forgetting_factor_, &dc_level_[k],
-        rtc::ArrayView<float>(audio->channels_f()[k], audio->num_frames()));
+        RTC_MAKE_VIEW(float)(audio->channels_f()[k], audio->num_frames()));
   }
 
   SignalClassifier::SignalType signal_type;
@@ -266,29 +266,11 @@ void LevelController::Process(AudioBuffer* audio) {
                         audio->channels_f()[0], *sample_rate_hz_, 1);
 }
 
-/* void LevelController::ApplyConfig(
-    const AudioProcessing::Config::LevelController& config) {
-  RTC_DCHECK(Validate(config));
+void LevelController::ApplyConfig(const Agc2Config& config) {
+  RTC_DCHECK(Agc2Config::Validate(config));
   config_ = config;
   peak_level_estimator_.Initialize(config_.initial_peak_level_dbfs);
   gain_jumpstart_ = true;
 }
-
-std::string LevelController::ToString(
-    const AudioProcessing::Config::LevelController& config) {
-  std::stringstream ss;
-  ss << "{"
-     << "enabled: " << (config.enabled ? "true" : "false") << ", "
-     << "initial_peak_level_dbfs: " << config.initial_peak_level_dbfs << "}";
-  return ss.str();
-}
-
-bool LevelController::Validate(
-    const AudioProcessing::Config::LevelController& config) {
-  return (config.initial_peak_level_dbfs <
-              std::numeric_limits<float>::epsilon() &&
-          config.initial_peak_level_dbfs >
-              -(100.f + std::numeric_limits<float>::epsilon()));
-} */
 
 }  // namespace webrtc

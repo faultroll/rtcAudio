@@ -29,7 +29,7 @@ VoiceActivityDetector::VoiceActivityDetector()
     : last_voice_probability_(kDefaultVoiceValue),
       standalone_vad_(StandaloneVad::Create()) {}
 
-VoiceActivityDetector::~VoiceActivityDetector() = default;
+VoiceActivityDetector::~VoiceActivityDetector() {}
 
 // Because ISAC has a different chunk length, it updates
 // |chunkwise_voice_probabilities_| and |chunkwise_rms_| when there is new data.

@@ -19,6 +19,7 @@
 
 #include "modules/include/audio_frame.h"
 #include "modules/include/channel_layout.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -77,8 +78,7 @@ class ChannelMixer {
   bool remapping_;
 
   // Delete the copy constructor and assignment operator.
-  ChannelMixer(const ChannelMixer& other) = delete;
-  ChannelMixer& operator=(const ChannelMixer& other) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(ChannelMixer);
 };
 
 }  // namespace webrtc

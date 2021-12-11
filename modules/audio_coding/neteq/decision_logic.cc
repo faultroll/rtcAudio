@@ -72,7 +72,7 @@ DecisionLogic::DecisionLogic(int fs_hz,
   SetSampleRate(fs_hz, output_size_samples);
 }
 
-DecisionLogic::~DecisionLogic() = default;
+DecisionLogic::~DecisionLogic() {}
 
 void DecisionLogic::Reset() {
   cng_state_ = kCngOff;

@@ -9,7 +9,7 @@
  */
 #include "modules/audio_processing/aec3/echo_path_delay_estimator.h"
 
-#include <array>
+// #include <array>
 
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -50,7 +50,7 @@ EchoPathDelayEstimator::EchoPathDelayEstimator(
   RTC_DCHECK(down_sampling_factor_ > 0);
 }
 
-EchoPathDelayEstimator::~EchoPathDelayEstimator() = default;
+EchoPathDelayEstimator::~EchoPathDelayEstimator() {}
 
 void EchoPathDelayEstimator::Reset(bool reset_delay_confidence) {
   Reset(true, reset_delay_confidence);
@@ -61,13 +61,14 @@ rtc::Optional<DelayEstimate> EchoPathDelayEstimator::EstimateDelay(
     const std::vector<std::vector<float>>& capture) {
   RTC_DCHECK_EQ(kBlockSize, capture[0].size());
 
-  std::array<float, kBlockSize> downsampled_capture_data;
-  rtc::ArrayView<float> downsampled_capture(downsampled_capture_data.data(),
-                                            sub_block_size_);
+  float downsampled_capture_data[kBlockSize];
+  RTC_VIEW(float) downsampled_capture = 
+    RTC_MAKE_VIEW(float)(downsampled_capture_data, sub_block_size_);
 
-  std::array<float, kBlockSize> downmixed_capture;
-  capture_mixer_.ProduceOutput(capture, downmixed_capture);
-  capture_decimator_.Decimate(downmixed_capture, downsampled_capture);
+  float downmixed_capture[kBlockSize];
+  RTC_VIEW(float) downmixed_capture_view = RTC_VIEW(float)(downmixed_capture);
+  capture_mixer_.ProduceOutput(capture, downmixed_capture_view);
+  capture_decimator_.Decimate(downmixed_capture_view, downsampled_capture);
   data_dumper_->DumpWav("aec3_capture_decimator_output",
                         downsampled_capture.size(), downsampled_capture.data(),
                         16000 / down_sampling_factor_, 1);

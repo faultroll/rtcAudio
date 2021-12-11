@@ -31,5 +31,5 @@ int32_t WebRtcSpl_DotProductWithScale(const int16_t* vector1,
   }
 
   // rtc::saturated_cast<int32_t>(sum);
-  return (int32_t)WEBRTC_SPL_SAT(WEBRTC_SPL_WORD32_MAX, sum, WEBRTC_SPL_WORD32_MIN);
+  return WEBRTC_SPL_SAT(WEBRTC_SPL_WORD32_MAX, sum, WEBRTC_SPL_WORD32_MIN);
 }

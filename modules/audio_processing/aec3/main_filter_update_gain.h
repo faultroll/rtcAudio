@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/adaptive_fir_filter.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -38,7 +39,7 @@ class MainFilterUpdateGain {
   void HandleEchoPathChange(const EchoPathVariability& echo_path_variability);
 
   // Computes the gain.
-  void Compute(const std::array<float, kFftLengthBy2Plus1>& render_power,
+  void Compute(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power,
                const RenderSignalAnalyzer& render_signal_analyzer,
                const SubtractorOutput& subtractor_output,
                const AdaptiveFirFilter& filter,
@@ -66,7 +67,8 @@ class MainFilterUpdateGain {
   EchoCanceller3Config::Filter::MainConfiguration current_config_;
   EchoCanceller3Config::Filter::MainConfiguration target_config_;
   EchoCanceller3Config::Filter::MainConfiguration old_target_config_;
-  std::array<float, kFftLengthBy2Plus1> H_error_;
+  float H_error_[kFftLengthBy2Plus1];
+  RTC_VIEW(float) H_error_view_ = RTC_MAKE_VIEW(float)(H_error_);
   size_t poor_excitation_counter_;
   size_t call_counter_ = 0;
   int config_change_counter_ = 0;

@@ -1,3 +1,7 @@
+
+#include "rtc_base/system/arch.h"
+#if defined(MIPS_FPU_LE)
+
 /*
  *  Copyright (c) 2013 The WebRTC project authors. All Rights Reserved.
  *
@@ -12,8 +16,6 @@
  * The core AEC algorithm, which is presented with time-aligned signals.
  */
 
-#if defined(MIPS32_LE)
-
 #include "modules/audio_processing/aec/aec_core.h"
 
 #include <math.h>
@@ -24,7 +26,7 @@ extern "C" {
 #include "modules/audio_processing/aec/aec_core_optimized_methods.h"
 #include "common_audio/third_party/ooura/fft_size_128/ooura_fft.h"
 
-namespace webrtc {
+// namespace webrtc {
 
 extern const float WebRtcAec_weightCurve[65];
 extern const float WebRtcAec_overDriveCurve[65];
@@ -484,6 +486,6 @@ void WebRtcAec_InitAec_mips(void) {
   WebRtcAec_Overdrive = WebRtcAec_Overdrive_mips;
   WebRtcAec_Suppress = WebRtcAec_Suppress_mips;
 }
-}  // namespace webrtc
+// }  // namespace webrtc
 
 #endif

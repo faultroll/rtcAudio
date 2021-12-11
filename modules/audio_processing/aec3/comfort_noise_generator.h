@@ -13,9 +13,10 @@
 
 #include <stdint.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec_state.h"
 #include "modules/audio_processing/aec3/fft_data.h"
@@ -26,12 +27,12 @@ namespace webrtc {
 namespace aec3 {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
 
-void EstimateComfortNoise_SSE2(const std::array<float, kFftLengthBy2Plus1>& N2,
+void EstimateComfortNoise_SSE2(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ N2,
                                uint32_t* seed,
                                FftData* lower_band_noise,
                                FftData* upper_band_noise);
 #endif
-void EstimateComfortNoise(const std::array<float, kFftLengthBy2Plus1>& N2,
+void EstimateComfortNoise(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ N2,
                           uint32_t* seed,
                           FftData* lower_band_noise,
                           FftData* upper_band_noise);
@@ -48,13 +49,13 @@ class ComfortNoiseGenerator {
 
   // Computes the comfort noise.
   void Compute(bool saturated_capture,
-               rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+               const std::vector<std::array<float, kFftLengthBy2Plus1>>&
                    capture_spectrum,
-               rtc::ArrayView<FftData> lower_band_noise,
-               rtc::ArrayView<FftData> upper_band_noise);
+               RTC_VIEW(FftData) lower_band_noise,
+               RTC_VIEW(FftData) upper_band_noise);
 
   // Returns the estimate of the background noise spectrum.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> NoiseSpectrum()
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& NoiseSpectrum()
       const {
     return N2_;
   }

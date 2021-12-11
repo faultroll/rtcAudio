@@ -31,7 +31,7 @@ class RTC_EXPORT Location {
       : function_name_(function_name),
         file_name_(file_name),
         line_number_(line_number) {}
-  Location() = default;
+  Location() {}
 
   const char* function_name() const { return function_name_; }
   const char* file_name() const { return file_name_; }

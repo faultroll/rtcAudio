@@ -20,6 +20,6 @@ DownsampledRenderBuffer::DownsampledRenderBuffer(size_t downsampled_buffer_size)
   std::fill(buffer.begin(), buffer.end(), 0.f);
 }
 
-DownsampledRenderBuffer::~DownsampledRenderBuffer() = default;
+DownsampledRenderBuffer::~DownsampledRenderBuffer() {}
 
 }  // namespace webrtc

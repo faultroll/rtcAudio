@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/include/echo_control.h"
 // #include "modules/audio_processing/include/audio_processing.h"
 #include "rtc_base/constructor_magic.h"
@@ -30,7 +30,7 @@ class EchoCancellationImpl : public EchoCancellation {
                        rtc::CriticalSection* crit_capture);
   ~EchoCancellationImpl() override;
 
-  void ProcessRenderAudio(rtc::ArrayView<const float> packed_render_audio);
+  void ProcessRenderAudio(RTC_VIEW(const float) packed_render_audio);
   int ProcessCaptureAudio(AudioBuffer* audio, int stream_delay_ms);
 
   // EchoCancellation implementation.
@@ -87,7 +87,7 @@ class EchoCancellationImpl : public EchoCancellation {
   bool is_delay_logging_enabled() const override;
   int GetDelayMetrics(int* median, int* std) override;
 
-  struct AecCore* aec_core() const override;
+  // struct AecCore* aec_core() const override;
 
   void AllocateRenderQueue();
   int Configure();

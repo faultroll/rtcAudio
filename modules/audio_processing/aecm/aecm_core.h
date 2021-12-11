@@ -13,10 +13,14 @@
 #ifndef MODULES_AUDIO_PROCESSING_AECM_AECM_CORE_H_
 #define MODULES_AUDIO_PROCESSING_AECM_AECM_CORE_H_
 
-extern "C" {
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+// extern "C" {
 #include "common_audio/ring_buffer.h"
 #include "common_audio/signal_processing/include/signal_processing_library.h"
-}
+// }
 #include "modules/audio_processing/aecm/aecm_defines.h"
 
 #ifdef _MSC_VER  // visual c++

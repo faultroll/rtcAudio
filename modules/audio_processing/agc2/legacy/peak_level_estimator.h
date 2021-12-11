@@ -12,7 +12,7 @@
 #define WEBRTC_MODULES_AUDIO_PROCESSING_LEVEL_CONTROLLER_PEAK_LEVEL_ESTIMATOR_H_
 
 #include "rtc_base/constructor_magic.h"
-#include "modules/audio_processing/agc2/level_controller_constants.h"
+#include "modules/audio_processing/agc2/legacy/level_controller_constants.h"
 #include "modules/audio_processing/agc2/signal_classifier.h"
 
 namespace webrtc {

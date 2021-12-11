@@ -11,7 +11,7 @@
 #ifndef WEBRTC_MODULES_AUDIO_PROCESSING_LEVEL_CONTROLLER_NOISE_SPECTRUM_ESTIMATOR_H_
 #define WEBRTC_MODULES_AUDIO_PROCESSING_LEVEL_CONTROLLER_NOISE_SPECTRUM_ESTIMATOR_H_
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
@@ -22,10 +22,10 @@ class NoiseSpectrumEstimator {
  public:
   explicit NoiseSpectrumEstimator(ApmDataDumper* data_dumper);
   void Initialize();
-  void Update(rtc::ArrayView<const float> spectrum, bool first_update);
+  void Update(RTC_VIEW(const float) spectrum, bool first_update);
 
-  rtc::ArrayView<const float> GetNoiseSpectrum() const {
-    return rtc::ArrayView<const float>(noise_spectrum_);
+  RTC_VIEW(const float) GetNoiseSpectrum() const {
+    return RTC_MAKE_VIEW(const float)(noise_spectrum_);
   }
 
  private:

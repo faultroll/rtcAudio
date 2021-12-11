@@ -10,9 +10,10 @@
 
 #include "modules/audio_processing/utility/delay_estimator.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <algorithm>
+// #include <algorithm> // any_of
 
 #include "rtc_base/checks.h"
 
@@ -282,7 +283,7 @@ BinaryDelayEstimatorFarend* WebRtc_CreateBinaryDelayEstimatorFarend(
 
   if (history_size > 1) {
     // Sanity conditions fulfilled.
-    self = static_cast<BinaryDelayEstimatorFarend*>(
+    self = /* static_cast<BinaryDelayEstimatorFarend*> */(
         malloc(sizeof(BinaryDelayEstimatorFarend)));
   }
   if (self == NULL) {
@@ -303,10 +304,10 @@ int WebRtc_AllocateFarendBufferMemory(BinaryDelayEstimatorFarend* self,
                                       int history_size) {
   RTC_DCHECK(self);
   // (Re-)Allocate memory for history buffers.
-  self->binary_far_history = static_cast<uint32_t*>(
+  self->binary_far_history = /* static_cast<uint32_t*> */(
       realloc(self->binary_far_history,
               history_size * sizeof(*self->binary_far_history)));
-  self->far_bit_counts = static_cast<int*>(realloc(
+  self->far_bit_counts = /* static_cast<int*> */(realloc(
       self->far_bit_counts, history_size * sizeof(*self->far_bit_counts)));
   if ((self->binary_far_history == NULL) || (self->far_bit_counts == NULL)) {
     history_size = 0;
@@ -409,7 +410,7 @@ BinaryDelayEstimator* WebRtc_CreateBinaryDelayEstimator(
 
   if ((farend != NULL) && (max_lookahead >= 0)) {
     // Sanity conditions fulfilled.
-    self = static_cast<BinaryDelayEstimator*>(
+    self = /* static_cast<BinaryDelayEstimator*> */(
         malloc(sizeof(BinaryDelayEstimator)));
   }
   if (self == NULL) {
@@ -428,7 +429,7 @@ BinaryDelayEstimator* WebRtc_CreateBinaryDelayEstimator(
   self->mean_bit_counts = NULL;
   self->bit_counts = NULL;
   self->histogram = NULL;
-  self->binary_near_history = static_cast<uint32_t*>(
+  self->binary_near_history = /* static_cast<uint32_t*> */(
       malloc((max_lookahead + 1) * sizeof(*self->binary_near_history)));
   if (self->binary_near_history == NULL ||
       WebRtc_AllocateHistoryBufferMemory(self, farend->history_size) == 0) {
@@ -450,12 +451,12 @@ int WebRtc_AllocateHistoryBufferMemory(BinaryDelayEstimator* self,
   // The extra array element in |mean_bit_counts| and |histogram| is a dummy
   // element only used while |last_delay| == -2, i.e., before we have a valid
   // estimate.
-  self->mean_bit_counts = static_cast<int32_t*>(
+  self->mean_bit_counts = /* static_cast<int32_t*> */(
       realloc(self->mean_bit_counts,
               (history_size + 1) * sizeof(*self->mean_bit_counts)));
-  self->bit_counts = static_cast<int32_t*>(
+  self->bit_counts = /* static_cast<int32_t*> */(
       realloc(self->bit_counts, history_size * sizeof(*self->bit_counts)));
-  self->histogram = static_cast<float*>(
+  self->histogram = /* static_cast<float*> */(
       realloc(self->histogram, (history_size + 1) * sizeof(*self->histogram)));
 
   if ((self->mean_bit_counts == NULL) || (self->bit_counts == NULL) ||
@@ -617,10 +618,17 @@ int WebRtc_ProcessBinarySpectrum(BinaryDelayEstimator* self,
                       (value_best_candidate < self->last_delay_probability)));
 
   // Check for nonstationary farend signal.
-  const bool non_stationary_farend =
+  /* const bool non_stationary_farend =
       std::any_of(self->farend->far_bit_counts,
                   self->farend->far_bit_counts + self->history_size,
-                  [](int a) { return a > 0; });
+                  [](int a) { return a > 0; }); */
+  bool non_stationary_farend = false;
+  for (i = 0; i < self->history_size; i++) {
+    if (self->farend->far_bit_counts[i] > 0) {
+      non_stationary_farend = true;
+      break;
+    }
+  }
 
   if (non_stationary_farend) {
     // Only update the validation statistics when the farend is nonstationary

@@ -18,7 +18,7 @@ namespace webrtc {
 // Handles the reporting of metrics for the block_processor.
 class BlockProcessorMetrics {
  public:
-  BlockProcessorMetrics() = default;
+  BlockProcessorMetrics() {}
 
   // Updates the metric with new capture data.
   void UpdateCapture(bool underrun);

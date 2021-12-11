@@ -14,11 +14,6 @@
 #include <algorithm> // #include <math.h>
 #include "rtc_base/time_utils.h"
 
-#if defined(WEBRTC_LINUX)
-#include <sys/prctl.h>
-#include <sys/syscall.h>
-#endif
-
 namespace rtc {
 
 int ThrdCreate(Thrd *thr, ThrdStartFunction func, void *arg)
@@ -55,84 +50,12 @@ void ThrdYield(void)
 
 bool ThrdSetPrio(Thrd thr, ThrdPrio prio)
 {
-#if defined(WEBRTC_WIN)
-    int tmp_prio;
-    switch (prio) {
-        case kLowPrio:
-            tmp_prio = THREAD_PRIORITY_BELOW_NORMAL;
-            break;
-        case kNormalPrio:
-            tmp_prio = THREAD_PRIORITY_NORMAL;
-            break;
-        case kHighPrio:
-            tmp_prio = THREAD_PRIORITY_ABOVE_NORMAL;
-            break;
-        case kHighestPrio:
-            tmp_prio = THREAD_PRIORITY_HIGHEST;
-            break;
-        case kRealtimePrio:
-            tmp_prio = THREAD_PRIORITY_TIME_CRITICAL;
-            break;
-    }
-    return SetThreadPrio(thr, tmp_prio) != FALSE;
-#else // #elif defined(WEBRTC_POSIX)
-    const int policy = SCHED_RR;
-    const int min_prio = sched_get_priority_min(policy);
-    const int max_prio = sched_get_priority_max(policy);
-    if (min_prio == -1 || max_prio == -1)
-        return false;
-
-    if (max_prio - min_prio <= 2)
-        return false;
-
-    // Convert webrtc priority to system priorities:
-    sched_param param;
-    const int top_prio = max_prio - 1;
-    const int low_prio = min_prio + 1;
-    switch (prio) {
-        case kLowPrio:
-            param.sched_priority = low_prio;
-            break;
-        case kNormalPrio:
-            // The -1 ensures that the kHighPrio is always greater or equal to
-            // kNormalPrio.
-            param.sched_priority = (low_prio + top_prio - 1) / 2;
-            break;
-        case kHighPrio:
-            param.sched_priority = std::max(top_prio - 2, low_prio);
-            break;
-        case kHighestPrio:
-            param.sched_priority = std::max(top_prio - 1, low_prio);
-            break;
-        case kRealtimePrio:
-            param.sched_priority = top_prio;
-            break;
-    }
-    return pthread_setschedparam(thr, policy, &param) == 0;
-#endif  // defined(WEBRTC_WIN)
+    return thrd_set_priority(thr, prio) == thrd_success;
 }
 
 void ThrdSetName(const char *name)
 {
-#if defined(WEBRTC_WIN)
-    struct {
-        DWORD dwType;
-        LPCSTR szName;
-        DWORD dwThreadID;
-        DWORD dwFlags;
-    } threadname_info = {0x1000, name, static_cast<DWORD>(-1), 0};
-
-    __try {
-        RaiseException(0x406D1388, 0, sizeof(threadname_info) / sizeof(DWORD),
-                       reinterpret_cast<ULONG_PTR *>(&threadname_info));
-    } __except (EXCEPTION_EXECUTE_HANDLER) {  // NOLINT
-    }
-#else // #elif defined(WEBRTC_POSIX)
-    #if defined(WEBRTC_LINUX)
-        prctl(PR_SET_NAME, reinterpret_cast<unsigned long>(name));  // NOLINT
-    #endif // defined(WEBRTC_LINUX)
-    RTC_UNUSED(name);
-#endif // defined(WEBRTC_WIN)
+    thrd_set_name(name);
 }
 
 Tss TssCreate(void)

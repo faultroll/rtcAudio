@@ -10,21 +10,20 @@
 
 #include "modules/audio_processing/aecm/aecm_core.h"
 
-#include <stddef.h>
 #include <stdlib.h>
 
-extern "C" {
+// extern "C" {
 #include "common_audio/ring_buffer.h"
 #include "common_audio/signal_processing/include/real_fft.h"
-}
+// }
 #include "modules/audio_processing/aecm/echo_control_mobile.h"
 #include "modules/audio_processing/utility/delay_estimator_wrapper.h"
-extern "C" {
-#include "system_wrappers/include/cpu_features_wrapper.h"
-}
+// extern "C" {
+// #include "system_wrappers/include/cpu_features_wrapper.h"
+// }
 
 #include "rtc_base/checks.h"
-#include "rtc_base/numerics/safe_conversions.h"
+// #include "rtc_base/numerics/safe_conversions.h"
 
 #ifdef AEC_DEBUG
 FILE* dfile;
@@ -182,7 +181,7 @@ StoreAdaptiveChannel WebRtcAecm_StoreAdaptiveChannel;
 ResetAdaptiveChannel WebRtcAecm_ResetAdaptiveChannel;
 
 AecmCore* WebRtcAecm_CreateCore() {
-  AecmCore* aecm = static_cast<AecmCore*>(malloc(sizeof(AecmCore)));
+  AecmCore* aecm = /* static_cast<AecmCore*> */(malloc(sizeof(AecmCore)));
 
   aecm->farFrameBuf =
       WebRtc_CreateBuffer(FRAME_LEN + PART_LEN, sizeof(int16_t));
@@ -850,7 +849,7 @@ void WebRtcAecm_UpdateChannel(AecmCore* aecm,
         // right shift of 32 is undefined. To avoid that, we
         // do this check.
         tmpU32no1 =
-            rtc::dchecked_cast<uint32_t>(
+            /* rtc::dchecked_cast<uint32_t> */(
                 shiftChFar >= 32 ? 0 : aecm->channelAdapt32[i] >> shiftChFar) *
             far_spectrum[i];
       }

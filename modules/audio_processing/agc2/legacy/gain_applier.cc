@@ -8,11 +8,11 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/gain_applier.h"
+#include "modules/audio_processing/agc2/legacy/gain_applier.h"
 
 #include <algorithm>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 
 #include "modules/audio_processing/include/common.h"
@@ -25,7 +25,7 @@ namespace {
 const float kMaxSampleValue = 32767.f;
 const float kMinSampleValue = -32767.f;
 
-int CountSaturations(rtc::ArrayView<const float> in) {
+int CountSaturations(RTC_VIEW(const float) in) {
   return std::count_if(in.begin(), in.end(), [](const float& v) {
     return v >= kMaxSampleValue || v <= kMinSampleValue;
   });
@@ -34,13 +34,13 @@ int CountSaturations(rtc::ArrayView<const float> in) {
 int CountSaturations(const AudioBuffer& audio) {
   int num_saturations = 0;
   for (size_t k = 0; k < audio.num_channels(); ++k) {
-    num_saturations += CountSaturations(rtc::ArrayView<const float>(
+    num_saturations += CountSaturations(RTC_MAKE_VIEW(const float)(
         audio.channels_const_f()[k], audio.num_frames()));
   }
   return num_saturations;
 }
 
-void LimitToAllowedRange(rtc::ArrayView<float> x) {
+void LimitToAllowedRange(RTC_VIEW(float) x) {
   for (auto& v : x) {
     v = std::max(kMinSampleValue, v);
     v = std::min(kMaxSampleValue, v);
@@ -50,14 +50,14 @@ void LimitToAllowedRange(rtc::ArrayView<float> x) {
 void LimitToAllowedRange(AudioBuffer* audio) {
   for (size_t k = 0; k < audio->num_channels(); ++k) {
     LimitToAllowedRange(
-        rtc::ArrayView<float>(audio->channels_f()[k], audio->num_frames()));
+        RTC_MAKE_VIEW(float)(audio->channels_f()[k], audio->num_frames()));
   }
 }
 
 float ApplyIncreasingGain(float new_gain,
                           float old_gain,
                           float step_size,
-                          rtc::ArrayView<float> x) {
+                          RTC_VIEW(float) x) {
   RTC_DCHECK_LT(0.f, step_size);
   float gain = old_gain;
   for (auto& v : x) {
@@ -70,7 +70,7 @@ float ApplyIncreasingGain(float new_gain,
 float ApplyDecreasingGain(float new_gain,
                           float old_gain,
                           float step_size,
-                          rtc::ArrayView<float> x) {
+                          RTC_VIEW(float) x) {
   RTC_DCHECK_GT(0.f, step_size);
   float gain = old_gain;
   for (auto& v : x) {
@@ -80,7 +80,7 @@ float ApplyDecreasingGain(float new_gain,
   return gain;
 }
 
-float ApplyConstantGain(float gain, rtc::ArrayView<float> x) {
+float ApplyConstantGain(float gain, RTC_VIEW(float) x) {
   for (auto& v : x) {
     v *= gain;
   }
@@ -92,7 +92,7 @@ float ApplyGain(float new_gain,
                 float old_gain,
                 float increase_step_size,
                 float decrease_step_size,
-                rtc::ArrayView<float> x) {
+                RTC_VIEW(float) x) {
   RTC_DCHECK_LT(0.f, increase_step_size);
   RTC_DCHECK_GT(0.f, decrease_step_size);
   if (new_gain == old_gain) {
@@ -145,7 +145,7 @@ int GainApplier::Process(float new_gain, AudioBuffer* audio) {
       last_applied_gain = ApplyGain(
           new_gain, old_gain_, gain_increase_step_size_,
           gain_decrease_step_size,
-          rtc::ArrayView<float>(audio->channels_f()[k], audio->num_frames()));
+          RTC_MAKE_VIEW(float)(audio->channels_f()[k], audio->num_frames()));
     }
 
     num_saturations = CountSaturations(*audio);

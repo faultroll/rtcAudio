@@ -22,8 +22,8 @@
 
 namespace webrtc {
 
-/* // Forward declarations.
-class BackgroundNoise; */
+// Forward declarations.
+/* class BackgroundNoise; */
 
 // This is the base class for Accelerate and PreemptiveExpand. This class
 // cannot be instantiated, but must be used through either of the derived
@@ -37,18 +37,17 @@ class TimeStretch {
     kError = -1
   };
 
-  TimeStretch(int sample_rate_hz, size_t num_channels
-              /* , const BackgroundNoise& background_noise */)
+  TimeStretch(int sample_rate_hz,
+              size_t num_channels/* ,
+              const BackgroundNoise& background_noise */)
       : sample_rate_hz_(sample_rate_hz),
         fs_mult_(sample_rate_hz / 8000),
         num_channels_(num_channels),
         master_channel_(0),  // First channel is master.
         /* background_noise_(background_noise), */
         max_input_value_(0) {
-    assert(sample_rate_hz_ == 8000 ||
-           sample_rate_hz_ == 16000 ||
-           sample_rate_hz_ == 32000 ||
-           sample_rate_hz_ == 48000);
+    assert(sample_rate_hz_ == 8000 || sample_rate_hz_ == 16000 ||
+           sample_rate_hz_ == 32000 || sample_rate_hz_ == 48000);
     assert(num_channels_ > 0);
     assert(master_channel_ < num_channels_);
     memset(auto_correlation_, 0, sizeof(auto_correlation_));
@@ -108,8 +107,10 @@ class TimeStretch {
   void AutoCorrelation();
 
   // Performs a simple voice-activity detection based on the input parameters.
-  bool SpeechDetection(int32_t vec1_energy, int32_t vec2_energy,
-                       size_t peak_index, int scaling) const;
+  bool SpeechDetection(int32_t vec1_energy,
+                       int32_t vec2_energy,
+                       size_t peak_index,
+                       int scaling) const;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(TimeStretch);
 };

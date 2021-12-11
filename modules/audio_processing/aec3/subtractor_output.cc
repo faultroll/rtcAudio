@@ -14,16 +14,16 @@
 
 namespace webrtc {
 
-SubtractorOutput::SubtractorOutput() = default;
-SubtractorOutput::~SubtractorOutput() = default;
+SubtractorOutput::SubtractorOutput() {}
+SubtractorOutput::~SubtractorOutput() {}
 
 void SubtractorOutput::Reset() {
   s_refined.fill(0.f);
   s_coarse.fill(0.f);
   e_refined.fill(0.f);
   e_coarse.fill(0.f);
-  E_refined.re.fill(0.f);
-  E_refined.im.fill(0.f);
+  E_refined.re_view.fill(0.f);
+  E_refined.im_view.fill(0.f);
   E2_refined.fill(0.f);
   E2_coarse.fill(0.f);
   e2_refined = 0.f;
@@ -33,7 +33,7 @@ void SubtractorOutput::Reset() {
   y2 = 0.f;
 }
 
-void SubtractorOutput::ComputeMetrics(rtc::ArrayView<const float> y) {
+void SubtractorOutput::ComputeMetrics(RTC_VIEW(const float) y) {
   const auto sum_of_squares = [](float a, float b) { return a + b * b; };
   y2 = std::accumulate(y.begin(), y.end(), 0.f, sum_of_squares);
   e2_refined =

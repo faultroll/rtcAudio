@@ -13,7 +13,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/constructor_magic.h"
 
@@ -35,7 +35,7 @@ class BlockFramer {
   // Adds a 64 sample block and extracts an 80 sample subframe.
   void InsertBlockAndExtractSubFrame(
       const std::vector<std::vector<std::vector<float>>>& block,
-      std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame);
+      std::vector<std::vector<RTC_VIEW(float)>>* sub_frame);
 
  private:
   const size_t num_bands_;

@@ -13,10 +13,10 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/system/arch.h"
 
@@ -26,20 +26,20 @@ namespace aec3 {
 // Computes and stores the echo return loss estimate of the filter, which is the
 // sum of the partition frequency responses.
 void ErlComputer(const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
-                 rtc::ArrayView<float> erl);
+                 RTC_VIEW(float) erl);
 #if defined(WEBRTC_HAS_NEON)
 void ErlComputer_NEON(
     const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
-    rtc::ArrayView<float> erl);
+    RTC_VIEW(float) erl);
 #endif
 #if defined(WEBRTC_ARCH_X86_FAMILY)
 void ErlComputer_SSE2(
     const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
-    rtc::ArrayView<float> erl);
+    RTC_VIEW(float) erl);
 
 void ErlComputer_AVX2(
     const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
-    rtc::ArrayView<float> erl);
+    RTC_VIEW(float) erl);
 #endif
 
 }  // namespace aec3
@@ -47,7 +47,7 @@ void ErlComputer_AVX2(
 // Computes the echo return loss based on a frequency response.
 void ComputeErl(const Aec3Optimization& optimization,
                 const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
-                rtc::ArrayView<float> erl);
+                RTC_VIEW(float) erl);
 
 }  // namespace webrtc
 

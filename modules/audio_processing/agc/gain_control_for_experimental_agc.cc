@@ -30,7 +30,7 @@ GainControlForExperimentalAgc::GainControlForExperimentalAgc(
       volume_(0),
       crit_capture_(crit_capture) {}
 
-GainControlForExperimentalAgc::~GainControlForExperimentalAgc() = default;
+GainControlForExperimentalAgc::~GainControlForExperimentalAgc() {}
 
 int GainControlForExperimentalAgc::Enable(bool enable) {
   return real_gain_control_->Enable(enable);

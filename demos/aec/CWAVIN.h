@@ -7,19 +7,19 @@
 class CWAVIN
 {
 public:
-	CWAVIN();
-	~CWAVIN();
+    CWAVIN();
+    ~CWAVIN();
 
 private:
-	HWAVEIN m_pIn;
-	
-	HANDLE m_hEvent;
-	
-	static void (CALLBACK callback)(HDRVR hdrvr, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+    HWAVEIN m_pIn;
+    
+    HANDLE m_hEvent;
+    
+    static void (CALLBACK callback)(HDRVR hdrvr, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
 
-	std::vector<LPWAVEHDR>m_vecHDR;
+    std::vector<LPWAVEHDR>m_vecHDR;
 public:
-	bool initcapture(int iSampleRate, int iChannels, int iBit);
+    bool initcapture(int iSampleRate, int iChannels, int iBit);
 
-	bool getcapturedata(char *pdata,int &iLen);
+    bool getcapturedata(char *pdata,int &iLen);
 };

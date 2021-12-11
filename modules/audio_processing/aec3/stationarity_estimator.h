@@ -13,10 +13,10 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"  // kFftLengthBy2Plus1...
 #include "modules/audio_processing/aec3/reverb_model.h"
 #include "rtc_base/checks.h"
@@ -36,13 +36,13 @@ class StationarityEstimator {
 
   // Update just the noise estimator. Usefull until the delay is known
   void UpdateNoiseEstimator(
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> spectrum);
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& spectrum);
 
   // Update the flag indicating whether this current frame is stationary. For
   // getting a more robust estimation, it looks at future and/or past frames.
   void UpdateStationarityFlags(
       const SpectrumBuffer& spectrum_buffer,
-      rtc::ArrayView<const float> render_reverb_contribution_spectrum,
+      RTC_VIEW(const float) render_reverb_contribution_spectrum,
       int idx_current,
       int num_lookahead);
 
@@ -62,8 +62,8 @@ class StationarityEstimator {
   // Get an estimation of the stationarity for the current band by looking
   // at the past/present/future available data.
   bool EstimateBandStationarity(const SpectrumBuffer& spectrum_buffer,
-                                rtc::ArrayView<const float> average_reverb,
-                                const std::array<int, kWindowLength>& indexes,
+                                RTC_VIEW(const float) average_reverb,
+                                RTC_VIEW(const int) /* kWindowLength */ indexes,
                                 size_t band) const;
 
   // True if all bands at the current point are stationary.
@@ -87,15 +87,17 @@ class StationarityEstimator {
 
     // Update the noise power spectrum with a new frame.
     void Update(
-        rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> spectrum);
+        const std::vector<std::array<float, kFftLengthBy2Plus1>>& spectrum);
 
     // Get the noise estimation power spectrum.
-    rtc::ArrayView<const float> Spectrum() const { return noise_spectrum_; }
+    RTC_VIEW(const float) Spectrum() const { 
+      return RTC_MAKE_VIEW(const float)(noise_spectrum_);
+    }
 
     // Get the noise power spectrum at a certain band.
     float Power(size_t band) const {
-      RTC_DCHECK_LT(band, noise_spectrum_.size());
-      return noise_spectrum_[band];
+      RTC_DCHECK_LT(band, noise_spectrum_view_.size());
+      return noise_spectrum_view_[band];
     }
 
    private:
@@ -106,15 +108,18 @@ class StationarityEstimator {
     float UpdateBandBySmoothing(float power_band,
                                 float power_band_noise,
                                 float alpha) const;
-    std::array<float, kFftLengthBy2Plus1> noise_spectrum_;
+    float noise_spectrum_[kFftLengthBy2Plus1];
+    RTC_VIEW(float) noise_spectrum_view_ = RTC_MAKE_VIEW(float)(noise_spectrum_);
     size_t block_counter_;
   };
 
   static int instance_count_;
   std::unique_ptr<ApmDataDumper> data_dumper_;
   NoiseSpectrum noise_;
-  std::array<int, kFftLengthBy2Plus1> hangovers_;
-  std::array<bool, kFftLengthBy2Plus1> stationarity_flags_;
+  int hangovers_[kFftLengthBy2Plus1];
+  RTC_VIEW(int) hangovers_view_ = RTC_MAKE_VIEW(int)(hangovers_);
+  bool stationarity_flags_[kFftLengthBy2Plus1];
+  RTC_VIEW(bool) stationarity_flags_view_ = RTC_MAKE_VIEW(bool)(stationarity_flags_);
 };
 
 }  // namespace webrtc

@@ -16,9 +16,9 @@
 #ifndef WEBRTC_SYSTEM_WRAPPERS_INCLUDE_TRACE_H_
 #define WEBRTC_SYSTEM_WRAPPERS_INCLUDE_TRACE_H_
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
+// #include <stddef.h>
+// #include <stdbool.h>
+// #include <stdint.h>
 
 #include "rtc_base/checks.h"
 
@@ -84,8 +84,9 @@ enum TraceLevel {
 class TraceCallback {
  public:
   virtual void Print(TraceLevel level, const char* message, int length) = 0;
+  virtual void WriteToFile(const char* message, int length) = 0;
 
- protected:
+ // protected:
   virtual ~TraceCallback() {}
   TraceCallback() {}
 };
@@ -119,13 +120,13 @@ class Trace {
   // Sets the file name. If add_file_counter is false the same file will be
   // reused when it fills up. If it's true a new file with incremented name
   // will be used.
-  static int32_t SetTraceFile(const char* file_name,
-                              const bool add_file_counter = false);
+  /* static int SetTraceFile(const char* file_name,
+                          const bool add_file_counter = false); */
 
   // Registers callback to receive trace messages.
   // TODO(hellner): Why not use OutStream instead? Why is TraceCallback not
   // defined in this file?
-  static int32_t SetTraceCallback(TraceCallback* callback);
+  static int SetTraceCallback(TraceCallback* callback);
 
   // Adds a trace message for writing to file. The message is put in a queue
   // for writing to file whenever possible for performance reasons. I.e. there
@@ -139,7 +140,7 @@ class Trace {
   // TODO(hellner) Why is TraceModule not defined in this file?
   static void Add(const TraceLevel level,
                   const TraceModule module,
-                  const int32_t id,
+                  const int id,
                   const char* msg, ...);
 
  private:

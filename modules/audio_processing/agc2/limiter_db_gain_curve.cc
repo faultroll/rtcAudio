@@ -29,14 +29,13 @@ double ComputeKneeStart(double max_input_level_db,
          max_input_level_db / (compression_ratio - 1.0);
 }
 
-std::array<double, 3> ComputeKneeRegionPolynomial(double knee_start_dbfs,
-                                                  double knee_smoothness_db,
-                                                  double compression_ratio) {
-  const double a = (1.0 - compression_ratio) /
-                   (2.0 * knee_smoothness_db * compression_ratio);
-  const double b = 1.0 - 2.0 * a * knee_start_dbfs;
-  const double c = a * knee_start_dbfs * knee_start_dbfs;
-  return {{a, b, c}};
+void ComputeKneeRegionPolynomial(RTC_VIEW(double) knee_region_polynomial,
+                                 double knee_start_dbfs,
+                                 double knee_smoothness_db,
+                                 double compression_ratio) {
+  knee_region_polynomial[0] = (1.0 - compression_ratio) / (2.0 * knee_smoothness_db * compression_ratio);
+  knee_region_polynomial[1] = 1.0 - 2.0 * knee_region_polynomial[0] * knee_start_dbfs;
+  knee_region_polynomial[2] = knee_region_polynomial[0] * knee_start_dbfs * knee_start_dbfs;
 }
 
 double ComputeLimiterD1(double max_input_level_db, double compression_ratio) {
@@ -68,9 +67,7 @@ LimiterDbGainCurve::LimiterDbGainCurve()
       knee_start_linear_(DbfsToFloatS16(knee_start_dbfs_)),
       limiter_start_dbfs_(knee_start_dbfs_ + knee_smoothness_db_),
       limiter_start_linear_(DbfsToFloatS16(limiter_start_dbfs_)),
-      knee_region_polynomial_(ComputeKneeRegionPolynomial(knee_start_dbfs_,
-                                                          knee_smoothness_db_,
-                                                          compression_ratio_)),
+      knee_region_polynomial_view_(RTC_MAKE_VIEW(const double)(knee_region_polynomial_)),
       gain_curve_limiter_d1_(
           ComputeLimiterD1(max_input_level_db_, compression_ratio_)),
       gain_curve_limiter_d2_(ComputeLimiterD2(compression_ratio_)),
@@ -81,6 +78,8 @@ LimiterDbGainCurve::LimiterDbGainCurve()
   static_assert(knee_smoothness_db_ > 0.0f, "");
   static_assert(compression_ratio_ > 1.0f, "");
   RTC_CHECK_GE(max_input_level_db_, knee_start_dbfs_ + knee_smoothness_db_);
+  ComputeKneeRegionPolynomial(RTC_MAKE_VIEW(double)(knee_region_polynomial_view_), 
+    knee_start_dbfs_, knee_smoothness_db_, compression_ratio_);
 }
 
 constexpr double LimiterDbGainCurve::max_input_level_db_;
@@ -125,9 +124,9 @@ double LimiterDbGainCurve::GetGainIntegralLinear(double x0, double x1) const {
 
 double LimiterDbGainCurve::GetKneeRegionOutputLevelDbfs(
     double input_level_dbfs) const {
-  return knee_region_polynomial_[0] * input_level_dbfs * input_level_dbfs +
-         knee_region_polynomial_[1] * input_level_dbfs +
-         knee_region_polynomial_[2];
+  return knee_region_polynomial_view_[0] * input_level_dbfs * input_level_dbfs +
+         knee_region_polynomial_view_[1] * input_level_dbfs +
+         knee_region_polynomial_view_[2];
 }
 
 double LimiterDbGainCurve::GetCompressorRegionOutputLevelDbfs(

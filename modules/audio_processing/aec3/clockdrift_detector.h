@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 
 namespace webrtc {
 
@@ -31,7 +31,7 @@ class ClockdriftDetector {
   Level ClockdriftLevel() const { return level_; }
 
  private:
-  std::array<int, 3> delay_history_;
+  int delay_history_[3];
   Level level_;
   size_t stability_counter_;
 };

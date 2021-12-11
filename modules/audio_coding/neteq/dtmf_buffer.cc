@@ -27,7 +27,7 @@ DtmfBuffer::DtmfBuffer(int fs_hz) {
   SetSampleRate(fs_hz);
 }
 
-DtmfBuffer::~DtmfBuffer() = default;
+DtmfBuffer::~DtmfBuffer() {}
 
 void DtmfBuffer::Flush() {
   buffer_.clear();

@@ -22,7 +22,7 @@ namespace {
 
 class MessageHandlerWithTask final : public MessageHandler {
  public:
-  MessageHandlerWithTask() = default;
+  MessageHandlerWithTask() {}
 
   void OnMessage(Message* msg) override {
     static_cast<rtc_thread_internal::MessageLikeTask*>(msg->pdata)->Run();

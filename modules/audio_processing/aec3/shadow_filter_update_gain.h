@@ -11,6 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_SHADOW_FILTER_UPDATE_GAIN_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_SHADOW_FILTER_UPDATE_GAIN_H_
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/render_buffer.h"
@@ -30,7 +31,7 @@ class ShadowFilterUpdateGain {
   void HandleEchoPathChange();
 
   // Computes the gain.
-  void Compute(const std::array<float, kFftLengthBy2Plus1>& render_power,
+  void Compute(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power,
                const RenderSignalAnalyzer& render_signal_analyzer,
                const FftData& E_shadow,
                size_t size_partitions,

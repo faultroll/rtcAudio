@@ -11,11 +11,22 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC_AEC_CORE_OPTIMIZED_METHODS_H_
 #define MODULES_AUDIO_PROCESSING_AEC_AEC_CORE_OPTIMIZED_METHODS_H_
 
-#include <memory>
-
 #include "modules/audio_processing/aec/aec_core.h"
+#include "common_audio/third_party/ooura/fft_size_128/ooura_fft.h"
 
-namespace webrtc {
+// namespace webrtc {
+using OouraFft = webrtc::OouraFft;
+
+// Number of partitions for the extended filter mode. The first one is an enum
+// to be used in array declarations, as it represents the maximum filter length.
+enum { kExtendedNumPartitions = 32 };
+static const int kNormalNumPartitions = 12;
+
+typedef struct CoherenceState {
+  complex_t sde[PART_LEN1];  // cross-psd of nearend and error
+  complex_t sxd[PART_LEN1];  // cross-psd of farend and nearend
+  float sx[PART_LEN1], sd[PART_LEN1], se[PART_LEN1];  // far, near, error psd
+} CoherenceState;
 
 typedef void (*WebRtcAecFilterFar)(
     int num_partitions,
@@ -74,6 +85,6 @@ extern WebRtcAecStoreAsComplex WebRtcAec_StoreAsComplex;
 typedef void (*WebRtcAecWindowData)(float* x_windowed, const float* x);
 extern WebRtcAecWindowData WebRtcAec_WindowData;
 
-}  // namespace webrtc
+// }  // namespace webrtc
 
 #endif  // MODULES_AUDIO_PROCESSING_AEC_AEC_CORE_OPTIMIZED_METHODS_H_

@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/utility/pffft_wrapper.h"
 
@@ -25,22 +25,21 @@ namespace rnn_vad {
 class AutoCorrelationCalculator {
  public:
   AutoCorrelationCalculator();
-  AutoCorrelationCalculator(const AutoCorrelationCalculator&) = delete;
-  AutoCorrelationCalculator& operator=(const AutoCorrelationCalculator&) =
-      delete;
   ~AutoCorrelationCalculator();
 
   // Computes the auto-correlation coefficients for a target pitch interval.
   // |auto_corr| indexes are inverted lags.
   void ComputeOnPitchBuffer(
-      rtc::ArrayView<const float, kBufSize12kHz> pitch_buf,
-      rtc::ArrayView<float, kNumInvertedLags12kHz> auto_corr);
+      RTC_VIEW(const float) /* kBufSize12kHz */ pitch_buf,
+      RTC_VIEW(float) /* kNumInvertedLags12kHz */ auto_corr);
 
  private:
   Pffft fft_;
   std::unique_ptr<Pffft::FloatBuffer> tmp_;
   std::unique_ptr<Pffft::FloatBuffer> X_;
   std::unique_ptr<Pffft::FloatBuffer> H_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(AutoCorrelationCalculator);
 };
 
 }  // namespace rnn_vad

@@ -11,12 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SPECTRAL_FEATURES_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SPECTRAL_FEATURES_H_
 
-#include <array>
+// #include <array>
 #include <cstddef>
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "modules/audio_processing/agc2/rnn_vad/ring_buffer.h"
 #include "modules/audio_processing/agc2/rnn_vad/spectral_features_internal.h"
@@ -31,9 +31,6 @@ namespace rnn_vad {
 class SpectralFeaturesExtractor {
  public:
   SpectralFeaturesExtractor();
-  /* SpectralFeaturesExtractor(const SpectralFeaturesExtractor&) = delete;
-  SpectralFeaturesExtractor& operator=(const SpectralFeaturesExtractor&) =
-      delete; */
   ~SpectralFeaturesExtractor();
   // Resets the internal state of the feature extractor.
   void Reset();
@@ -41,34 +38,36 @@ class SpectralFeaturesExtractor {
   // detects silence and computes features. If silence is detected, the output
   // is neither computed nor written.
   bool CheckSilenceComputeFeatures(
-      rtc::ArrayView<const float, kFrameSize20ms24kHz> reference_frame,
-      rtc::ArrayView<const float, kFrameSize20ms24kHz> lagged_frame,
-      rtc::ArrayView<float, kNumBands - kNumLowerBands> higher_bands_cepstrum,
-      rtc::ArrayView<float, kNumLowerBands> average,
-      rtc::ArrayView<float, kNumLowerBands> first_derivative,
-      rtc::ArrayView<float, kNumLowerBands> second_derivative,
-      rtc::ArrayView<float, kNumLowerBands> bands_cross_corr,
+      RTC_VIEW(const float) /* kFrameSize20ms24kHz */ reference_frame,
+      RTC_VIEW(const float) /* kFrameSize20ms24kHz */ lagged_frame,
+      RTC_VIEW(float) /* kNumBands - kNumLowerBands */ higher_bands_cepstrum,
+      RTC_VIEW(float) /* kNumLowerBands */ average,
+      RTC_VIEW(float) /* kNumLowerBands */ first_derivative,
+      RTC_VIEW(float) /* kNumLowerBands */ second_derivative,
+      RTC_VIEW(float) /* kNumLowerBands */ bands_cross_corr,
       float* variability);
 
  private:
   void ComputeAvgAndDerivatives(
-      rtc::ArrayView<float, kNumLowerBands> average,
-      rtc::ArrayView<float, kNumLowerBands> first_derivative,
-      rtc::ArrayView<float, kNumLowerBands> second_derivative) const;
+      RTC_VIEW(float) /* kNumLowerBands */ average,
+      RTC_VIEW(float) /* kNumLowerBands */ first_derivative,
+      RTC_VIEW(float) /* kNumLowerBands */ second_derivative) const;
   void ComputeNormalizedCepstralCorrelation(
-      rtc::ArrayView<float, kNumLowerBands> bands_cross_corr);
+      RTC_VIEW(float) /* kNumLowerBands */ bands_cross_corr);
   float ComputeVariability() const;
 
-  const std::array<float, kFrameSize20ms24kHz / 2> half_window_;
+  const float half_window_[kFrameSize20ms24kHz / 2];
+  RTC_VIEW(const float) half_window_view_;
   Pffft fft_;
   std::unique_ptr<Pffft::FloatBuffer> fft_buffer_;
   std::unique_ptr<Pffft::FloatBuffer> reference_frame_fft_;
   std::unique_ptr<Pffft::FloatBuffer> lagged_frame_fft_;
   SpectralCorrelator spectral_correlator_;
-  std::array<float, kOpusBands24kHz> reference_frame_bands_energy_;
-  std::array<float, kOpusBands24kHz> lagged_frame_bands_energy_;
-  std::array<float, kOpusBands24kHz> bands_cross_corr_;
-  const std::array<float, kNumBands * kNumBands> dct_table_;
+  float reference_frame_bands_energy_[kOpusBands24kHz];
+  float lagged_frame_bands_energy_[kOpusBands24kHz];
+  float bands_cross_corr_[kOpusBands24kHz];
+  const float dct_table_[kNumBands * kNumBands];
+  RTC_VIEW(const float) dct_table_view_;
   RingBuffer<float, kNumBands, kCepstralCoeffsHistorySize>
       cepstral_coeffs_ring_buf_;
   SymmetricMatrixBuffer<float, kCepstralCoeffsHistorySize> cepstral_diffs_buf_;

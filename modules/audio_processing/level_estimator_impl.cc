@@ -10,7 +10,7 @@
 
 #include "modules/audio_processing/level_estimator_impl.h"
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/rms_level.h"
 
@@ -36,8 +36,8 @@ void LevelEstimatorImpl::ProcessStream(AudioBuffer* audio) {
   }
 
   for (size_t i = 0; i < audio->num_channels(); i++) {
-    rms_->Analyze(rtc::ArrayView<const int16_t>(audio->channels_const()[i],
-                                                audio->num_frames()));
+    rms_->Analyze(RTC_MAKE_VIEW(const int16_t)(audio->channels_const()[i],
+                                               audio->num_frames()));
   }
 }
 

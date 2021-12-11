@@ -27,8 +27,6 @@ class Limiter {
   Limiter(size_t sample_rate_hz,
           ApmDataDumper* apm_data_dumper,
           std::string histogram_name_prefix);
-  Limiter(const Limiter& limiter) = delete;
-  Limiter& operator=(const Limiter& limiter) = delete;
   ~Limiter();
 
   // Applies limiter and hard-clipping to |signal|.
@@ -53,10 +51,13 @@ class Limiter {
   ApmDataDumper* const apm_data_dumper_ = nullptr;
 
   // Work array containing the sub-frame scaling factors to be interpolated.
-  std::array<float, kSubFramesInFrame + 1> scaling_factors_ = {{}};
-  std::array<float, kMaximalNumberOfSamplesPerChannel>
-      per_sample_scaling_factors_ = {{}};
+  float scaling_factors_[kSubFramesInFrame + 1];
+  RTC_VIEW(float) scaling_factors_view_;
+  float per_sample_scaling_factors_[kMaximalNumberOfSamplesPerChannel];
+  RTC_VIEW(float) per_sample_scaling_factors_view_;
   float last_scaling_factor_ = 1.f;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(Limiter);
 };
 
 }  // namespace webrtc

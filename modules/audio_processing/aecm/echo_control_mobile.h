@@ -12,6 +12,7 @@
 #define MODULES_AUDIO_PROCESSING_AECM_ECHO_CONTROL_MOBILE_H_
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 enum { AecmFalse = 0, AecmTrue };

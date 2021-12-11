@@ -12,7 +12,7 @@
 #define WEBRTC_MODULES_AUDIO_CODING_NETEQ_NETEQ_DECODER_ENUM_H_
 
 // #include "api/audio_codecs/audio_format.h"
-#include "rtc_base/optional.h"
+// #include "rtc_base/optional.h"
 
 namespace webrtc {
 
@@ -49,7 +49,7 @@ enum class NetEqDecoder {
   kDecoderOpus_2ch,
 };
 
-rtc::Optional<SdpAudioFormat> NetEqDecoderToSdpAudioFormat(NetEqDecoder nd);
+/* rtc::Optional<SdpAudioFormat> NetEqDecoderToSdpAudioFormat(NetEqDecoder nd); */
 
 }  // namespace webrtc
 

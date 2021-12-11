@@ -12,7 +12,7 @@
 #define MODULES_AUDIO_PROCESSING_RMS_LEVEL_H_
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
@@ -41,7 +41,7 @@ class RmsLevel {
   void Reset();
 
   // Pass each chunk of audio to Analyze() to accumulate the level.
-  void Analyze(rtc::ArrayView<const int16_t> data);
+  void Analyze(RTC_VIEW(const int16_t) data);
 
   // If all samples with the given |length| have a magnitude of zero, this is
   // a shortcut to avoid some computation.

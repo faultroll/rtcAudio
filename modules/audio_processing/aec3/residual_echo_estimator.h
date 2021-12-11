@@ -11,10 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_RESIDUAL_ECHO_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_RESIDUAL_ECHO_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 #include <memory>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec_state.h"
@@ -36,9 +36,9 @@ class ResidualEchoEstimator {
   void Estimate(
       const AecState& aec_state,
       const RenderBuffer& render_buffer,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> S2_linear,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-      rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2);
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& S2_linear,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      std::vector<std::array<float, kFftLengthBy2Plus1>>& R2);
 
  private:
   enum class ReverbType { kLinear, kNonLinear };
@@ -55,7 +55,7 @@ class ResidualEchoEstimator {
   void AddReverb(ReverbType reverb_type,
                  const AecState& aec_state,
                  const RenderBuffer& render_buffer,
-                 rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2);
+                 std::vector<std::array<float, kFftLengthBy2Plus1>>& R2);
 
   // Gets the echo path gain to apply.
   float GetEchoPathGain(const AecState& aec_state,
@@ -67,8 +67,10 @@ class ResidualEchoEstimator {
   const float late_reflections_transparent_mode_gain_;
   const float early_reflections_general_gain_;
   const float late_reflections_general_gain_;
-  std::array<float, kFftLengthBy2Plus1> X2_noise_floor_;
-  std::array<int, kFftLengthBy2Plus1> X2_noise_floor_counter_;
+  float X2_noise_floor_[kFftLengthBy2Plus1];
+  RTC_VIEW(float) X2_noise_floor_view_ = RTC_MAKE_VIEW(float)(X2_noise_floor_);
+  int X2_noise_floor_counter_[kFftLengthBy2Plus1];
+  RTC_VIEW(int) X2_noise_floor_counter_view_ = RTC_MAKE_VIEW(int)(X2_noise_floor_counter_);
   ReverbModel echo_reverb_;
 
   RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(ResidualEchoEstimator);

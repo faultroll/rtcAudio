@@ -22,8 +22,8 @@
 
 namespace webrtc {
 
-/* // Forward declarations.
-class BackgroundNoise; */
+// Forward declarations.
+/* class BackgroundNoise; */
 
 // This class implements the PreemptiveExpand operation. Most of the work is
 // done in the base class TimeStretch, which is shared with the Accelerate
@@ -37,15 +37,14 @@ class PreemptiveExpand : public TimeStretch {
                    size_t overlap_samples)
       : TimeStretch(sample_rate_hz, num_channels/* , background_noise */),
         old_data_length_per_channel_(0),
-        overlap_samples_(overlap_samples) {
-  }
+        overlap_samples_(overlap_samples) {}
 
   // This method performs the actual PreemptiveExpand operation. The samples are
   // read from |input|, of length |input_length| elements, and are written to
   // |output|. The number of samples added through time-stretching is
   // is provided in the output |length_change_samples|. The method returns
   // the outcome of the operation as an enumerator value.
-  ReturnCodes Process(const int16_t *pw16_decoded,
+  ReturnCodes Process(const int16_t* pw16_decoded,
                       size_t len,
                       size_t old_data_len,
                       AudioMultiVector* output,

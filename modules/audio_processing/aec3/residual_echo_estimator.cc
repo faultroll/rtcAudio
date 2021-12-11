@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/reverb_model.h"
 #include "rtc_base/checks.h"
 // #include "system_wrappers/include/field_trial.h"
@@ -75,9 +75,9 @@ void GetRenderIndexesToAnalyze(
 // Estimates the residual echo power based on the echo return loss enhancement
 // (ERLE) and the linear power estimate.
 void LinearEstimate(
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> S2_linear,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> erle,
-    rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2) {
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& S2_linear,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& erle,
+    std::vector<std::array<float, kFftLengthBy2Plus1>>& R2) {
   RTC_DCHECK_EQ(S2_linear.size(), erle.size());
   RTC_DCHECK_EQ(S2_linear.size(), R2.size());
 
@@ -93,9 +93,9 @@ void LinearEstimate(
 // Estimates the residual echo power based on an uncertainty estimate of the
 // echo return loss enhancement (ERLE) and the linear power estimate.
 void LinearEstimate(
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> S2_linear,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& S2_linear,
     float erle_uncertainty,
-    rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2) {
+    std::vector<std::array<float, kFftLengthBy2Plus1>>& R2) {
   RTC_DCHECK_EQ(S2_linear.size(), R2.size());
 
   const size_t num_capture_channels = R2.size();
@@ -110,8 +110,8 @@ void LinearEstimate(
 // gain.
 void NonLinearEstimate(
     float echo_path_gain,
-    const std::array<float, kFftLengthBy2Plus1>& X2,
-    rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2) {
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+    std::vector<std::array<float, kFftLengthBy2Plus1>>& R2) {
   const size_t num_capture_channels = R2.size();
   for (size_t ch = 0; ch < num_capture_channels; ++ch) {
     for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
@@ -122,7 +122,7 @@ void NonLinearEstimate(
 
 // Applies a soft noise gate to the echo generating power.
 void ApplyNoiseGate(const EchoCanceller3Config::EchoModel& config,
-                    rtc::ArrayView<float, kFftLengthBy2Plus1> X2) {
+                    RTC_VIEW(float) /* kFftLengthBy2Plus1 */ X2) {
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
     if (config.noise_gate_power > X2[k]) {
       X2[k] = std::max(0.f, X2[k] - config.noise_gate_slope *
@@ -137,7 +137,7 @@ void EchoGeneratingPower(size_t num_render_channels,
                          const SpectrumBuffer& spectrum_buffer,
                          const EchoCanceller3Config::EchoModel& echo_model,
                          int filter_delay_blocks,
-                         rtc::ArrayView<float, kFftLengthBy2Plus1> X2) {
+                         RTC_VIEW(float) /* kFftLengthBy2Plus1 */ X2) {
   int idx_stop;
   int idx_start;
   GetRenderIndexesToAnalyze(spectrum_buffer, echo_model, filter_delay_blocks,
@@ -152,16 +152,17 @@ void EchoGeneratingPower(size_t num_render_channels,
     }
   } else {
     for (int k = idx_start; k != idx_stop; k = spectrum_buffer.IncIndex(k)) {
-      std::array<float, kFftLengthBy2Plus1> render_power;
-      render_power.fill(0.f);
+      float render_power[kFftLengthBy2Plus1];
+      RTC_VIEW(float) render_power_view = RTC_MAKE_VIEW(float)(render_power);
+      render_power_view.fill(0.f);
       for (size_t ch = 0; ch < num_render_channels; ++ch) {
         const auto& channel_power = spectrum_buffer.buffer[k][ch];
         for (size_t j = 0; j < kFftLengthBy2Plus1; ++j) {
-          render_power[j] += channel_power[j];
+          render_power_view[j] += channel_power[j];
         }
       }
       for (size_t j = 0; j < kFftLengthBy2Plus1; ++j) {
-        X2[j] = std::max(X2[j], render_power[j]);
+        X2[j] = std::max(X2[j], render_power_view[j]);
       }
     }
   }
@@ -182,14 +183,14 @@ ResidualEchoEstimator::ResidualEchoEstimator(const EchoCanceller3Config& config,
   Reset();
 }
 
-ResidualEchoEstimator::~ResidualEchoEstimator() = default;
+ResidualEchoEstimator::~ResidualEchoEstimator() {}
 
 void ResidualEchoEstimator::Estimate(
     const AecState& aec_state,
     const RenderBuffer& render_buffer,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> S2_linear,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-    rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2) {
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& S2_linear,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      std::vector<std::array<float, kFftLengthBy2Plus1>>& R2) {
   RTC_DCHECK_EQ(R2.size(), Y2.size());
   RTC_DCHECK_EQ(R2.size(), S2_linear.size());
 
@@ -228,7 +229,7 @@ void ResidualEchoEstimator::Estimate(
       }
     } else {
       // Estimate the echo generating signal power.
-      std::array<float, kFftLengthBy2Plus1> X2;
+      float X2[kFftLengthBy2Plus1];
       EchoGeneratingPower(num_render_channels_,
                           render_buffer.GetSpectrumBuffer(), config_.echo_model,
                           aec_state.MinDirectPathFilterDelay(), X2);
@@ -239,7 +240,7 @@ void ResidualEchoEstimator::Estimate(
       // Subtract the stationary noise power to avoid stationary noise causing
       // excessive echo suppression.
       for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-        X2[k] -= config_.echo_model.stationary_gate_slope * X2_noise_floor_[k];
+        X2[k] -= config_.echo_model.stationary_gate_slope * X2_noise_floor_view_[k];
         X2[k] = std::max(0.f, X2[k]);
       }
 
@@ -254,7 +255,7 @@ void ResidualEchoEstimator::Estimate(
 
   if (aec_state.UseStationarityProperties()) {
     // Scale the echo according to echo audibility.
-    std::array<float, kFftLengthBy2Plus1> residual_scaling;
+    float residual_scaling[kFftLengthBy2Plus1];
     aec_state.GetResidualEchoScaling(residual_scaling);
     for (size_t ch = 0; ch < num_capture_channels; ++ch) {
       for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
@@ -266,42 +267,43 @@ void ResidualEchoEstimator::Estimate(
 
 void ResidualEchoEstimator::Reset() {
   echo_reverb_.Reset();
-  X2_noise_floor_counter_.fill(config_.echo_model.noise_floor_hold);
-  X2_noise_floor_.fill(config_.echo_model.min_noise_floor_power);
+  X2_noise_floor_counter_view_.fill(config_.echo_model.noise_floor_hold);
+  X2_noise_floor_view_.fill(config_.echo_model.min_noise_floor_power);
 }
 
 void ResidualEchoEstimator::UpdateRenderNoisePower(
     const RenderBuffer& render_buffer) {
-  std::array<float, kFftLengthBy2Plus1> render_power_data;
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> X2 =
+  float render_power_data[kFftLengthBy2Plus1];
+  RTC_VIEW(float) render_power_data_view = RTC_MAKE_VIEW(float)(render_power_data);
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& X2 =
       render_buffer.Spectrum(0);
-  rtc::ArrayView<const float, kFftLengthBy2Plus1> render_power =
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power =
       X2[/*channel=*/0];
   if (num_render_channels_ > 1) {
-    render_power_data.fill(0.f);
+    render_power_data_view.fill(0.f);
     for (size_t ch = 0; ch < num_render_channels_; ++ch) {
       const auto& channel_power = X2[ch];
       for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-        render_power_data[k] += channel_power[k];
+        render_power_data_view[k] += channel_power[k];
       }
     }
-    render_power = render_power_data;
+    render_power = render_power_data_view;
   }
 
   // Estimate the stationary noise power in a minimum statistics manner.
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
     // Decrease rapidly.
-    if (render_power[k] < X2_noise_floor_[k]) {
-      X2_noise_floor_[k] = render_power[k];
-      X2_noise_floor_counter_[k] = 0;
+    if (render_power[k] < X2_noise_floor_view_[k]) {
+      X2_noise_floor_view_[k] = render_power[k];
+      X2_noise_floor_counter_view_[k] = 0;
     } else {
       // Increase in a delayed, leaky manner.
-      if (X2_noise_floor_counter_[k] >=
+      if (X2_noise_floor_counter_view_[k] >=
           static_cast<int>(config_.echo_model.noise_floor_hold)) {
-        X2_noise_floor_[k] = std::max(X2_noise_floor_[k] * 1.1f,
+        X2_noise_floor_view_[k] = std::max(X2_noise_floor_view_[k] * 1.1f,
                                       config_.echo_model.min_noise_floor_power);
       } else {
-        ++X2_noise_floor_counter_[k];
+        ++X2_noise_floor_counter_view_[k];
       }
     }
   }
@@ -312,7 +314,7 @@ void ResidualEchoEstimator::AddReverb(
     ReverbType reverb_type,
     const AecState& aec_state,
     const RenderBuffer& render_buffer,
-    rtc::ArrayView<std::array<float, kFftLengthBy2Plus1>> R2) {
+    std::vector<std::array<float, kFftLengthBy2Plus1>>& R2) {
   const size_t num_capture_channels = R2.size();
 
   // Choose reverb partition based on what type of echo power model is used.
@@ -322,20 +324,21 @@ void ResidualEchoEstimator::AddReverb(
           : aec_state.MinDirectPathFilterDelay() + 1;
 
   // Compute render power for the reverb.
-  std::array<float, kFftLengthBy2Plus1> render_power_data;
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> X2 =
+  float render_power_data[kFftLengthBy2Plus1];
+  RTC_VIEW(float) render_power_data_view = RTC_MAKE_VIEW(float)(render_power_data);
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& X2 =
       render_buffer.Spectrum(first_reverb_partition);
-  rtc::ArrayView<const float, kFftLengthBy2Plus1> render_power =
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power =
       X2[/*channel=*/0];
   if (num_render_channels_ > 1) {
-    render_power_data.fill(0.f);
+    render_power_data_view.fill(0.f);
     for (size_t ch = 0; ch < num_render_channels_; ++ch) {
       const auto& channel_power = X2[ch];
       for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-        render_power_data[k] += channel_power[k];
+        render_power_data_view[k] += channel_power[k];
       }
     }
-    render_power = render_power_data;
+    render_power = render_power_data_view;
   }
 
   // Update the reverb estimate.
@@ -351,7 +354,7 @@ void ResidualEchoEstimator::AddReverb(
   }
 
   // Add the reverb power.
-  rtc::ArrayView<const float, kFftLengthBy2Plus1> reverb_power =
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ reverb_power =
       echo_reverb_.reverb();
   for (size_t ch = 0; ch < num_capture_channels; ++ch) {
     for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {

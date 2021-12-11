@@ -16,6 +16,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Releases the memory allocated by WebRtc_CreateDelayEstimatorFarend(...)
 void WebRtc_FreeDelayEstimatorFarend(void* handle);
 
@@ -241,4 +245,7 @@ int WebRtc_last_delay(void* handle);
 //      - delay_quality : >= 0  - Estimation quality of last calculated delay.
 float WebRtc_last_delay_quality(void* handle);
 
+#ifdef __cplusplus
+}
+#endif
 #endif  // MODULES_AUDIO_PROCESSING_UTILITY_DELAY_ESTIMATOR_WRAPPER_H_

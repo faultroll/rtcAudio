@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <memory>
+
 extern "C" {
 #include "common_audio/ring_buffer.h"
 #include "common_audio/signal_processing/include/signal_processing_library.h"
@@ -25,10 +27,62 @@ extern "C" {
 #include "modules/audio_processing/aec/aec_resampler.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 
-namespace webrtc {
+// namespace webrtc {
+using ApmDataDumper = webrtc::ApmDataDumper;
 
-Aec::Aec() = default;
-Aec::~Aec() = default;
+// From echo_cancellation.h
+typedef struct Aec {
+  Aec();
+  ~Aec();
+
+  std::unique_ptr<ApmDataDumper> data_dumper;
+
+  int delayCtr;
+  int sampFreq;
+  int splitSampFreq;
+  int scSampFreq;
+  float sampFactor;  // scSampRate / sampFreq
+  short skewMode;
+  int bufSizeStart;
+  int knownDelay;
+  int rate_factor;
+
+  short initFlag;  // indicates if AEC has been initialized
+
+  // Variables used for averaging far end buffer size
+  short counter;
+  int sum;
+  short firstVal;
+  short checkBufSizeCtr;
+
+  // Variables used for delay shifts
+  short msInSndCardBuf;
+  short filtDelay;  // Filtered delay estimate.
+  int timeForDelayChange;
+  int startup_phase;
+  int checkBuffSize;
+  short lastDelayDiff;
+
+  // Structures
+  void* resampler;
+
+  int skewFrCtr;
+  int resample;  // if the skew is small enough we don't resample
+  int highSkewCtr;
+  float skew;
+
+  RingBuffer* far_pre_buf;  // Time domain far-end pre-buffer.
+
+  int farend_started;
+
+  // Aec instance counter.
+  static int instance_count;
+  AecCore* aec;
+} Aec;
+
+Aec::Aec() {}
+Aec::~Aec() {}
+int Aec::instance_count = 0;
 
 // Measured delays [ms]
 // Device                Chrome  GTP
@@ -97,8 +151,6 @@ static const int kMaxTrustedDelayMs = 500;
 static const int kMaxBufSizeStart = 62;  // In partitions
 static const int sampMsNb = 8;           // samples per ms in nb
 static const int initCheck = 42;
-
-int Aec::instance_count = 0;
 
 // Estimates delay to set the position of the far-end buffer read pointer
 // (controlled by knownDelay)
@@ -861,4 +913,4 @@ static void EstBufDelayExtended(Aec* aecInst) {
     aecInst->knownDelay = WEBRTC_SPL_MAX((int)aecInst->filtDelay - 256, 0);
   }
 }
-}  // namespace webrtc
+// }  // namespace webrtc

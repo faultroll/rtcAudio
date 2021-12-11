@@ -37,9 +37,9 @@ namespace aec3 {
 void MatchedFilterCore_NEON(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum) {
   const int h_size = static_cast<int>(h.size());
@@ -147,9 +147,9 @@ void MatchedFilterCore_NEON(size_t x_start_index,
 void MatchedFilterCore_SSE2(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum) {
   const int h_size = static_cast<int>(h.size());
@@ -258,9 +258,9 @@ void MatchedFilterCore_SSE2(size_t x_start_index,
 void MatchedFilterCore(size_t x_start_index,
                        float x2_sum_threshold,
                        float smoothing,
-                       rtc::ArrayView<const float> x,
-                       rtc::ArrayView<const float> y,
-                       rtc::ArrayView<float> h,
+                       RTC_VIEW(const float) x,
+                       RTC_VIEW(const float) y,
+                       RTC_VIEW(float) h,
                        bool* filters_updated,
                        float* error_sum) {
   // Process for all samples in the sub-block.
@@ -327,7 +327,7 @@ MatchedFilter::MatchedFilter(ApmDataDumper* data_dumper,
   RTC_DCHECK((sub_block_size % 4) == 0);
 }
 
-MatchedFilter::~MatchedFilter() = default;
+MatchedFilter::~MatchedFilter() {}
 
 void MatchedFilter::Reset() {
   for (auto& f : filters_) {
@@ -340,7 +340,7 @@ void MatchedFilter::Reset() {
 }
 
 void MatchedFilter::Update(const DownsampledRenderBuffer& render_buffer,
-                           rtc::ArrayView<const float> capture) {
+                           RTC_VIEW(const float) capture) {
   RTC_DCHECK_EQ(sub_block_size_, capture.size());
   auto& y = capture;
 
@@ -406,34 +406,44 @@ void MatchedFilter::Update(const DownsampledRenderBuffer& render_buffer,
     RTC_DCHECK_GE(10, filters_.size());
     switch (n) {
       case 0:
-        data_dumper_->DumpRaw("aec3_correlator_0_h", filters_[0]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_0_h", RTC_MAKE_VIEW(const float)(filters_[0]));
         break;
       case 1:
-        data_dumper_->DumpRaw("aec3_correlator_1_h", filters_[1]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_1_h", RTC_MAKE_VIEW(const float)(filters_[1]));
         break;
       case 2:
-        data_dumper_->DumpRaw("aec3_correlator_2_h", filters_[2]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_2_h", RTC_MAKE_VIEW(const float)(filters_[2]));
         break;
       case 3:
-        data_dumper_->DumpRaw("aec3_correlator_3_h", filters_[3]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_3_h", RTC_MAKE_VIEW(const float)(filters_[3]));
         break;
       case 4:
-        data_dumper_->DumpRaw("aec3_correlator_4_h", filters_[4]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_4_h", RTC_MAKE_VIEW(const float)(filters_[4]));
         break;
       case 5:
-        data_dumper_->DumpRaw("aec3_correlator_5_h", filters_[5]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_5_h", RTC_MAKE_VIEW(const float)(filters_[5]));
         break;
       case 6:
-        data_dumper_->DumpRaw("aec3_correlator_6_h", filters_[6]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_6_h", RTC_MAKE_VIEW(const float)(filters_[6]));
         break;
       case 7:
-        data_dumper_->DumpRaw("aec3_correlator_7_h", filters_[7]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_7_h", RTC_MAKE_VIEW(const float)(filters_[7]));
         break;
       case 8:
-        data_dumper_->DumpRaw("aec3_correlator_8_h", filters_[8]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_8_h", RTC_MAKE_VIEW(const float)(filters_[8]));
         break;
       case 9:
-        data_dumper_->DumpRaw("aec3_correlator_9_h", filters_[9]);
+        data_dumper_->DumpRaw(
+            "aec3_correlator_9_h", RTC_MAKE_VIEW(const float)(filters_[9]));
         break;
       default:
         RTC_NOTREACHED();

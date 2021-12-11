@@ -11,13 +11,13 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_PRIOR_SIGNAL_MODEL_H_
 #define MODULES_AUDIO_PROCESSING_NS_PRIOR_SIGNAL_MODEL_H_
 
+#include "rtc_base/constructor_magic.h"
+
 namespace webrtc {
 
 // Struct for storing the prior signal model parameters.
 struct PriorSignalModel {
   explicit PriorSignalModel(float lrt_initial_value);
-  PriorSignalModel(const PriorSignalModel&) = delete;
-  PriorSignalModel& operator=(const PriorSignalModel&) = delete;
 
   float lrt;
   float flatness_threshold = .5f;
@@ -25,6 +25,8 @@ struct PriorSignalModel {
   float lrt_weighting = 1.f;
   float flatness_weighting = 0.f;
   float difference_weighting = 0.f;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(PriorSignalModel);
 };
 
 }  // namespace webrtc

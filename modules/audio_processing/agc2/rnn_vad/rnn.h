@@ -12,12 +12,13 @@
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_RNN_H_
 
 #include <stddef.h>
+#include <stdint.h>
 // #include <sys/types.h>
 
-#include <array>
+// #include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 // #include "rtc_base/system/arch.h"
 #include "rtc_base/constructor_magic.h"
@@ -42,19 +43,17 @@ class FullyConnectedLayer {
  public:
   FullyConnectedLayer(size_t input_size,
                       size_t output_size,
-                      rtc::ArrayView<const int8_t> bias,
-                      rtc::ArrayView<const int8_t> weights,
+                      RTC_VIEW(const int8_t) bias,
+                      RTC_VIEW(const int8_t) weights,
                       float (*const activation_function)(float),
                       Optimization optimization);
-  /* FullyConnectedLayer(const FullyConnectedLayer&) = delete;
-  FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete; */
   ~FullyConnectedLayer();
   size_t input_size() const { return input_size_; }
   size_t output_size() const { return output_size_; }
   Optimization optimization() const { return optimization_; }
-  rtc::ArrayView<const float> GetOutput() const;
+  RTC_VIEW(const float) GetOutput() const;
   // Computes the fully-connected layer output.
-  void ComputeOutput(rtc::ArrayView<const float> input);
+  void ComputeOutput(RTC_VIEW(const float) input);
 
  private:
   const size_t input_size_;
@@ -64,7 +63,8 @@ class FullyConnectedLayer {
   float (*const activation_function_)(float);
   // The output vector of a recurrent layer has length equal to |output_size_|.
   // However, for efficiency, over-allocation is used.
-  std::array<float, kFullyConnectedLayersMaxUnits> output_;
+  float output_[kFullyConnectedLayersMaxUnits];
+  RTC_VIEW(float) output_view_;
   const Optimization optimization_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(FullyConnectedLayer);
@@ -76,20 +76,18 @@ class GatedRecurrentLayer {
  public:
   GatedRecurrentLayer(size_t input_size,
                       size_t output_size,
-                      rtc::ArrayView<const int8_t> bias,
-                      rtc::ArrayView<const int8_t> weights,
-                      rtc::ArrayView<const int8_t> recurrent_weights,
+                      RTC_VIEW(const int8_t) bias,
+                      RTC_VIEW(const int8_t) weights,
+                      RTC_VIEW(const int8_t) recurrent_weights,
                       Optimization optimization);
-  /* GatedRecurrentLayer(const GatedRecurrentLayer&) = delete;
-  GatedRecurrentLayer& operator=(const GatedRecurrentLayer&) = delete; */
   ~GatedRecurrentLayer();
   size_t input_size() const { return input_size_; }
   size_t output_size() const { return output_size_; }
   Optimization optimization() const { return optimization_; }
-  rtc::ArrayView<const float> GetOutput() const;
+  RTC_VIEW(const float) GetOutput() const;
   void Reset();
   // Computes the recurrent layer output and updates the status.
-  void ComputeOutput(rtc::ArrayView<const float> input);
+  void ComputeOutput(RTC_VIEW(const float) input);
 
  private:
   const size_t input_size_;
@@ -99,7 +97,8 @@ class GatedRecurrentLayer {
   const std::vector<float> recurrent_weights_;
   // The state vector of a recurrent layer has length equal to |output_size_|.
   // However, to avoid dynamic allocation, over-allocation is used.
-  std::array<float, kRecurrentLayersMaxUnits> state_;
+  float state_[kRecurrentLayersMaxUnits];
+  RTC_VIEW(float) state_view_;
   const Optimization optimization_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(GatedRecurrentLayer);
@@ -109,13 +108,11 @@ class GatedRecurrentLayer {
 class RnnBasedVad {
  public:
   RnnBasedVad();
-  /* RnnBasedVad(const RnnBasedVad&) = delete;
-  RnnBasedVad& operator=(const RnnBasedVad&) = delete; */
   ~RnnBasedVad();
   void Reset();
   // Compute and returns the probability of voice (range: [0.0, 1.0]).
   float ComputeVadProbability(
-      rtc::ArrayView<const float, kFeatureVectorSize> feature_vector,
+      RTC_VIEW(const float) /* kFeatureVectorSize */ feature_vector,
       bool is_silence);
 
  private:

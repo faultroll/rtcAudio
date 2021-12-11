@@ -9,14 +9,17 @@
  */
 #include "modules/audio_processing/aec3/clockdrift_detector.h"
 
+#include "rtc_base/view.h"
+
 namespace webrtc {
 
 ClockdriftDetector::ClockdriftDetector()
     : level_(Level::kNone), stability_counter_(0) {
-  delay_history_.fill(0);
+  RTC_VIEW(int) /* 3 */ delay_history_view_ = RTC_VIEW(int)(delay_history_);
+  delay_history_view_.fill(0);
 }
 
-ClockdriftDetector::~ClockdriftDetector() = default;
+ClockdriftDetector::~ClockdriftDetector() {}
 
 void ClockdriftDetector::Update(int delay_estimate) {
   if (delay_estimate == delay_history_[0]) {

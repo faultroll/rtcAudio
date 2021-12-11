@@ -26,6 +26,6 @@ MatrixBuffer::MatrixBuffer(size_t size, size_t height, size_t width)
   }
 }
 
-MatrixBuffer::~MatrixBuffer() = default;
+MatrixBuffer::~MatrixBuffer() {}
 
 }  // namespace webrtc

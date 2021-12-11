@@ -14,8 +14,8 @@ namespace webrtc {
 
 // Transposed direct form I implementation of a bi-quad filter applied to an
 // input signal |x| to produce an output signal |y|.
-void BiQuadFilter::Process(rtc::ArrayView<const float> x,
-                           rtc::ArrayView<float> y) {
+void BiQuadFilter::Process(RTC_VIEW(const float) x,
+                           RTC_VIEW(float) y) {
   for (size_t k = 0; k < x.size(); ++k) {
     // Use temporary variable for x[k] to allow in-place function call
     // (that x and y refer to the same array).

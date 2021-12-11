@@ -57,14 +57,14 @@ AlignmentMixer::AlignmentMixer(size_t num_channels,
       selection_variant_(
           ChooseMixingVariant(downmix, adaptive_selection, num_channels_)) {
   if (selection_variant_ == MixingVariant::kAdaptive) {
-    std::fill(strong_block_counters_.begin(), strong_block_counters_.end(), 0);
+    std::fill(strong_block_counters_view_.begin(), strong_block_counters_view_.end(), 0);
     cumulative_energies_.resize(num_channels_);
     std::fill(cumulative_energies_.begin(), cumulative_energies_.end(), 0.f);
   }
 }
 
-void AlignmentMixer::ProduceOutput(rtc::ArrayView<const std::vector<float>> x,
-                                   rtc::ArrayView<float, kBlockSize> y) {
+void AlignmentMixer::ProduceOutput(RTC_VIEW(const std::vector<float>) x,
+                                   RTC_VIEW(float) /* kBlockSize */ y) {
   RTC_DCHECK_EQ(x.size(), num_channels_);
   if (selection_variant_ == MixingVariant::kDownmix) {
     Downmix(x, y);
@@ -77,8 +77,8 @@ void AlignmentMixer::ProduceOutput(rtc::ArrayView<const std::vector<float>> x,
   std::copy(x[ch].begin(), x[ch].end(), y.begin());
 }
 
-void AlignmentMixer::Downmix(rtc::ArrayView<const std::vector<float>> x,
-                             rtc::ArrayView<float, kBlockSize> y) const {
+void AlignmentMixer::Downmix(RTC_VIEW(const std::vector<float>) x,
+                             RTC_VIEW(float) /* kBlockSize */ y) const {
   RTC_DCHECK_EQ(x.size(), num_channels_);
   RTC_DCHECK_GE(num_channels_, 2);
   std::copy(x[0].begin(), x[0].end(), y.begin());
@@ -93,7 +93,7 @@ void AlignmentMixer::Downmix(rtc::ArrayView<const std::vector<float>> x,
   }
 }
 
-int AlignmentMixer::SelectChannel(rtc::ArrayView<const std::vector<float>> x) {
+int AlignmentMixer::SelectChannel(RTC_VIEW(const std::vector<float>) x) {
   RTC_DCHECK_EQ(x.size(), num_channels_);
   RTC_DCHECK_GE(num_channels_, 2);
   RTC_DCHECK_EQ(cumulative_energies_.size(), num_channels_);
@@ -102,8 +102,8 @@ int AlignmentMixer::SelectChannel(rtc::ArrayView<const std::vector<float>> x) {
       static_cast<size_t>(0.5f * kNumBlocksPerSecond);
   const bool good_signal_in_left_or_right =
       prefer_first_two_channels_ &&
-      (strong_block_counters_[0] > kBlocksToChooseLeftOrRight ||
-       strong_block_counters_[1] > kBlocksToChooseLeftOrRight);
+      (strong_block_counters_view_[0] > kBlocksToChooseLeftOrRight ||
+       strong_block_counters_view_[1] > kBlocksToChooseLeftOrRight);
 
   const int num_ch_to_analyze =
       good_signal_in_left_or_right ? 2 : num_channels_;
@@ -119,7 +119,7 @@ int AlignmentMixer::SelectChannel(rtc::ArrayView<const std::vector<float>> x) {
     }
 
     if (ch < 2 && x2_sum > excitation_energy_threshold_) {
-      ++strong_block_counters_[ch];
+      ++strong_block_counters_view_[ch];
     }
 
     if (block_counter_ <= kNumBlocksBeforeEnergySmoothing) {

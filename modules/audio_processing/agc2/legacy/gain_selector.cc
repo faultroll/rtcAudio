@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/gain_selector.h"
+#include "modules/audio_processing/agc2/legacy/gain_selector.h"
 
 #include <math.h>
 #include <algorithm>
@@ -16,7 +16,7 @@
 #include "rtc_base/checks.h"
 #include "modules/audio_processing/include/common.h"
 // #include "modules/audio_processing/include/audio_processing.h"
-#include "modules/audio_processing/agc2/level_controller_constants.h"
+#include "modules/audio_processing/agc2/legacy/level_controller_constants.h"
 
 namespace webrtc {
 

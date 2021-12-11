@@ -17,10 +17,10 @@
 #include <emmintrin.h>
 #endif
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <cmath>
 #include <cstdint>
-#include <functional>
+// #include <functional>
 #include <numeric>
 
 #include "common_audio/signal_processing/include/signal_processing_library.h"
@@ -49,7 +49,7 @@ constexpr float kSqrt2Sin[32] = {
     -0.5411961f, -0.2758994f};
 
 void GenerateComfortNoise(Aec3Optimization optimization,
-                          const std::array<float, kFftLengthBy2Plus1>& N2,
+                          RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ N2,
                           uint32_t* seed,
                           FftData* lower_band_noise,
                           FftData* upper_band_noise) {
@@ -57,7 +57,8 @@ void GenerateComfortNoise(Aec3Optimization optimization,
   FftData* N_high = upper_band_noise;
 
   // Compute square root spectrum.
-  std::array<float, kFftLengthBy2Plus1> N;
+  float N_data[kFftLengthBy2Plus1];
+  RTC_VIEW(float) N = RTC_MAKE_VIEW(float)(N_data);
   std::copy(N2.begin(), N2.end(), N.begin());
   aec3::VectorMath(optimization).Sqrt(N);
 
@@ -119,14 +120,14 @@ ComfortNoiseGenerator::ComfortNoiseGenerator(const EchoCanceller3Config& config,
   }
 }
 
-ComfortNoiseGenerator::~ComfortNoiseGenerator() = default;
+ComfortNoiseGenerator::~ComfortNoiseGenerator() {}
 
 void ComfortNoiseGenerator::Compute(
     bool saturated_capture,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         capture_spectrum,
-    rtc::ArrayView<FftData> lower_band_noise,
-    rtc::ArrayView<FftData> upper_band_noise) {
+    RTC_VIEW(FftData) lower_band_noise,
+    RTC_VIEW(FftData) upper_band_noise) {
   const auto& Y2 = capture_spectrum;
 
   if (!saturated_capture) {

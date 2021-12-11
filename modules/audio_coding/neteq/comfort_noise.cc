@@ -12,11 +12,14 @@
 
 #include <assert.h>
 
+#include "rtc_base/view.h"
 // #include "api/audio_codecs/audio_decoder.h"
 // #include "rtc_base/logging.h"
 // #include "modules/audio_coding/neteq/decoder_database.h"
+#include "modules/audio_coding/codecs/cng/webrtc_cng.h"
 #include "modules/audio_coding/neteq/dsp_helper.h"
 #include "modules/audio_coding/neteq/sync_buffer.h"
+#include "modules/audio_coding/neteq/packet.h"
 
 namespace webrtc {
 
@@ -26,19 +29,18 @@ void ComfortNoise::Reset() {
 
 int ComfortNoise::UpdateParameters(const Packet& packet) {
   // Get comfort noise decoder.
-  if (decoder_database_->SetActiveCngDecoder(packet.payload_type) != kOK) {
+  /* if (decoder_database_->SetActiveCngDecoder(packet.payload_type) != kOK) {
     return kUnknownPayloadType;
   }
   ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
-  RTC_DCHECK(cng_decoder);
-  cng_decoder->UpdateSid(packet.payload);
+  RTC_DCHECK(cng_decoder); */
+  cng_decoder_->UpdateSid(packet.payload);
   return kOK;
 }
 
-int ComfortNoise::Generate(size_t requested_length,
-                           AudioMultiVector* output) {
+int ComfortNoise::Generate(size_t requested_length, AudioMultiVector* output) {
   // TODO(hlundin): Change to an enumerator and skip assert.
-  assert(fs_hz_ == 8000 || fs_hz_ == 16000 || fs_hz_ ==  32000 ||
+  assert(fs_hz_ == 8000 || fs_hz_ == 16000 || fs_hz_ == 32000 ||
          fs_hz_ == 48000);
   // Not adapted for multi-channel yet.
   if (output->Channels() != 1) {
@@ -55,16 +57,15 @@ int ComfortNoise::Generate(size_t requested_length,
   }
   output->AssertSize(number_of_samples);
   // Get the decoder from the database.
-  ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
+  /* ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
   if (!cng_decoder) {
-    /* LOG(LS_ERROR) << "Unknwown payload type"; */
+    // LOG(LS_ERROR) << "Unknwown payload type";
     return kUnknownPayloadType;
-  }
+  } */
 
   std::unique_ptr<int16_t[]> temp(new int16_t[number_of_samples]);
-  if (!cng_decoder->Generate(
-          rtc::ArrayView<int16_t>(temp.get(), number_of_samples),
-          new_period)) {
+  if (!cng_decoder_->Generate(
+          RTC_VIEW(int16_t)(temp.get(), number_of_samples), new_period)) {
     // Error returned.
     output->Zeros(requested_length);
     /* LOG(LS_ERROR) <<
@@ -75,9 +76,9 @@ int ComfortNoise::Generate(size_t requested_length,
 
   if (first_call_) {
     // Set tapering window parameters. Values are in Q15.
-    int16_t muting_window;  // Mixing factor for overlap data.
-    int16_t muting_window_increment;  // Mixing factor increment (negative).
-    int16_t unmuting_window;  // Mixing factor for comfort noise.
+    int16_t muting_window;              // Mixing factor for overlap data.
+    int16_t muting_window_increment;    // Mixing factor increment (negative).
+    int16_t unmuting_window;            // Mixing factor for comfort noise.
     int16_t unmuting_window_increment;  // Mixing factor increment.
     if (fs_hz_ == 8000) {
       muting_window = DspHelper::kMuteFactorStart8kHz;
@@ -109,7 +110,8 @@ int ComfortNoise::Generate(size_t requested_length,
       // channel.
       (*sync_buffer_)[0][start_ix + i] =
           (((*sync_buffer_)[0][start_ix + i] * muting_window) +
-              ((*output)[0][i] * unmuting_window) + 16384) >> 15;
+           ((*output)[0][i] * unmuting_window) + 16384) >>
+          15;
       muting_window += muting_window_increment;
       unmuting_window += unmuting_window_increment;
     }

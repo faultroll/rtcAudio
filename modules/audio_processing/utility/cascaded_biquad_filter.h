@@ -16,7 +16,7 @@
 #include <complex>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
@@ -59,15 +59,15 @@ class CascadedBiQuadFilter {
       const std::vector<CascadedBiQuadFilter::BiQuadParam>& biquad_params);
   ~CascadedBiQuadFilter();
   // Applies the biquads on the values in x in order to form the output in y.
-  void Process(rtc::ArrayView<const float> x, rtc::ArrayView<float> y);
+  void Process(RTC_VIEW(const float) x, RTC_VIEW(float) y);
   // Applies the biquads on the values in y in an in-place manner.
-  void Process(rtc::ArrayView<float> y);
+  void Process(RTC_VIEW(float) y);
   // Resets the filter to its initial state.
   void Reset();
 
  private:
-  void ApplyBiQuad(rtc::ArrayView<const float> x,
-                   rtc::ArrayView<float> y,
+  void ApplyBiQuad(RTC_VIEW(const float) x,
+                   RTC_VIEW(float) y,
                    CascadedBiQuadFilter::BiQuad* biquad);
 
   std::vector<BiQuad> biquads_;

@@ -11,22 +11,23 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_SIGNAL_MODEL_H_
 #define MODULES_AUDIO_PROCESSING_NS_SIGNAL_MODEL_H_
 
-#include <array>
+// #include <array>
 
 #include "modules/audio_processing/ns2/ns_common.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
 struct SignalModel {
   SignalModel();
-  SignalModel(const SignalModel&) = delete;
-  SignalModel& operator=(const SignalModel&) = delete;
 
   float lrt;
   float spectral_diff;
   float spectral_flatness;
   // Log LRT factor with time-smoothing.
-  std::array<float, kFftSizeBy2Plus1> avg_log_lrt;
+  float avg_log_lrt[kFftSizeBy2Plus1];
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SignalModel);
 };
 
 }  // namespace webrtc

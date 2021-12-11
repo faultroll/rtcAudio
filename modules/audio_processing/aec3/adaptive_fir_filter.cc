@@ -22,10 +22,11 @@
 #include <math.h>
 
 #include <algorithm>
-#include <functional>
+// #include <functional>
 
 #include "modules/audio_processing/aec3/fft_data.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
@@ -125,7 +126,7 @@ void AdaptPartitions(const RenderBuffer& render_buffer,
                      const FftData& G,
                      size_t num_partitions,
                      std::vector<std::vector<FftData>>* H) {
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   size_t index = render_buffer.Position();
   const size_t num_render_channels = render_buffer_data[index].size();
@@ -148,7 +149,7 @@ void AdaptPartitions_Neon(const RenderBuffer& render_buffer,
                           const FftData& G,
                           size_t num_partitions,
                           std::vector<std::vector<FftData>>* H) {
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(
@@ -214,7 +215,7 @@ void AdaptPartitions_Sse2(const RenderBuffer& render_buffer,
                           const FftData& G,
                           size_t num_partitions,
                           std::vector<std::vector<FftData>>* H) {
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(
@@ -282,10 +283,10 @@ void ApplyFilter(const RenderBuffer& render_buffer,
                  size_t num_partitions,
                  const std::vector<std::vector<FftData>>& H,
                  FftData* S) {
-  S->re.fill(0.f);
-  S->im.fill(0.f);
+  S->re_view.fill(0.f);
+  S->im_view.fill(0.f);
 
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   size_t index = render_buffer.Position();
   const size_t num_render_channels = render_buffer_data[index].size();
@@ -310,12 +311,12 @@ void ApplyFilter_Neon(const RenderBuffer& render_buffer,
                       const std::vector<std::vector<FftData>>& H,
                       FftData* S) {
   // const RenderBuffer& render_buffer,
-  //                     rtc::ArrayView<const FftData> H,
+  //                     RTC_VIEW(const FftData) H,
   //                     FftData* S) {
   RTC_DCHECK_GE(H.size(), H.size() - 1);
   S->Clear();
 
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(
@@ -380,13 +381,13 @@ void ApplyFilter_Sse2(const RenderBuffer& render_buffer,
                       const std::vector<std::vector<FftData>>& H,
                       FftData* S) {
   // const RenderBuffer& render_buffer,
-  //                     rtc::ArrayView<const FftData> H,
+  //                     RTC_VIEW(const FftData) H,
   //                     FftData* S) {
   RTC_DCHECK_GE(H.size(), H.size() - 1);
-  S->re.fill(0.f);
-  S->im.fill(0.f);
+  S->re_view.fill(0.f);
+  S->im_view.fill(0.f);
 
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(
@@ -496,7 +497,7 @@ AdaptiveFirFilter::AdaptiveFirFilter(size_t max_size_partitions,
   SetSizePartitions(current_size_partitions_, true);
 }
 
-AdaptiveFirFilter::~AdaptiveFirFilter() = default;
+AdaptiveFirFilter::~AdaptiveFirFilter() {}
 
 void AdaptiveFirFilter::HandleEchoPathChange() {
   // TODO(peah): Check the value and purpose of the code below.
@@ -650,7 +651,8 @@ void AdaptiveFirFilter::ConstrainAndUpdateImpulseResponse(
   RTC_DCHECK_EQ((size_t)GetTimeDomainLength(max_size_partitions_),
                 impulse_response->capacity());
   impulse_response->resize(GetTimeDomainLength(current_size_partitions_));
-  std::array<float, kFftLength> h;
+  float h[kFftLength];
+  RTC_VIEW(float) h_view = RTC_MAKE_VIEW(float)(h);
   impulse_response->resize(GetTimeDomainLength(current_size_partitions_));
   std::fill(
       impulse_response->begin() + partition_to_constrain_ * kFftLengthBy2,
@@ -658,27 +660,27 @@ void AdaptiveFirFilter::ConstrainAndUpdateImpulseResponse(
       0.f);
 
   for (size_t ch = 0; ch < num_render_channels_; ++ch) {
-    fft_.Ifft(H_[partition_to_constrain_][ch], &h);
+    fft_.Ifft(H_[partition_to_constrain_][ch], h_view);
 
     static constexpr float kScale = 1.0f / kFftLengthBy2;
-    std::for_each(h.begin(), h.begin() + kFftLengthBy2,
+    std::for_each(h_view.begin(), h_view.begin() + kFftLengthBy2,
                   [](float& a) { a *= kScale; });
-    std::fill(h.begin() + kFftLengthBy2, h.end(), 0.f);
+    std::fill(h_view.begin() + kFftLengthBy2, h_view.end(), 0.f);
 
     if (ch == 0) {
       std::copy(
-          h.begin(), h.begin() + kFftLengthBy2,
+          h_view.begin(), h_view.begin() + kFftLengthBy2,
           impulse_response->begin() + partition_to_constrain_ * kFftLengthBy2);
     } else {
       for (size_t k = 0, j = partition_to_constrain_ * kFftLengthBy2;
            k < kFftLengthBy2; ++k, ++j) {
-        if (fabsf((*impulse_response)[j]) < fabsf(h[k])) {
-          (*impulse_response)[j] = h[k];
+        if (fabsf((*impulse_response)[j]) < fabsf(h_view[k])) {
+          (*impulse_response)[j] = h_view[k];
         }
       }
     }
 
-    fft_.Fft(&h, &H_[partition_to_constrain_][ch]);
+    fft_.Fft(h_view, &H_[partition_to_constrain_][ch]);
   }
 
   partition_to_constrain_ =
@@ -690,16 +692,17 @@ void AdaptiveFirFilter::ConstrainAndUpdateImpulseResponse(
 // Constrains the a partiton of the frequency domain filter to be limited in
 // time via setting the relevant time-domain coefficients to zero.
 void AdaptiveFirFilter::Constrain() {
-  std::array<float, kFftLength> h;
+  float h[kFftLength];
+  RTC_VIEW(float) h_view = RTC_MAKE_VIEW(float)(h);
   for (size_t ch = 0; ch < num_render_channels_; ++ch) {
-    fft_.Ifft(H_[partition_to_constrain_][ch], &h);
+    fft_.Ifft(H_[partition_to_constrain_][ch], h_view);
 
     static constexpr float kScale = 1.0f / kFftLengthBy2;
-    std::for_each(h.begin(), h.begin() + kFftLengthBy2,
+    std::for_each(h_view.begin(), h_view.begin() + kFftLengthBy2,
                   [](float& a) { a *= kScale; });
-    std::fill(h.begin() + kFftLengthBy2, h.end(), 0.f);
+    std::fill(h_view.begin() + kFftLengthBy2, h_view.end(), 0.f);
 
-    fft_.Fft(&h, &H_[partition_to_constrain_][ch]);
+    fft_.Fft(h_view, &H_[partition_to_constrain_][ch]);
   }
 
   partition_to_constrain_ =
@@ -731,8 +734,8 @@ void AdaptiveFirFilter::SetFilter(size_t num_partitions,
     RTC_DCHECK_EQ(num_render_channels_, H_[p].size());
 
     for (size_t ch = 0; ch < num_render_channels_; ++ch) {
-      std::copy(H[p][ch].re.begin(), H[p][ch].re.end(), H_[p][ch].re.begin());
-      std::copy(H[p][ch].im.begin(), H[p][ch].im.end(), H_[p][ch].im.begin());
+      std::copy(H[p][ch].re_view.begin(), H[p][ch].re_view.end(), H_[p][ch].re_view.begin());
+      std::copy(H[p][ch].im_view.begin(), H[p][ch].im_view.end(), H_[p][ch].im_view.begin());
     }
   }
 }

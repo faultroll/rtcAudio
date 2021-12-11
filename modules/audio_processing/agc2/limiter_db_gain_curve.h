@@ -11,8 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_LIMITER_DB_GAIN_CURVE_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_LIMITER_DB_GAIN_CURVE_H_
 
-#include <array>
+// #include <array>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/agc2_testing_common.h"
 
 namespace webrtc {
@@ -60,7 +61,8 @@ class LimiterDbGainCurve {
 
   // Coefficients {a, b, c} of the knee region polynomial
   // ax^2 + bx + c in the DB scale.
-  const std::array<double, 3> knee_region_polynomial_;
+  const double knee_region_polynomial_[3];
+  RTC_VIEW(const double) knee_region_polynomial_view_;
 
   // Parameters for the computation of the first derivative of GetGainLinear().
   const double gain_curve_limiter_d1_;

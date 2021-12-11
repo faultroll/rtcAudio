@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/ref_count.h"
 
 namespace webrtc {
@@ -23,11 +23,11 @@ class EchoDetector : public rtc::RefCountInterface {
                           int num_render_channels) = 0;
 
   // Analysis (not changing) of the render signal.
-  virtual void AnalyzeRenderAudio(rtc::ArrayView<const float> render_audio) = 0;
+  virtual void AnalyzeRenderAudio(RTC_VIEW(const float) render_audio) = 0;
 
   // Analysis (not changing) of the capture signal.
   virtual void AnalyzeCaptureAudio(
-      rtc::ArrayView<const float> capture_audio) = 0;
+      RTC_VIEW(const float) capture_audio) = 0;
 
   // Pack an AudioBuffer into a vector<float>.
   static void PackRenderAudioBuffer(AudioBuffer* audio,

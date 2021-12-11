@@ -29,7 +29,7 @@ class Vad {
 
   enum Activity { kPassive = 0, kActive = 1, kError = -1 };
 
-  virtual ~Vad() = default;
+  virtual ~Vad() {}
 
   // Calculates a VAD decision for the given audio frame. Valid sample rates
   // are 8000, 16000, and 32000 Hz; the number of samples must be such that the

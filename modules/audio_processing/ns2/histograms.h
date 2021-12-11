@@ -11,11 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_HISTOGRAMS_H_
 #define MODULES_AUDIO_PROCESSING_NS_HISTOGRAMS_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/ns_common.h"
 #include "modules/audio_processing/ns2/signal_model.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -25,8 +26,6 @@ constexpr int kHistogramSize = 1000;
 class Histograms {
  public:
   Histograms();
-  Histograms(const Histograms&) = delete;
-  Histograms& operator=(const Histograms&) = delete;
 
   // Clears the histograms.
   void Clear();
@@ -36,18 +35,22 @@ class Histograms {
   void Update(const SignalModel& features_);
 
   // Methods for accessing the histograms.
-  rtc::ArrayView<const int, kHistogramSize> get_lrt() const { return lrt_; }
-  rtc::ArrayView<const int, kHistogramSize> get_spectral_flatness() const {
-    return spectral_flatness_;
+  RTC_VIEW(const int) get_lrt() const {
+    return RTC_MAKE_VIEW(const int)(lrt_);
   }
-  rtc::ArrayView<const int, kHistogramSize> get_spectral_diff() const {
-    return spectral_diff_;
+  RTC_VIEW(const int) get_spectral_flatness() const {
+    return RTC_MAKE_VIEW(const int)(spectral_flatness_);
+  }
+  RTC_VIEW(const int) get_spectral_diff() const {
+    return RTC_MAKE_VIEW(const int)(spectral_diff_);
   }
 
  private:
-  std::array<int, kHistogramSize> lrt_;
-  std::array<int, kHistogramSize> spectral_flatness_;
-  std::array<int, kHistogramSize> spectral_diff_;
+  int lrt_[kHistogramSize];
+  int spectral_flatness_[kHistogramSize];
+  int spectral_diff_[kHistogramSize];
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(Histograms);
 };
 
 }  // namespace webrtc

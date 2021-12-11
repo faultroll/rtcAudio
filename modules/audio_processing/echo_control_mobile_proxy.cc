@@ -18,7 +18,7 @@ EchoControlMobileProxy::EchoControlMobileProxy(
     : audio_processing_(audio_processing),
       echo_control_mobile_(echo_control_mobile) {}
 
-EchoControlMobileProxy::~EchoControlMobileProxy() = default;
+EchoControlMobileProxy::~EchoControlMobileProxy() {}
 
 int EchoControlMobileProxy::Enable(bool enable) {
   // Change the config in APM to mirror the applied settings.

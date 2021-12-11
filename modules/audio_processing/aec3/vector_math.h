@@ -23,10 +23,10 @@
 #include <math.h>
 
 #include <algorithm>
-#include <array>
-#include <functional>
+// #include <array>
+// #include <functional>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/checks.h"
 
@@ -40,8 +40,8 @@ class VectorMath {
       : optimization_(optimization) {}
 
   // Elementwise square root.
-  void SqrtAVX2(rtc::ArrayView<float> x);
-  void Sqrt(rtc::ArrayView<float> x) {
+  void SqrtAVX2(RTC_VIEW(float) x);
+  void Sqrt(RTC_VIEW(float) x) {
     switch (optimization_) {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
       case Aec3Optimization::kSse2: {
@@ -114,12 +114,12 @@ class VectorMath {
   }
 
   // Elementwise vector multiplication z = x * y.
-  void MultiplyAVX2(rtc::ArrayView<const float> x,
-                    rtc::ArrayView<const float> y,
-                    rtc::ArrayView<float> z);
-  void Multiply(rtc::ArrayView<const float> x,
-                rtc::ArrayView<const float> y,
-                rtc::ArrayView<float> z) {
+  void MultiplyAVX2(RTC_VIEW(const float) x,
+                    RTC_VIEW(const float) y,
+                    RTC_VIEW(float) z);
+  void Multiply(RTC_VIEW(const float) x,
+                RTC_VIEW(const float) y,
+                RTC_VIEW(float) z) {
     RTC_DCHECK_EQ(z.size(), x.size());
     RTC_DCHECK_EQ(z.size(), y.size());
     switch (optimization_) {
@@ -169,8 +169,8 @@ class VectorMath {
   }
 
   // Elementwise vector accumulation z += x.
-  void AccumulateAVX2(rtc::ArrayView<const float> x, rtc::ArrayView<float> z);
-  void Accumulate(rtc::ArrayView<const float> x, rtc::ArrayView<float> z) {
+  void AccumulateAVX2(RTC_VIEW(const float) x, RTC_VIEW(float) z);
+  void Accumulate(RTC_VIEW(const float) x, RTC_VIEW(float) z) {
     RTC_DCHECK_EQ(z.size(), x.size());
     switch (optimization_) {
 #if defined(WEBRTC_ARCH_X86_FAMILY)

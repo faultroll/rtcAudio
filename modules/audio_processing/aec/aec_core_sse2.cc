@@ -1,3 +1,7 @@
+
+#include "rtc_base/system/arch.h"
+#if defined(WEBRTC_HAS_SSE2)
+
 /*
  *  Copyright (c) 2011 The WebRTC project authors. All Rights Reserved.
  *
@@ -12,8 +16,6 @@
  * The core AEC algorithm, SSE2 version of speed-critical functions.
  */
 
-#if defined(WEBRTC_HAS_SSE2)
-
 #include <emmintrin.h>
 #include <math.h>
 #include <string.h>  // memset
@@ -25,7 +27,7 @@ extern "C" {
 #include "modules/audio_processing/aec/aec_core_optimized_methods.h"
 #include "common_audio/third_party/ooura/fft_size_128/ooura_fft.h"
 
-namespace webrtc {
+// namespace webrtc {
 
 __inline static float MulRe(float aRe, float aIm, float bRe, float bIm) {
   return aRe * bRe - aIm * bIm;
@@ -748,6 +750,6 @@ void WebRtcAec_InitAec_SSE2(void) {
   WebRtcAec_PartitionDelay = PartitionDelaySSE2;
   WebRtcAec_WindowData = WindowDataSSE2;
 }
-}  // namespace webrtc
+// }  // namespace webrtc
 
 #endif

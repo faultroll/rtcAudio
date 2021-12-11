@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec3_fft.h"
@@ -50,7 +50,6 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   RenderDelayBufferImpl(const EchoCanceller3Config& config,
                         int sample_rate_hz,
                         size_t num_render_channels);
-  RenderDelayBufferImpl() = delete;
   ~RenderDelayBufferImpl() override;
 
   void Reset() override;
@@ -112,13 +111,15 @@ class RenderDelayBufferImpl final : public RenderDelayBuffer {
   void ApplyTotalDelay(int delay);
   void InsertBlock(const std::vector<std::vector<std::vector<float>>>& block,
                    int previous_write);
-  bool DetectActiveRender(rtc::ArrayView<const float> x) const;
+  bool DetectActiveRender(RTC_VIEW(const float) x) const;
   bool DetectExcessRenderBlocks();
   void IncrementWriteIndices();
   void IncrementLowRateReadIndices();
   void IncrementReadIndices();
   bool RenderOverrun();
   bool RenderUnderrun();
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(RenderDelayBufferImpl);
 };
 
 int RenderDelayBufferImpl::instance_count_ = 0;
@@ -168,7 +169,7 @@ RenderDelayBufferImpl::RenderDelayBufferImpl(const EchoCanceller3Config& config,
   Reset();
 }
 
-RenderDelayBufferImpl::~RenderDelayBufferImpl() = default;
+RenderDelayBufferImpl::~RenderDelayBufferImpl() {}
 
 // Resets the buffer delays and clears the reported delays.
 void RenderDelayBufferImpl::Reset() {
@@ -425,9 +426,10 @@ void RenderDelayBufferImpl::InsertBlock(
     }
   }
 
-  std::array<float, kBlockSize> downmixed_render;
-  render_mixer_.ProduceOutput(b.buffer[b.write][0], downmixed_render);
-  render_decimator_.Decimate(downmixed_render, ds);
+  float downmixed_render[kBlockSize];
+  RTC_VIEW(float) downmixed_render_view = RTC_MAKE_VIEW(float)(downmixed_render);
+  render_mixer_.ProduceOutput(b.buffer[b.write][0], downmixed_render_view);
+  render_decimator_.Decimate(downmixed_render_view, ds);
   data_dumper_->DumpWav("aec3_render_decimator_output", ds.size(), ds.data(),
                         16000 / down_sampling_factor_, 1);
   std::copy(ds.rbegin(), ds.rend(), lr.buffer.begin() + lr.write);
@@ -441,7 +443,7 @@ void RenderDelayBufferImpl::InsertBlock(
 }
 
 bool RenderDelayBufferImpl::DetectActiveRender(
-    rtc::ArrayView<const float> x) const {
+    RTC_VIEW(const float) x) const {
   const float x_energy = std::inner_product(x.begin(), x.end(), x.begin(), 0.f);
   return x_energy > (config_.render_levels.active_render_limit *
                      config_.render_levels.active_render_limit) *

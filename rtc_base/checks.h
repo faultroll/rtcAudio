@@ -22,7 +22,21 @@
 #define RTC_DCHECK_IS_ON 0
 #endif
 
-#if 0 // defined(__cplusplus)
+// Both C and C++ version have these
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+RTC_NORETURN void rtc_FatalMessage(const char* file, int line, const char* msg);
+#if defined(__cplusplus)
+}  // extern "C"
+#endif
+
+#define RTC_UNREACHABLE_CODE_HIT false
+#define RTC_NOTREACHED() RTC_DCHECK(RTC_UNREACHABLE_CODE_HIT)
+
+
+#if defined(__cplusplus)
 // C++ version.
 
 #include <sstream>
@@ -119,7 +133,7 @@ std::string* MakeCheckOpString(const t1& v1, const t2& v2, const char* names) {
 }
 
 // MSVC doesn't like complex extern templates and DLLs.
-#if !defined(WEBRTC_WIN)
+#if !defined(_MSC_VER)
 // Commonly used instantiations of MakeCheckOpString<>. Explicitly instantiated
 // in logging.cc.
 extern template std::string* MakeCheckOpString<int, int>(
@@ -147,13 +161,13 @@ std::string* MakeCheckOpString<std::string, std::string>(
   inline std::string* Check##name##Impl(const t1& v1, const t2& v2,          \
                                         const char* names) {                 \
     if (v1 op v2)                                                            \
-      return NULL;                                                           \
+      return nullptr;                                                        \
     else                                                                     \
       return rtc::MakeCheckOpString(v1, v2, names);                          \
   }                                                                          \
   inline std::string* Check##name##Impl(int v1, int v2, const char* names) { \
     if (v1 op v2)                                                            \
-      return NULL;                                                           \
+      return nullptr;                                                        \
     else                                                                     \
       return rtc::MakeCheckOpString(v1, v2, names);                          \
   }
@@ -221,6 +235,8 @@ class FatalMessage {
  private:
   void Init(const char* file, int line);
 
+  std::string file_;
+  int line_;
   std::ostringstream stream_;
 };
 
@@ -228,9 +244,10 @@ class FatalMessage {
 // remainder is zero.
 template <typename T>
 inline T CheckedDivExact(T a, T b) {
-  RTC_CHECK_EQ(a % b, static_cast<T>(0)) /* << a << " is not evenly divisible by " << b */;
+  RTC_CHECK_EQ(a % b, static_cast<T>(0)) << a << " is not evenly divisible by " << b;
   return a / b;
 }
+#define RTC_CHECK_DIV_EXACT(a, b) rtc::CheckedDivExact(a, b)
 
 }  // namespace rtc
 
@@ -238,13 +255,6 @@ inline T CheckedDivExact(T a, T b) {
 
 // C version. Lacks many features compared to the C++ version, but usage
 // guidelines are the same.
-#if defined(__cplusplus)
-extern "C" {
-#endif
-RTC_NORETURN void rtc_FatalMessage(const char* file, int line, const char* msg);
-#if defined(__cplusplus)
-}  // extern "C"
-#endif
 
 #define RTC_CHECK(condition)                                             \
   do {                                                                   \
@@ -282,10 +292,5 @@ RTC_NORETURN void rtc_FatalMessage(const char* file, int line, const char* msg);
     })
 
 #endif  // defined(__cplusplus)
-
-// Both C and C++ version have these
-
-#define RTC_UNREACHABLE_CODE_HIT false
-#define RTC_NOTREACHED() RTC_DCHECK(RTC_UNREACHABLE_CODE_HIT)
 
 #endif  // RTC_BASE_CHECKS_H_

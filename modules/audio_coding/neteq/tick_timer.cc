@@ -20,6 +20,6 @@ TickTimer::Countdown::Countdown(const TickTimer& ticktimer,
     : stopwatch_(ticktimer.GetNewStopwatch()),
       ticks_to_count_(ticks_to_count) {}
 
-TickTimer::Countdown::~Countdown() = default;
+TickTimer::Countdown::~Countdown() {}
 
 }  // namespace webrtc

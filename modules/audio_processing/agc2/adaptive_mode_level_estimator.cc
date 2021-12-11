@@ -19,8 +19,7 @@
 namespace webrtc {
 namespace {
 
-using LevelEstimatorType =
-    /* AudioProcessing::Config::GainController2:: */LevelEstimator;
+using LevelEstimatorType = Agc2Config::LevelEstimator;
 
 // Combines a level estimation with the saturation protector margins.
 float ComputeLevelEstimateDbfs(float level_estimate_dbfs,
@@ -64,14 +63,14 @@ AdaptiveModeLevelEstimator::AdaptiveModeLevelEstimator(
     ApmDataDumper* apm_data_dumper)
     : AdaptiveModeLevelEstimator(
           apm_data_dumper,
-          /* AudioProcessing::Config::GainController2:: */LevelEstimator::kRms,
+          Agc2Config::LevelEstimator::kRms,
           kDefaultLevelEstimatorAdjacentSpeechFramesThreshold,
           kDefaultInitialSaturationMarginDb,
           kDefaultExtraSaturationMarginDb) {}
 
 AdaptiveModeLevelEstimator::AdaptiveModeLevelEstimator(
     ApmDataDumper* apm_data_dumper,
-    /* AudioProcessing::Config::GainController2:: */LevelEstimator level_estimator,
+    Agc2Config::LevelEstimator level_estimator,
     int adjacent_speech_frames_threshold,
     float initial_saturation_margin_db,
     float extra_saturation_margin_db)

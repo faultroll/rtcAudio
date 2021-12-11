@@ -11,12 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_GAIN_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_GAIN_H_
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec_state.h"
@@ -37,18 +37,19 @@ class SuppressionGain {
                   size_t num_capture_channels);
   ~SuppressionGain();
   void GetGain(
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           nearend_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> echo_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
+          echo_spectrum,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           residual_echo_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           comfort_noise_spectrum,
       const RenderSignalAnalyzer& render_signal_analyzer,
       const AecState& aec_state,
       const std::vector<std::vector<std::vector<float>>>& render,
       float* high_bands_gain,
-      std::array<float, kFftLengthBy2Plus1>* low_band_gain);
+      RTC_VIEW(float) /* kFftLengthBy2Plus1 */ low_band_gain);
 
   // Toggles the usage of the initial state.
   void SetInitialState(bool state);
@@ -56,36 +57,35 @@ class SuppressionGain {
  private:
   // Computes the gain to apply for the bands beyond the first band.
   float UpperBandsGain(
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> echo_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& echo_spectrum,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           comfort_noise_spectrum,
       const rtc::Optional<int>& narrow_peak_band,
       bool saturated_echo,
       const std::vector<std::vector<std::vector<float>>>& render,
-      const std::array<float, kFftLengthBy2Plus1>& low_band_gain) const;
+      RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ low_band_gain) const;
 
-  void GainToNoAudibleEcho(const std::array<float, kFftLengthBy2Plus1>& nearend,
-                           const std::array<float, kFftLengthBy2Plus1>& echo,
-                           const std::array<float, kFftLengthBy2Plus1>& masker,
-                           std::array<float, kFftLengthBy2Plus1>* gain) const;
+  void GainToNoAudibleEcho(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ nearend,
+                           RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ echo,
+                           RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ masker,
+                           RTC_VIEW(float) /* kFftLengthBy2Plus1 */ gain) const;
 
   void LowerBandGain(
       bool stationary_with_low_power,
       const AecState& aec_state,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
-          suppressor_input,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> residual_echo,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> comfort_noise,
-      std::array<float, kFftLengthBy2Plus1>* gain);
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& suppressor_input,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& residual_echo,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& comfort_noise,
+      RTC_VIEW(float) /* kFftLengthBy2Plus1 */ gain);
 
-  void GetMinGain(rtc::ArrayView<const float> weighted_residual_echo,
-                  rtc::ArrayView<const float> last_nearend,
-                  rtc::ArrayView<const float> last_echo,
+  void GetMinGain(RTC_VIEW(const float) weighted_residual_echo,
+                  RTC_VIEW(const float) last_nearend,
+                  RTC_VIEW(const float) last_echo,
                   bool low_noise_render,
                   bool saturated_echo,
-                  rtc::ArrayView<float> min_gain) const;
+                  RTC_VIEW(float) min_gain) const;
 
-  void GetMaxGain(rtc::ArrayView<float> max_gain) const;
+  void GetMaxGain(RTC_VIEW(float) max_gain) const;
 
   class LowNoiseRenderDetector {
    public:

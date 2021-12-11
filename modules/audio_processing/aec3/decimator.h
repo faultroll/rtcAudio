@@ -11,9 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_DECIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_DECIMATOR_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/utility/cascaded_biquad_filter.h"
 #include "rtc_base/constructor_magic.h"
@@ -26,7 +26,7 @@ class Decimator {
   explicit Decimator(size_t down_sampling_factor);
 
   // Downsamples the signal.
-  void Decimate(rtc::ArrayView<const float> in, rtc::ArrayView<float> out);
+  void Decimate(RTC_VIEW(const float) in, RTC_VIEW(float) out);
 
  private:
   const size_t down_sampling_factor_;

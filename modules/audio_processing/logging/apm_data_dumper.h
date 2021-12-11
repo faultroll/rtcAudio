@@ -17,7 +17,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 // #include "common_audio/wav_file.h"
 #include "rtc_base/constructor_magic.h"
 
@@ -73,7 +73,7 @@ class ApmDataDumper {
 #endif
   }
 
-  void DumpRaw(const char* name, rtc::ArrayView<const double> v) {
+  void DumpRaw(const char* name, RTC_VIEW(const double) v) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     DumpRaw(name, v.size(), v.data());
 #endif
@@ -93,7 +93,7 @@ class ApmDataDumper {
 #endif
   }
 
-  void DumpRaw(const char* name, rtc::ArrayView<const float> v) {
+  void DumpRaw(const char* name, RTC_VIEW(const float) v) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     DumpRaw(name, v.size(), v.data());
 #endif
@@ -115,7 +115,7 @@ class ApmDataDumper {
 #endif
   }
 
-  void DumpRaw(const char* name, rtc::ArrayView<const bool> v) {
+  void DumpRaw(const char* name, RTC_VIEW(const bool) v) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     DumpRaw(name, v.size(), v.data());
 #endif
@@ -135,7 +135,7 @@ class ApmDataDumper {
 #endif
   }
 
-  void DumpRaw(const char* name, rtc::ArrayView<const int16_t> v) {
+  void DumpRaw(const char* name, RTC_VIEW(const int16_t) v) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     DumpRaw(name, v.size(), v.data());
 #endif
@@ -169,7 +169,7 @@ class ApmDataDumper {
 #endif
   }
 
-  void DumpRaw(const char* name, rtc::ArrayView<const int32_t> v) {
+  void DumpRaw(const char* name, RTC_VIEW(const int32_t) v) {
 #if WEBRTC_APM_DEBUG_DUMP == 1
     DumpRaw(name, v.size(), v.data());
 #endif
@@ -187,7 +187,7 @@ class ApmDataDumper {
   }
 
   void DumpWav(const char* name,
-               rtc::ArrayView<const float> v,
+               RTC_VIEW(const float) v,
                int sample_rate_hz,
                int num_channels) {
 #if WEBRTC_APM_DEBUG_DUMP == 1

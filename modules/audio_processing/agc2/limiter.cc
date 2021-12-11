@@ -11,10 +11,10 @@
 #include "modules/audio_processing/agc2/limiter.h"
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <cmath>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
@@ -33,7 +33,7 @@ constexpr float kAttackFirstSubframeInterpolationPower = 8.f;
 
 void InterpolateFirstSubframe(float last_factor,
                               float current_factor,
-                              rtc::ArrayView<float> subframe) {
+                              RTC_VIEW(float) subframe) {
   const auto n = subframe.size();
   constexpr auto p = kAttackFirstSubframeInterpolationPower;
   for (size_t i = 0; i < n; ++i) {
@@ -43,9 +43,9 @@ void InterpolateFirstSubframe(float last_factor,
 }
 
 void ComputePerSampleSubframeFactors(
-    const std::array<float, kSubFramesInFrame + 1>& scaling_factors,
+    RTC_VIEW(const float) /* kSubFramesInFrame + 1 */ scaling_factors,
     size_t samples_per_channel,
-    rtc::ArrayView<float> per_sample_scaling_factors) {
+    RTC_VIEW(float) per_sample_scaling_factors) {
   const size_t num_subframes = scaling_factors.size() - 1;
   const size_t subframe_size =
       /* rtc::CheckedDivExact */RTC_CHECK_DIV_EXACT(samples_per_channel, num_subframes);
@@ -55,7 +55,7 @@ void ComputePerSampleSubframeFactors(
   if (is_attack) {
     InterpolateFirstSubframe(
         scaling_factors[0], scaling_factors[1],
-        rtc::ArrayView<float>(
+        RTC_MAKE_VIEW(float)(
             per_sample_scaling_factors.subview(0, subframe_size)));
   }
 
@@ -71,7 +71,7 @@ void ComputePerSampleSubframeFactors(
   }
 }
 
-void ScaleSamples(rtc::ArrayView<const float> per_sample_scaling_factors,
+void ScaleSamples(RTC_VIEW(const float) per_sample_scaling_factors,
                   AudioFrameView<float> signal) {
   const size_t samples_per_channel = signal.samples_per_channel();
   RTC_DCHECK_EQ(samples_per_channel, per_sample_scaling_factors.size());
@@ -97,37 +97,42 @@ Limiter::Limiter(size_t sample_rate_hz,
                  std::string histogram_name)
     : interp_gain_curve_(apm_data_dumper, histogram_name),
       level_estimator_(sample_rate_hz, apm_data_dumper),
-      apm_data_dumper_(apm_data_dumper) {
+      apm_data_dumper_(apm_data_dumper),
+      scaling_factors_view_(RTC_MAKE_VIEW(float)(scaling_factors_)),
+      per_sample_scaling_factors_view_(RTC_MAKE_VIEW(float)(per_sample_scaling_factors_)) {
   CheckLimiterSampleRate(sample_rate_hz);
 }
 
 Limiter::~Limiter() {}
 
 void Limiter::Process(AudioFrameView<float> signal) {
-  const auto level_estimate = level_estimator_.ComputeLevel(signal);
+  float level_estimate[kSubFramesInFrame];
+  RTC_VIEW(const float) level_estimate_view = 
+    RTC_MAKE_VIEW(const float)(level_estimate);
+  level_estimator_.ComputeLevel(RTC_MAKE_VIEW(float)(level_estimate_view), signal);
 
-  RTC_DCHECK_EQ(level_estimate.size() + 1, scaling_factors_.size());
-  scaling_factors_[0] = last_scaling_factor_;
-  std::transform(level_estimate.begin(), level_estimate.end(),
-                 scaling_factors_.begin() + 1, [this](float x) {
+  RTC_DCHECK_EQ(level_estimate_view.size() + 1, scaling_factors_view_.size());
+  scaling_factors_view_[0] = last_scaling_factor_;
+  std::transform(level_estimate_view.begin(), level_estimate_view.end(),
+                 scaling_factors_view_.begin() + 1, [this](float x) {
                    return interp_gain_curve_.LookUpGainToApply(x);
                  });
 
   const size_t samples_per_channel = signal.samples_per_channel();
   RTC_DCHECK_LE(samples_per_channel, kMaximalNumberOfSamplesPerChannel);
 
-  auto per_sample_scaling_factors = rtc::ArrayView<float>(
-      &per_sample_scaling_factors_[0], samples_per_channel);
-  ComputePerSampleSubframeFactors(scaling_factors_, samples_per_channel,
+  auto per_sample_scaling_factors = RTC_MAKE_VIEW(float)(
+      &per_sample_scaling_factors_view_[0], samples_per_channel);
+  ComputePerSampleSubframeFactors(scaling_factors_view_, samples_per_channel,
                                   per_sample_scaling_factors);
   ScaleSamples(per_sample_scaling_factors, signal);
 
-  last_scaling_factor_ = scaling_factors_.back();
+  last_scaling_factor_ = scaling_factors_view_.back();
 
   // Dump data for debug.
   apm_data_dumper_->DumpRaw("agc2_gain_curve_applier_scaling_factors",
                             samples_per_channel,
-                            per_sample_scaling_factors_.data());
+                            per_sample_scaling_factors_view_.data());
 }
 
 InterpolatedGainCurve::Stats Limiter::GetGainCurveStats() const {

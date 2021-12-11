@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/system/arch.h"
 #if defined(WEBRTC_HAS_AVX2)
 
 #include "modules/audio_processing/aec3/matched_filter.h"
@@ -22,9 +23,9 @@ namespace aec3 {
 void MatchedFilterCore_AVX2(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum) {
   const int h_size = static_cast<int>(h.size());

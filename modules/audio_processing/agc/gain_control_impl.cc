@@ -35,9 +35,9 @@ int16_t MapSetting(GainControl::Mode mode) {
 }
 
 // Checks whether the legacy digital gain application should be used.
-/* bool UseLegacyDigitalGainApplier() {
-  return field_trial::IsEnabled("WebRTC-UseLegacyDigitalGainApplier");
-} */
+bool UseLegacyDigitalGainApplier() {
+  return true/* field_trial::IsEnabled("WebRTC-UseLegacyDigitalGainApplier") */;
+}
 
 // Floating point variant of WebRtcAgc_Process.
 void ApplyDigitalGain(const int32_t gains[11],
@@ -95,6 +95,7 @@ GainControlImpl::GainControlImpl(rtc::CriticalSection* crit_render,
     : crit_render_(crit_render),
       crit_capture_(crit_capture),
       data_dumper_(new ApmDataDumper(instance_counter_)),
+      use_legacy_gain_applier_(UseLegacyDigitalGainApplier()),
       mode_(kAdaptiveAnalog),
       minimum_capture_level_(0),
       maximum_capture_level_(255),
@@ -111,8 +112,9 @@ GainControlImpl::GainControlImpl(rtc::CriticalSection* crit_render,
 GainControlImpl::~GainControlImpl() {}
 
 void GainControlImpl::ProcessRenderAudio(
-    rtc::ArrayView<const int16_t> packed_render_audio) {
+    RTC_VIEW(const int16_t) packed_render_audio) {
   rtc::CritScope cs_capture(crit_capture_);
+
   if (!enabled_) {
     return;
   }
@@ -219,7 +221,7 @@ int GainControlImpl::ProcessCaptureAudio(AudioBuffer* audio,
     }
   }
 
-  if (true/* use_legacy_gain_applier_ */) {
+  if (use_legacy_gain_applier_) {
     for (size_t ch = 0; ch < mono_agcs_.size(); ++ch) {
       int err_process = WebRtcAgc_Process(
           mono_agcs_[ch]->state, mono_agcs_[index_to_apply]->gains, audio->split_bands_const(ch),
@@ -271,7 +273,7 @@ int GainControlImpl::set_stream_analog_level(int level) {
   return AudioProcessing::kNoError;
 }
 
-int GainControlImpl::stream_analog_level() {
+int GainControlImpl::stream_analog_level() const {
   rtc::CritScope cs(crit_capture_);
   data_dumper_->DumpRaw("gain_control_stream_analog_level", 1,
                         &analog_capture_level_);

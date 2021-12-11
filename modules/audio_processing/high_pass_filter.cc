@@ -10,7 +10,7 @@
 
 #include "modules/audio_processing/high_pass_filter.h"
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "rtc_base/checks.h"
 
@@ -62,21 +62,21 @@ HighPassFilter::HighPassFilter(int sample_rate_hz, size_t num_channels)
   }
 }
 
-HighPassFilter::~HighPassFilter() = default;
+HighPassFilter::~HighPassFilter() {}
 
 void HighPassFilter::Process(AudioBuffer* audio, bool use_split_band_data) {
   RTC_DCHECK(audio);
   RTC_DCHECK_EQ(filters_.size(), audio->num_channels());
   if (use_split_band_data) {
     for (size_t k = 0; k < audio->num_channels(); ++k) {
-      rtc::ArrayView<float> channel_data = rtc::ArrayView<float>(
+      RTC_VIEW(float) channel_data = RTC_MAKE_VIEW(float)(
           audio->split_bands_f(k)[0], audio->num_frames_per_band());
       filters_[k]->Process(channel_data);
     }
   } else {
     for (size_t k = 0; k < audio->num_channels(); ++k) {
-      rtc::ArrayView<float> channel_data =
-          rtc::ArrayView<float>(&audio->channels_f()[k][0], audio->num_frames());
+      RTC_VIEW(float) channel_data =
+          RTC_MAKE_VIEW(float)(&audio->channels_f()[k][0], audio->num_frames());
       filters_[k]->Process(channel_data);
     }
   }
@@ -85,7 +85,8 @@ void HighPassFilter::Process(AudioBuffer* audio, bool use_split_band_data) {
 void HighPassFilter::Process(std::vector<std::vector<float>>* audio) {
   RTC_DCHECK_EQ(filters_.size(), audio->size());
   for (size_t k = 0; k < audio->size(); ++k) {
-    filters_[k]->Process((*audio)[k]);
+    filters_[k]->Process(RTC_MAKE_VIEW(float)(
+        (*audio)[k].data(), (*audio)[k].size()));
   }
 }
 

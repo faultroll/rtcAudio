@@ -25,6 +25,6 @@ SpectrumBuffer::SpectrumBuffer(size_t size, size_t num_channels)
   }
 }
 
-SpectrumBuffer::~SpectrumBuffer() = default;
+SpectrumBuffer::~SpectrumBuffer() {}
 
 }  // namespace webrtc

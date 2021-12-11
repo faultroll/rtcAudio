@@ -14,10 +14,10 @@
 #include <math.h>
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/adaptive_fir_filter.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -50,7 +50,7 @@ class Subtractor {
                const std::vector<std::vector<float>>& capture,
                const RenderSignalAnalyzer& render_signal_analyzer,
                const AecState& aec_state,
-               rtc::ArrayView<SubtractorOutput> outputs);
+               RTC_VIEW(SubtractorOutput) outputs);
 
   void HandleEchoPathChange(const EchoPathVariability& echo_path_variability);
 
@@ -73,7 +73,7 @@ class Subtractor {
   void DumpFilters() {
     data_dumper_->DumpRaw(
         "aec3_subtractor_h_refined",
-        rtc::ArrayView<const float>(
+        RTC_MAKE_VIEW(const float)(
             refined_impulse_responses_[0].data(),
             GetTimeDomainLength(
                 refined_filters_[0]->max_filter_size_partitions())));
@@ -85,8 +85,8 @@ class Subtractor {
  private:
   class FilterMisadjustmentEstimator {
    public:
-    FilterMisadjustmentEstimator() = default;
-    ~FilterMisadjustmentEstimator() = default;
+    FilterMisadjustmentEstimator() {}
+    ~FilterMisadjustmentEstimator() {}
     // Update the misadjustment estimator.
     void Update(const SubtractorOutput& output);
     // GetMisadjustment() Returns a recommended scale for the filter so the

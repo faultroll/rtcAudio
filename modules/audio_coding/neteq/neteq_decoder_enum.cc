@@ -15,7 +15,7 @@
 
 namespace webrtc {
 
-rtc::Optional<SdpAudioFormat> NetEqDecoderToSdpAudioFormat(NetEqDecoder nd) {
+/* rtc::Optional<SdpAudioFormat> NetEqDecoderToSdpAudioFormat(NetEqDecoder nd) {
   switch (nd) {
     case NetEqDecoder::kDecoderPCMu:
       return rtc::Optional<SdpAudioFormat>(SdpAudioFormat("pcmu", 8000, 1));
@@ -84,6 +84,6 @@ rtc::Optional<SdpAudioFormat> NetEqDecoderToSdpAudioFormat(NetEqDecoder nd) {
     default:
       return rtc::Optional<SdpAudioFormat>();
   }
-}
+} */
 
 }  // namespace webrtc

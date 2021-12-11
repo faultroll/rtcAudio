@@ -55,6 +55,10 @@ class DecoderDatabase {
     DecoderInfo(DecoderInfo&&);
     ~DecoderInfo();
 
+    // Was this info object created with a specification that allows us to
+    // actually produce a decoder?
+    bool CanGetDecoder() const;
+
     // Get the AudioDecoder object, creating it first if necessary.
     AudioDecoder* GetDecoder() const;
 
@@ -81,14 +85,10 @@ class DecoderDatabase {
     }
 
     // Returns true if the decoder's format is DTMF.
-    bool IsDtmf() const {
-      return subtype_ == Subtype::kDtmf;
-    }
+    bool IsDtmf() const { return subtype_ == Subtype::kDtmf; }
 
     // Returns true if the decoder's format is RED.
-    bool IsRed() const {
-      return subtype_ == Subtype::kRed;
-    }
+    bool IsRed() const { return subtype_ == Subtype::kRed; }
 
     // Returns true if the decoder's format is named |name|.
     bool IsType(const char* name) const;
@@ -117,12 +117,7 @@ class DecoderDatabase {
     };
     const rtc::Optional<CngDecoder> cng_decoder_;
 
-    enum class Subtype : int8_t {
-      kNormal,
-      kComfortNoise,
-      kDtmf,
-      kRed
-    };
+    enum class Subtype : int8_t { kNormal, kComfortNoise, kDtmf, kRed };
 
     static Subtype SubtypeFromFormat(const SdpAudioFormat& format);
 

@@ -11,9 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_NEAREND_DETECTOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_NEAREND_DETECTOR_H_
 
+#include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+// #include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
@@ -28,11 +29,11 @@ class NearendDetector {
 
   // Updates the state selection based on latest spectral estimates.
   virtual void Update(
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           nearend_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           residual_echo_spectrum,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>&
           comfort_noise_spectrum,
       bool initial_state) = 0;
 };

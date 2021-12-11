@@ -11,11 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_NS_WIENER_FILTER_H_
 #define MODULES_AUDIO_PROCESSING_NS_WIENER_FILTER_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/ns2/ns_common.h"
 #include "modules/audio_processing/ns2/suppression_params.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -23,16 +24,14 @@ namespace webrtc {
 class WienerFilter {
  public:
   explicit WienerFilter(const SuppressionParams& suppression_params);
-  WienerFilter(const WienerFilter&) = delete;
-  WienerFilter& operator=(const WienerFilter&) = delete;
 
   // Updates the filter estimate.
   void Update(
       int32_t num_analyzed_frames,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> noise_spectrum,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> prev_noise_spectrum,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> parametric_noise_spectrum,
-      rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum);
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ noise_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ prev_noise_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ parametric_noise_spectrum,
+      RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum);
 
   // Compute an overall gain scaling factor.
   float ComputeOverallScalingFactor(int32_t num_analyzed_frames,
@@ -41,15 +40,17 @@ class WienerFilter {
                                     float energy_after_filtering) const;
 
   // Returns the filter.
-  rtc::ArrayView<const float, kFftSizeBy2Plus1> get_filter() const {
-    return filter_;
+  RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ get_filter() const {
+    return RTC_MAKE_VIEW(const float)(filter_);
   }
 
  private:
   const SuppressionParams& suppression_params_;
-  std::array<float, kFftSizeBy2Plus1> spectrum_prev_process_;
-  std::array<float, kFftSizeBy2Plus1> initial_spectral_estimate_;
-  std::array<float, kFftSizeBy2Plus1> filter_;
+  float spectrum_prev_process_[kFftSizeBy2Plus1];
+  float initial_spectral_estimate_[kFftSizeBy2Plus1];
+  float filter_[kFftSizeBy2Plus1];
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(WienerFilter);
 };
 
 }  // namespace webrtc

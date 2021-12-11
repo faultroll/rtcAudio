@@ -22,7 +22,7 @@ namespace webrtc {
 class TimeScheduler {
 public:
     TimeScheduler(const int64_t periodicityInMs);
-    ~TimeScheduler() = default;
+    ~TimeScheduler() {}
 
     // Signal that a periodic event has been triggered.
     int32_t UpdateScheduler();

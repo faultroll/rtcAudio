@@ -12,6 +12,8 @@
 
 #include <numeric>
 
+#include "rtc_base/view.h"
+
 namespace webrtc {
 DominantNearendDetector::DominantNearendDetector(
     const EchoCanceller3Config::Suppressor::DominantNearendDetection& config,
@@ -27,16 +29,16 @@ DominantNearendDetector::DominantNearendDetector(
       hold_counters_(num_capture_channels_) {}
 
 void DominantNearendDetector::Update(
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         nearend_spectrum,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         residual_echo_spectrum,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>&
         comfort_noise_spectrum,
     bool initial_state) {
   nearend_state_ = false;
 
-  auto low_frequency_energy = [](rtc::ArrayView<const float> spectrum) {
+  auto low_frequency_energy = [](RTC_VIEW(const float) spectrum) {
     RTC_DCHECK_LE(16, spectrum.size());
     return std::accumulate(spectrum.begin() + 1, spectrum.begin() + 16, 0.f);
   };

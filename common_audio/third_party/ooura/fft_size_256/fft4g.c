@@ -293,7 +293,7 @@ Appendix :
 
 // namespace webrtc {
 
-namespace {
+// namespace {
 
 void makewt(size_t nw, size_t* ip, float* w);
 void makect(size_t nc, size_t* ip, float* c);
@@ -1257,7 +1257,7 @@ void dstsub(int n, float *a, int nc, float *c)
 }
 #endif  // Not used.
 
-}  // namespace
+// }  // namespace
 
 #if 0  // Not used.
 void WebRtc_cdft(int n, int isgn, float *a, int *ip, float *w)

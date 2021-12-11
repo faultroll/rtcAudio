@@ -19,14 +19,11 @@
 
 namespace webrtc {
 
-constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
-    InterpolatedGainCurve::approximation_params_x_;
+/* constexpr float InterpolatedGainCurve::approximation_params_x_[kInterpolatedGainCurveTotalPoints];
 
-constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
-    InterpolatedGainCurve::approximation_params_m_;
+constexpr float InterpolatedGainCurve::approximation_params_m_[kInterpolatedGainCurveTotalPoints];
 
-constexpr std::array<float, kInterpolatedGainCurveTotalPoints>
-    InterpolatedGainCurve::approximation_params_q_;
+constexpr float InterpolatedGainCurve::approximation_params_q_[kInterpolatedGainCurveTotalPoints]; */
 
 InterpolatedGainCurve::InterpolatedGainCurve(ApmDataDumper* apm_data_dumper,
                                              std::string histogram_name_prefix)
@@ -38,7 +35,10 @@ InterpolatedGainCurve::InterpolatedGainCurve(ApmDataDumper* apm_data_dumper,
                          ".FixedDigitalGainCurveRegion.Limiter",
                      "WebRTC.Audio." + histogram_name_prefix +
                          ".FixedDigitalGainCurveRegion.Saturation"),
-      apm_data_dumper_(apm_data_dumper) {}
+      apm_data_dumper_(apm_data_dumper),
+      approximation_params_x_view_(RTC_MAKE_VIEW(float)(approximation_params_x_)),
+      approximation_params_m_view_(RTC_MAKE_VIEW(float)(approximation_params_m_)),
+      approximation_params_q_view_(RTC_MAKE_VIEW(float)(approximation_params_q_)) {}
 
 InterpolatedGainCurve::~InterpolatedGainCurve() {
   if (stats_.available) {
@@ -80,7 +80,7 @@ InterpolatedGainCurve::RegionLogger::RegionLogger(
                                              10000,
                                              50)) {}
 
-InterpolatedGainCurve::RegionLogger::~RegionLogger() = default;
+InterpolatedGainCurve::RegionLogger::~RegionLogger() {}
 
 void InterpolatedGainCurve::RegionLogger::LogRegionStats(
     const InterpolatedGainCurve::Stats& stats) const {
@@ -124,11 +124,11 @@ void InterpolatedGainCurve::UpdateStats(float input_level) const {
 
   GainCurveRegion region;
 
-  if (input_level < approximation_params_x_[0]) {
+  if (input_level < approximation_params_x_view_[0]) {
     stats_.look_ups_identity_region++;
     region = GainCurveRegion::kIdentity;
   } else if (input_level <
-             approximation_params_x_[kInterpolatedGainCurveKneePoints - 1]) {
+             approximation_params_x_view_[kInterpolatedGainCurveKneePoints - 1]) {
     stats_.look_ups_knee_region++;
     region = GainCurveRegion::kKnee;
   } else if (input_level < kMaxInputLevelLinear) {
@@ -159,7 +159,7 @@ void InterpolatedGainCurve::UpdateStats(float input_level) const {
 float InterpolatedGainCurve::LookUpGainToApply(float input_level) const {
   UpdateStats(input_level);
 
-  if (input_level <= approximation_params_x_[0]) {
+  if (input_level <= approximation_params_x_view_[0]) {
     // Identity region.
     return 1.0f;
   }
@@ -175,19 +175,19 @@ float InterpolatedGainCurve::LookUpGainToApply(float input_level) const {
   // out the complete type was the only way to silence both the clang
   // plugin and the windows compilers.
   std::array<float, kInterpolatedGainCurveTotalPoints>::const_iterator it =
-      std::lower_bound(approximation_params_x_.begin(),
-                       approximation_params_x_.end(), input_level);
-  const size_t index = std::distance(approximation_params_x_.begin(), it) - 1;
+      std::lower_bound(approximation_params_x_view_.begin(),
+                       approximation_params_x_view_.end(), input_level);
+  const size_t index = std::distance(approximation_params_x_view_.begin(), it) - 1;
   // RTC_DCHECK_LE(0, index);
-  RTC_DCHECK_LT(index, approximation_params_m_.size());
-  RTC_DCHECK_LE(approximation_params_x_[index], input_level);
-  if (index < approximation_params_m_.size() - 1) {
-    RTC_DCHECK_LE(input_level, approximation_params_x_[index + 1]);
+  RTC_DCHECK_LT(index, approximation_params_m_view_.size());
+  RTC_DCHECK_LE(approximation_params_x_view_[index], input_level);
+  if (index < approximation_params_m_view_.size() - 1) {
+    RTC_DCHECK_LE(input_level, approximation_params_x_view_[index + 1]);
   }
 
   // Piece-wise linear interploation.
-  const float gain = approximation_params_m_[index] * input_level +
-                     approximation_params_q_[index];
+  const float gain = approximation_params_m_view_[index] * input_level +
+                     approximation_params_q_view_[index];
   RTC_DCHECK_LE(0.f, gain);
   return gain;
 }

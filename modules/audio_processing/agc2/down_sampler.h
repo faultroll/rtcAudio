@@ -11,7 +11,7 @@
 #ifndef WEBRTC_MODULES_AUDIO_PROCESSING_LEVEL_CONTROLLER_DOWN_SAMPLER_H_
 #define WEBRTC_MODULES_AUDIO_PROCESSING_LEVEL_CONTROLLER_DOWN_SAMPLER_H_
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 #include "modules/audio_processing/agc2/biquad_filter.h"
 
@@ -24,7 +24,7 @@ class DownSampler {
   explicit DownSampler(ApmDataDumper* data_dumper);
   void Initialize(int sample_rate_hz);
 
-  void DownSample(rtc::ArrayView<const float> in, rtc::ArrayView<float> out);
+  void DownSample(RTC_VIEW(const float) in, RTC_VIEW(float) out);
 
  private:
   ApmDataDumper* data_dumper_;

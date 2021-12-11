@@ -23,7 +23,7 @@ AutoCorrelationCalculator::AutoCorrelationCalculator()
       X_(fft_.CreateBuffer()),
       H_(fft_.CreateBuffer()) {}
 
-AutoCorrelationCalculator::~AutoCorrelationCalculator() = default;
+AutoCorrelationCalculator::~AutoCorrelationCalculator() {}
 
 // The auto-correlations coefficients are computed as follows:
 // |.........|...........|  <- pitch buffer
@@ -36,8 +36,8 @@ AutoCorrelationCalculator::~AutoCorrelationCalculator() = default;
 // inverted lag equal to 0 that corresponds to a lag equal to the maximum
 // pitch period.
 void AutoCorrelationCalculator::ComputeOnPitchBuffer(
-    rtc::ArrayView<const float, kBufSize12kHz> pitch_buf,
-    rtc::ArrayView<float, kNumInvertedLags12kHz> auto_corr) {
+    RTC_VIEW(const float) /* kBufSize12kHz */ pitch_buf,
+    RTC_VIEW(float) /* kNumInvertedLags12kHz */ auto_corr) {
   RTC_DCHECK_LT(auto_corr.size(), kMaxPitch12kHz);
   RTC_DCHECK_GT(pitch_buf.size(), kMaxPitch12kHz);
   constexpr size_t kFftFrameSize = 1 << kAutoCorrelationFftOrder;

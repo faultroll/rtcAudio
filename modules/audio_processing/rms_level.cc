@@ -48,7 +48,7 @@ RmsLevel::RmsLevel() {
   Reset();
 }
 
-RmsLevel::~RmsLevel() = default;
+RmsLevel::~RmsLevel() {}
 
 void RmsLevel::Reset() {
   sum_square_ = 0.f;
@@ -57,8 +57,8 @@ void RmsLevel::Reset() {
   block_size_ = rtc::nullopt;
 }
 
-void RmsLevel::Analyze(rtc::ArrayView<const int16_t> data) {
-  if (data.empty()) {
+void RmsLevel::Analyze(RTC_VIEW(const int16_t) data) {
+  if (0 == data.size()) {
     return;
   }
 

@@ -29,7 +29,7 @@
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "modules/audio_processing/include/config.h"
 #include "modules/audio_processing/include/gain_control.h"
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 #include "rtc_base/deprecation.h"
 #include "rtc_base/platform_file.h"
 #include "rtc_base/refcount.h"
@@ -117,7 +117,7 @@ static const int kAgcStartupMinVolume = 0;
 #endif  // defined(WEBRTC_CHROMIUM_BUILD)
 static constexpr int kClippedLevelMin = 70;
 struct ExperimentalAgc {
-  ExperimentalAgc() = default;
+  ExperimentalAgc() {}
   explicit ExperimentalAgc(bool enabled) : enabled(enabled) {}
   ExperimentalAgc(bool enabled,
                   bool enabled_agc2_level_estimator,
@@ -319,7 +319,7 @@ class AudioProcessing : public rtc::RefCountInterface {
     };
 
     RuntimeSetting() : type_(Type::kNotSpecified), value_(0.f) {}
-    ~RuntimeSetting() = default;
+    ~RuntimeSetting() {}
 
     static RuntimeSetting CreateCapturePreGain(float gain) {
       RTC_DCHECK_GE(gain, 1.f) << "Attenuation is not allowed.";

@@ -138,5 +138,8 @@
     case 0:                            \
     case expression:;                  \
   }
+#ifndef __cplusplus
+#define static_assert(expression, message) RTC_COMPILE_ASSERT(expression)
+#endif
 
 #endif  // RTC_BASE_SYSTEM_COMPILE_MAGIC_H_

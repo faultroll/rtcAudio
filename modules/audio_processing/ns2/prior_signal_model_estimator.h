@@ -13,6 +13,7 @@
 
 #include "modules/audio_processing/ns2/histograms.h"
 #include "modules/audio_processing/ns2/prior_signal_model.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -20,9 +21,6 @@ namespace webrtc {
 class PriorSignalModelEstimator {
  public:
   explicit PriorSignalModelEstimator(float lrt_initial_value);
-  PriorSignalModelEstimator(const PriorSignalModelEstimator&) = delete;
-  PriorSignalModelEstimator& operator=(const PriorSignalModelEstimator&) =
-      delete;
 
   // Updates the model estimate.
   void Update(const Histograms& h);
@@ -32,6 +30,8 @@ class PriorSignalModelEstimator {
 
  private:
   PriorSignalModel prior_model_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(PriorSignalModelEstimator);
 };
 
 }  // namespace webrtc

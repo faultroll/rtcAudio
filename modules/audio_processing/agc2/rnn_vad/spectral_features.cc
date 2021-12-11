@@ -26,15 +26,15 @@ constexpr float kSilenceThreshold = 0.04f;
 // Computes the new cepstral difference stats and pushes them into the passed
 // symmetric matrix buffer.
 void UpdateCepstralDifferenceStats(
-    rtc::ArrayView<const float, kNumBands> new_cepstral_coeffs,
+    RTC_VIEW(const float) /* kNumBands */ new_cepstral_coeffs,
     const RingBuffer<float, kNumBands, kCepstralCoeffsHistorySize>& ring_buf,
     SymmetricMatrixBuffer<float, kCepstralCoeffsHistorySize>* sym_matrix_buf) {
   RTC_DCHECK(sym_matrix_buf);
   // Compute the new cepstral distance stats.
-  std::array<float, kCepstralCoeffsHistorySize - 1> distances;
+  float distances[kCepstralCoeffsHistorySize - 1];
   for (size_t i = 0; i < kCepstralCoeffsHistorySize - 1; ++i) {
     const size_t delay = i + 1;
-    auto old_cepstral_coeffs = ring_buf.GetArrayView(delay);
+    auto old_cepstral_coeffs = ring_buf.GetView(delay);
     distances[i] = 0.f;
     for (size_t k = 0; k < kNumBands; ++k) {
       const float c = new_cepstral_coeffs[k] - old_cepstral_coeffs[k];
@@ -46,25 +46,25 @@ void UpdateCepstralDifferenceStats(
 }
 
 // Computes the first half of the Vorbis window.
-std::array<float, kFrameSize20ms24kHz / 2> ComputeScaledHalfVorbisWindow(
-    float scaling = 1.f) {
+void ComputeScaledHalfVorbisWindow(RTC_VIEW(float) half_window,
+                                   float scaling = 1.f) {
   constexpr size_t kHalfSize = kFrameSize20ms24kHz / 2;
-  std::array<float, kHalfSize> half_window{{}};
+  // float half_window[kHalfSize];
   for (size_t i = 0; i < kHalfSize; ++i) {
     half_window[i] =
         scaling *
         std::sin(0.5 * kPi * std::sin(0.5 * kPi * (i + 0.5) / kHalfSize) *
                  std::sin(0.5 * kPi * (i + 0.5) / kHalfSize));
   }
-  return half_window;
+  // return half_window;
 }
 
 // Computes the forward FFT on a 20 ms frame to which a given window function is
 // applied. The Fourier coefficient corresponding to the Nyquist frequency is
 // set to zero (it is never used and this allows to simplify the code).
 void ComputeWindowedForwardFft(
-    rtc::ArrayView<const float, kFrameSize20ms24kHz> frame,
-    const std::array<float, kFrameSize20ms24kHz / 2>& half_window,
+    RTC_VIEW(const float) /* kFrameSize20ms24kHz */ frame,
+    RTC_VIEW(const float) /* kFrameSize20ms24kHz / 2 */ half_window,
     Pffft::FloatBuffer* fft_input_buffer,
     Pffft::FloatBuffer* fft_output_buffer,
     Pffft* fft) {
@@ -85,15 +85,20 @@ void ComputeWindowedForwardFft(
 }  // namespace
 
 SpectralFeaturesExtractor::SpectralFeaturesExtractor()
-    : half_window_(ComputeScaledHalfVorbisWindow(
-          1.f / static_cast<float>(kFrameSize20ms24kHz))),
+    : half_window_(),
+      half_window_view_(RTC_MAKE_VIEW(const float)(half_window_)),
       fft_(kFrameSize20ms24kHz, Pffft::FftType::kReal),
       fft_buffer_(fft_.CreateBuffer()),
       reference_frame_fft_(fft_.CreateBuffer()),
       lagged_frame_fft_(fft_.CreateBuffer()),
-      dct_table_(ComputeDctTable()) {}
+      dct_table_(),
+      dct_table_view_(RTC_MAKE_VIEW(const float)(dct_table_)) {
+      ComputeScaledHalfVorbisWindow(RTC_MAKE_VIEW(float)(half_window_view_),
+          1.f / static_cast<float>(kFrameSize20ms24kHz));
+      ComputeDctTable(RTC_MAKE_VIEW(float)(dct_table_view_));
+    }
 
-SpectralFeaturesExtractor::~SpectralFeaturesExtractor() = default;
+SpectralFeaturesExtractor::~SpectralFeaturesExtractor() {}
 
 void SpectralFeaturesExtractor::Reset() {
   cepstral_coeffs_ring_buf_.Reset();
@@ -101,48 +106,51 @@ void SpectralFeaturesExtractor::Reset() {
 }
 
 bool SpectralFeaturesExtractor::CheckSilenceComputeFeatures(
-    rtc::ArrayView<const float, kFrameSize20ms24kHz> reference_frame,
-    rtc::ArrayView<const float, kFrameSize20ms24kHz> lagged_frame,
-    rtc::ArrayView<float, kNumBands - kNumLowerBands> higher_bands_cepstrum,
-    rtc::ArrayView<float, kNumLowerBands> average,
-    rtc::ArrayView<float, kNumLowerBands> first_derivative,
-    rtc::ArrayView<float, kNumLowerBands> second_derivative,
-    rtc::ArrayView<float, kNumLowerBands> bands_cross_corr,
+    RTC_VIEW(const float) /* kFrameSize20ms24kHz */ reference_frame,
+    RTC_VIEW(const float) /* kFrameSize20ms24kHz */ lagged_frame,
+    RTC_VIEW(float) /* kNumBands - kNumLowerBands */ higher_bands_cepstrum,
+    RTC_VIEW(float) /* kNumLowerBands */ average,
+    RTC_VIEW(float) /* kNumLowerBands */ first_derivative,
+    RTC_VIEW(float) /* kNumLowerBands */ second_derivative,
+    RTC_VIEW(float) /* kNumLowerBands */ bands_cross_corr,
     float* variability) {
+  RTC_VIEW(float) reference_frame_bands_energy_view = 
+    RTC_MAKE_VIEW(float)(reference_frame_bands_energy_);
   // Compute the Opus band energies for the reference frame.
-  ComputeWindowedForwardFft(reference_frame, half_window_, fft_buffer_.get(),
+  ComputeWindowedForwardFft(reference_frame, half_window_view_, fft_buffer_.get(),
                             reference_frame_fft_.get(), &fft_);
   spectral_correlator_.ComputeAutoCorrelation(
-      reference_frame_fft_->GetConstView(), reference_frame_bands_energy_);
+      reference_frame_fft_->GetConstView(), reference_frame_bands_energy_view);
   // Check if the reference frame has silence.
   const float tot_energy =
-      std::accumulate(reference_frame_bands_energy_.begin(),
-                      reference_frame_bands_energy_.end(), 0.f);
+      std::accumulate(reference_frame_bands_energy_view.begin(),
+                      reference_frame_bands_energy_view.end(), 0.f);
   if (tot_energy < kSilenceThreshold) {
     return true;
   }
   // Compute the Opus band energies for the lagged frame.
-  ComputeWindowedForwardFft(lagged_frame, half_window_, fft_buffer_.get(),
+  ComputeWindowedForwardFft(lagged_frame, half_window_view_, fft_buffer_.get(),
                             lagged_frame_fft_.get(), &fft_);
   spectral_correlator_.ComputeAutoCorrelation(lagged_frame_fft_->GetConstView(),
                                               lagged_frame_bands_energy_);
   // Log of the band energies for the reference frame.
-  std::array<float, kNumBands> log_bands_energy;
-  ComputeSmoothedLogMagnitudeSpectrum(reference_frame_bands_energy_,
+  float log_bands_energy[kNumBands];
+  ComputeSmoothedLogMagnitudeSpectrum(reference_frame_bands_energy_view,
                                       log_bands_energy);
   // Reference frame cepstrum.
-  std::array<float, kNumBands> cepstrum;
-  ComputeDct(log_bands_energy, dct_table_, cepstrum);
+  float cepstrum[kNumBands];
+  RTC_VIEW(float) cepstrum_view = RTC_MAKE_VIEW(float)(cepstrum);
+  ComputeDct(log_bands_energy, dct_table_view_, cepstrum_view);
   // Ad-hoc correction terms for the first two cepstral coefficients.
-  cepstrum[0] -= 12.f;
-  cepstrum[1] -= 4.f;
+  cepstrum_view[0] -= 12.f;
+  cepstrum_view[1] -= 4.f;
   // Update the ring buffer and the cepstral difference stats.
-  cepstral_coeffs_ring_buf_.Push(cepstrum);
-  UpdateCepstralDifferenceStats(cepstrum, cepstral_coeffs_ring_buf_,
+  cepstral_coeffs_ring_buf_.Push(cepstrum_view);
+  UpdateCepstralDifferenceStats(cepstrum_view, cepstral_coeffs_ring_buf_,
                                 &cepstral_diffs_buf_);
   // Write the higher bands cepstral coefficients.
-  RTC_DCHECK_EQ(cepstrum.size() - kNumLowerBands, higher_bands_cepstrum.size());
-  std::copy(cepstrum.begin() + kNumLowerBands, cepstrum.end(),
+  RTC_DCHECK_EQ(cepstrum_view.size() - kNumLowerBands, higher_bands_cepstrum.size());
+  std::copy(cepstrum_view.begin() + kNumLowerBands, cepstrum_view.end(),
             higher_bands_cepstrum.begin());
   // Compute and write remaining features.
   ComputeAvgAndDerivatives(average, first_derivative, second_derivative);
@@ -153,12 +161,12 @@ bool SpectralFeaturesExtractor::CheckSilenceComputeFeatures(
 }
 
 void SpectralFeaturesExtractor::ComputeAvgAndDerivatives(
-    rtc::ArrayView<float, kNumLowerBands> average,
-    rtc::ArrayView<float, kNumLowerBands> first_derivative,
-    rtc::ArrayView<float, kNumLowerBands> second_derivative) const {
-  auto curr = cepstral_coeffs_ring_buf_.GetArrayView(0);
-  auto prev1 = cepstral_coeffs_ring_buf_.GetArrayView(1);
-  auto prev2 = cepstral_coeffs_ring_buf_.GetArrayView(2);
+    RTC_VIEW(float) /* kNumLowerBands */ average,
+    RTC_VIEW(float) /* kNumLowerBands */ first_derivative,
+    RTC_VIEW(float) /* kNumLowerBands */ second_derivative) const {
+  auto curr = cepstral_coeffs_ring_buf_.GetView(0);
+  auto prev1 = cepstral_coeffs_ring_buf_.GetView(1);
+  auto prev2 = cepstral_coeffs_ring_buf_.GetView(2);
   RTC_DCHECK_EQ(average.size(), first_derivative.size());
   RTC_DCHECK_EQ(first_derivative.size(), second_derivative.size());
   RTC_DCHECK_LE(average.size(), curr.size());
@@ -173,19 +181,21 @@ void SpectralFeaturesExtractor::ComputeAvgAndDerivatives(
 }
 
 void SpectralFeaturesExtractor::ComputeNormalizedCepstralCorrelation(
-    rtc::ArrayView<float, kNumLowerBands> bands_cross_corr) {
+    RTC_VIEW(float) /* kNumLowerBands */ bands_cross_corr) {
+  RTC_VIEW(float) bands_cross_corr_view = 
+    RTC_MAKE_VIEW(float)(bands_cross_corr_);
   spectral_correlator_.ComputeCrossCorrelation(
       reference_frame_fft_->GetConstView(), lagged_frame_fft_->GetConstView(),
-      bands_cross_corr_);
+      bands_cross_corr_view);
   // Normalize.
-  for (size_t i = 0; i < bands_cross_corr_.size(); ++i) {
-    bands_cross_corr_[i] =
-        bands_cross_corr_[i] /
+  for (size_t i = 0; i < bands_cross_corr_view.size(); ++i) {
+    bands_cross_corr_view[i] =
+        bands_cross_corr_view[i] /
         std::sqrt(0.001f + reference_frame_bands_energy_[i] *
                                lagged_frame_bands_energy_[i]);
   }
   // Cepstrum.
-  ComputeDct(bands_cross_corr_, dct_table_, bands_cross_corr);
+  ComputeDct(bands_cross_corr_view, dct_table_view_, bands_cross_corr);
   // Ad-hoc correction terms for the first two cepstral coefficients.
   bands_cross_corr[0] -= 1.3f;
   bands_cross_corr[1] -= 0.9f;

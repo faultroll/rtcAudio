@@ -19,7 +19,7 @@
 
 #include "common_audio/window_generator.h"
 #include "modules/audio_processing/beamformer/covariance_matrix_generator.h"
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 namespace {
@@ -222,7 +222,7 @@ NonlinearBeamformer::NonlinearBeamformer(
   WindowGenerator::KaiserBesselDerived(kKbdAlpha, kFftSize, window_);
 }
 
-NonlinearBeamformer::~NonlinearBeamformer() = default;
+NonlinearBeamformer::~NonlinearBeamformer() {}
 
 void NonlinearBeamformer::Initialize(int chunk_size_ms, int sample_rate_hz) {
   chunk_length_ =

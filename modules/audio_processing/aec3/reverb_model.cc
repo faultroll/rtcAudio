@@ -13,9 +13,9 @@
 #include <stddef.h>
 
 #include <algorithm>
-#include <functional>
+// #include <functional>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
@@ -26,58 +26,57 @@ ReverbModel::ReverbModel() {
 ReverbModel::~ReverbModel() {}
 
 void ReverbModel::Reset() {
-  reverb_.fill(0.);
+  reverb_view_.fill(0.);
 }
 
-/* void ReverbModel::AddReverbNoFreqShaping(
-    rtc::ArrayView<const float> power_spectrum,
-    float power_spectrum_scaling,
-    float reverb_decay,
-    rtc::ArrayView<float> reverb_power_spectrum) {
-  UpdateReverbContributionsNoFreqShaping(power_spectrum, power_spectrum_scaling,
-                                         reverb_decay);
-
-  // Add the power of the echo reverb to the residual echo power.
-  std::transform(reverb_power_spectrum.begin(), reverb_power_spectrum.end(),
-                 reverb_.begin(), reverb_power_spectrum.begin(),
-                 std::plus<float>());
-}
-
-void ReverbModel::AddReverb(rtc::ArrayView<const float> power_spectrum,
-                            rtc::ArrayView<const float> power_spectrum_scaling,
-                            float reverb_decay,
-                            rtc::ArrayView<float> reverb_power_spectrum) {
-  UpdateReverbContributions(power_spectrum, power_spectrum_scaling,
+void ReverbModel::AddReverbNoFreqShaping(RTC_VIEW(const float) power_spectrum,
+                                         float power_spectrum_scaling,
+                                         float reverb_decay,
+                                         RTC_VIEW(float) reverb_power_spectrum) {
+  UpdateReverbNoFreqShaping(power_spectrum, power_spectrum_scaling,
                             reverb_decay);
 
   // Add the power of the echo reverb to the residual echo power.
   std::transform(reverb_power_spectrum.begin(), reverb_power_spectrum.end(),
-                 reverb_.begin(), reverb_power_spectrum.begin(),
+                 reverb_view_.begin(), reverb_power_spectrum.begin(),
                  std::plus<float>());
-} */
+}
+
+void ReverbModel::AddReverb(RTC_VIEW(const float) power_spectrum,
+                            RTC_VIEW(const float) power_spectrum_scaling,
+                            float reverb_decay,
+                            RTC_VIEW(float) reverb_power_spectrum) {
+  UpdateReverb(power_spectrum, power_spectrum_scaling,
+               reverb_decay);
+
+  // Add the power of the echo reverb to the residual echo power.
+  std::transform(reverb_power_spectrum.begin(), reverb_power_spectrum.end(),
+                 reverb_view_.begin(), reverb_power_spectrum.begin(),
+                 std::plus<float>());
+}
 
 void ReverbModel::UpdateReverbNoFreqShaping(
-    rtc::ArrayView<const float> power_spectrum,
+    RTC_VIEW(const float) power_spectrum,
     float power_spectrum_scaling,
     float reverb_decay) {
   if (reverb_decay > 0) {
     // Update the estimate of the reverberant power.
     for (size_t k = 0; k < power_spectrum.size(); ++k) {
-      reverb_[k] = (reverb_[k] + power_spectrum[k] * power_spectrum_scaling) *
+      reverb_view_[k] = (reverb_view_[k] + power_spectrum[k] * power_spectrum_scaling) *
                    reverb_decay;
     }
   }
 }
 
 void ReverbModel::UpdateReverb(
-    rtc::ArrayView<const float> power_spectrum,
-    rtc::ArrayView<const float> power_spectrum_scaling,
+    RTC_VIEW(const float) power_spectrum,
+    RTC_VIEW(const float) power_spectrum_scaling,
     float reverb_decay) {
   if (reverb_decay > 0) {
     // Update the estimate of the reverberant power.
     for (size_t k = 0; k < power_spectrum.size(); ++k) {
-      reverb_[k] =
-          (reverb_[k] + power_spectrum[k] * power_spectrum_scaling[k]) *
+      reverb_view_[k] =
+          (reverb_view_[k] + power_spectrum[k] * power_spectrum_scaling[k]) *
           reverb_decay;
     }
   }

@@ -21,10 +21,10 @@ namespace webrtc {
 class SubtractorOutputAnalyzer {
  public:
   explicit SubtractorOutputAnalyzer(size_t num_capture_channels);
-  ~SubtractorOutputAnalyzer() = default;
+  ~SubtractorOutputAnalyzer() {}
 
   // Analyses the subtractor output.
-  void Update(rtc::ArrayView<const SubtractorOutput> subtractor_output,
+  void Update(RTC_VIEW(const SubtractorOutput) subtractor_output,
               bool* any_filter_converged,
               bool* all_filters_diverged);
 

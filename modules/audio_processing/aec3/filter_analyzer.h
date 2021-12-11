@@ -13,12 +13,12 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/constructor_magic.h"
@@ -39,13 +39,13 @@ class FilterAnalyzer {
   void Reset();
 
   // Updates the estimates with new input data.
-  void Update(rtc::ArrayView<const std::vector<float>> filters_time_domain,
+  void Update(RTC_VIEW(const std::vector<float>) filters_time_domain,
               const RenderBuffer& render_buffer,
               bool* any_filter_consistent,
               float* max_echo_path_gain);
 
   // Returns the delay in blocks for each filter.
-  rtc::ArrayView<const int> FilterDelaysBlocks() const {
+  RTC_VIEW(const int) FilterDelaysBlocks() const {
     return filter_delays_blocks_;
   }
 
@@ -58,7 +58,7 @@ class FilterAnalyzer {
   }
 
   // Returns the preprocessed filter.
-  rtc::ArrayView<const std::vector<float>> GetAdjustedFilters() const {
+  RTC_VIEW(const std::vector<float>) GetAdjustedFilters() const {
     return h_highpass_;
   }
 
@@ -69,13 +69,13 @@ class FilterAnalyzer {
   struct FilterAnalysisState;
 
   void AnalyzeRegion(
-      rtc::ArrayView<const std::vector<float>> filters_time_domain,
+      RTC_VIEW(const std::vector<float>) filters_time_domain,
       const RenderBuffer& render_buffer);
 
-  void UpdateFilterGain(rtc::ArrayView<const float> filters_time_domain,
+  void UpdateFilterGain(RTC_VIEW(const float) filters_time_domain,
                         FilterAnalysisState* st);
   void PreProcessFilters(
-      rtc::ArrayView<const std::vector<float>> filters_time_domain);
+      RTC_VIEW(const std::vector<float>) filters_time_domain);
 
   void ResetRegion();
 
@@ -90,9 +90,9 @@ class FilterAnalyzer {
    public:
     explicit ConsistentFilterDetector(const EchoCanceller3Config& config);
     void Reset();
-    bool Detect(rtc::ArrayView<const float> filter_to_analyze,
+    bool Detect(RTC_VIEW(const float) filter_to_analyze,
                 const FilterRegion& region,
-                rtc::ArrayView<const std::vector<float>> x_block,
+                RTC_VIEW(const std::vector<float>) x_block,
                 size_t peak_index,
                 int delay_blocks);
 

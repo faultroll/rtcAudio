@@ -13,7 +13,8 @@
 
 #include <memory>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
+#include "rtc_base/constructor_magic.h"
 
 // Forward declaration.
 struct PFFFT_Setup;
@@ -30,12 +31,10 @@ class Pffft {
   // It must be constructed using Pffft::CreateBuffer().
   class FloatBuffer {
    public:
-    FloatBuffer(const FloatBuffer&) = delete;
-    FloatBuffer& operator=(const FloatBuffer&) = delete;
     ~FloatBuffer();
 
-    rtc::ArrayView<const float> GetConstView() const;
-    rtc::ArrayView<float> GetView();
+    RTC_VIEW(const float) GetConstView() const;
+    RTC_VIEW(float) GetView();
 
    private:
     friend class Pffft;
@@ -46,6 +45,8 @@ class Pffft {
 
     const size_t size_;
     float* const data_;
+
+    RTC_DISALLOW_COPY_AND_ASSIGN(FloatBuffer);
   };
 
   // TODO(https://crbug.com/webrtc/9577): Consider adding a factory and making
@@ -54,8 +55,6 @@ class Pffft {
   // FftType fft_type); Ctor. |fft_size| must be a supported size (see
   // Pffft::IsValidFftSize()). If not supported, the code will crash.
   Pffft(size_t fft_size, FftType fft_type);
-  Pffft(const Pffft&) = delete;
-  Pffft& operator=(const Pffft&) = delete;
   ~Pffft();
 
   // Returns true if the FFT size is supported.
@@ -87,6 +86,8 @@ class Pffft {
   const FftType fft_type_;
   PFFFT_Setup* pffft_status_;
   float* const scratch_buffer_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(Pffft);
 };
 
 }  // namespace webrtc

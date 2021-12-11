@@ -18,7 +18,8 @@
 namespace webrtc {
 
 // Forward declarations.
-class DecoderDatabase;
+// class DecoderDatabase;
+class ComfortNoiseDecoder;
 class SyncBuffer;
 struct Packet;
 
@@ -32,14 +33,14 @@ class ComfortNoise {
     kMultiChannelNotSupported
   };
 
-  ComfortNoise(int fs_hz, DecoderDatabase* decoder_database,
+  ComfortNoise(int fs_hz,
+               /* DecoderDatabase* decoder_database, */
                SyncBuffer* sync_buffer)
       : fs_hz_(fs_hz),
         first_call_(true),
         overlap_length_(5 * fs_hz_ / 8000),
-        decoder_database_(decoder_database),
-        sync_buffer_(sync_buffer) {
-  }
+        /* decoder_database_(decoder_database), */
+        sync_buffer_(sync_buffer) {}
 
   // Resets the state. Should be called before each new comfort noise period.
   void Reset();
@@ -61,7 +62,8 @@ class ComfortNoise {
   int fs_hz_;
   bool first_call_;
   size_t overlap_length_;
-  DecoderDatabase* decoder_database_;
+  // DecoderDatabase* decoder_database_;
+  std::unique_ptr<ComfortNoiseDecoder> cng_decoder_;
   SyncBuffer* sync_buffer_;
   int internal_error_code_;
   RTC_DISALLOW_COPY_AND_ASSIGN(ComfortNoise);

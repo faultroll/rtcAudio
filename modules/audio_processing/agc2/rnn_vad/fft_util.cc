@@ -21,36 +21,40 @@ namespace {
 constexpr size_t kHalfFrameSize = kFrameSize20ms24kHz / 2;
 
 // Computes the first half of the Vorbis window.
-std::array<float, kHalfFrameSize> ComputeHalfVorbisWindow() {
-  std::array<float, kHalfFrameSize> half_window{{}};
+void ComputeHalfVorbisWindow(RTC_VIEW(float) /* kHalfFrameSize */ half_window) {
+  // float half_window[kHalfFrameSize];
   for (size_t i = 0; i < kHalfFrameSize; ++i) {
     half_window[i] =
         std::sin(0.5 * kPi * std::sin(0.5 * kPi * (i + 0.5) / kHalfFrameSize) *
                  std::sin(0.5 * kPi * (i + 0.5) / kHalfFrameSize));
   }
-  return half_window;
+  // return half_window;
 }
 
 }  // namespace
 
 BandAnalysisFft::BandAnalysisFft()
-    : half_window_(ComputeHalfVorbisWindow()),
-      fft_(static_cast<int>(input_buf_.size())) {}
+    : half_window_(),
+      half_window_view_(RTC_MAKE_VIEW(float)(half_window_)),
+      input_buf_view_(RTC_MAKE_VIEW(std::complex<float>)(input_buf_)),
+      fft_(static_cast<int>(input_buf_view_.size())) {
+        ComputeHalfVorbisWindow(half_window_view_);
+    }
 
-BandAnalysisFft::~BandAnalysisFft() = default;
+BandAnalysisFft::~BandAnalysisFft() {}
 
-void BandAnalysisFft::ForwardFft(rtc::ArrayView<const float> samples,
-                                 rtc::ArrayView<std::complex<float>> dst) {
-  RTC_DCHECK_EQ(input_buf_.size(), samples.size());
+void BandAnalysisFft::ForwardFft(RTC_VIEW(const float) samples,
+                                 RTC_VIEW(std::complex<float>) dst) {
+  RTC_DCHECK_EQ(input_buf_view_.size(), samples.size());
   RTC_DCHECK_EQ(samples.size(), dst.size());
   // Apply windowing.
-  RTC_DCHECK_EQ(input_buf_.size(), 2 * half_window_.size());
-  for (size_t i = 0; i < input_buf_.size() / 2; ++i) {
-    input_buf_[i].real(samples[i] * half_window_[i]);
+  RTC_DCHECK_EQ(input_buf_view_.size(), 2 * half_window_view_.size());
+  for (size_t i = 0; i < input_buf_view_.size() / 2; ++i) {
+    input_buf_view_[i].real(samples[i] * half_window_view_[i]);
     size_t j = kFrameSize20ms24kHz - i - 1;
-    input_buf_[j].real(samples[j] * half_window_[i]);
+    input_buf_view_[j].real(samples[j] * half_window_view_[i]);
   }
-  fft_.ForwardFft(kFrameSize20ms24kHz, input_buf_.data(), kFrameSize20ms24kHz,
+  fft_.ForwardFft(kFrameSize20ms24kHz, input_buf_view_.data(), kFrameSize20ms24kHz,
                   dst.data());
 }
 

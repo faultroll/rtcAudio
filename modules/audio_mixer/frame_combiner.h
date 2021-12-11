@@ -43,8 +43,7 @@ class FrameCombiner {
   static constexpr size_t kMaximumNumberOfChannels = 8;
   static constexpr size_t kMaximumChannelSize = 48 * 10;
 
-  using MixingBuffer = std::array<std::array<float, kMaximumChannelSize>,
-                                  kMaximumNumberOfChannels>;
+  using MixingBuffer = float[kMaximumChannelSize][kMaximumNumberOfChannels];
 
  private:
   void LogMixingStats(const std::vector<AudioFrame*>& mix_list,

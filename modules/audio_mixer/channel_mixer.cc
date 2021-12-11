@@ -31,7 +31,7 @@ ChannelMixer::ChannelMixer(ChannelLayout input_layout,
   remapping_ = matrix_builder.CreateTransformationMatrix(&matrix_);
 }
 
-ChannelMixer::~ChannelMixer() = default;
+ChannelMixer::~ChannelMixer() {}
 
 void ChannelMixer::Transform(AudioFrame* frame) {
   RTC_DCHECK(frame);

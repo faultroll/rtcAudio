@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/system/arch.h"
 #if defined(WEBRTC_HAS_AVX2)
 
 #include "modules/audio_processing/aec3/adaptive_fir_filter.h"
@@ -15,6 +16,7 @@
 #include <immintrin.h>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
@@ -55,7 +57,7 @@ void AdaptPartitions_Avx2(const RenderBuffer& render_buffer,
                           const FftData& G,
                           size_t num_partitions,
                           std::vector<std::vector<FftData>>* H) {
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(
@@ -123,10 +125,10 @@ void ApplyFilter_Avx2(const RenderBuffer& render_buffer,
                       const std::vector<std::vector<FftData>>& H,
                       FftData* S) {
   RTC_DCHECK_GE(H.size(), H.size() - 1);
-  S->re.fill(0.f);
-  S->im.fill(0.f);
+  S->re_view.fill(0.f);
+  S->im_view.fill(0.f);
 
-  rtc::ArrayView<const std::vector<FftData>> render_buffer_data =
+  RTC_VIEW(const std::vector<FftData>) render_buffer_data =
       render_buffer.GetFftBuffer();
   const size_t num_render_channels = render_buffer_data[0].size();
   const size_t lim1 = std::min(

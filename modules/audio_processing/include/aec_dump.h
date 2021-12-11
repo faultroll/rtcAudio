@@ -73,7 +73,7 @@ class AecDump {
     bool keypress;
   };
 
-  virtual ~AecDump() = default;
+  virtual ~AecDump() {}
 
   // Logs Event::Type INIT message.
   virtual void WriteInitMessage(const ProcessingConfig& api_format,

@@ -11,12 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_REVERB_FREQUENCY_RESPONSE_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_REVERB_FREQUENCY_RESPONSE_H_
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
 namespace webrtc {
@@ -35,8 +35,8 @@ class ReverbFrequencyResponse {
               bool stationary_block);
 
   // Returns the estimated frequency response for the reverb.
-  rtc::ArrayView<const float> FrequencyResponse() const {
-    return tail_response_;
+  RTC_VIEW(const float) FrequencyResponse() const {
+    return RTC_MAKE_VIEW(const float)(tail_response_);
   }
 
  private:
@@ -46,7 +46,8 @@ class ReverbFrequencyResponse {
               float linear_filter_quality);
 
   float average_decay_ = 0.f;
-  std::array<float, kFftLengthBy2Plus1> tail_response_;
+  float tail_response_[kFftLengthBy2Plus1];
+  RTC_VIEW(float) tail_response_view_ = RTC_MAKE_VIEW(float)(tail_response_);
 };
 
 }  // namespace webrtc

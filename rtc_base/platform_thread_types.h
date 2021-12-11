@@ -48,11 +48,11 @@ bool ThrdSleep(int milliseconds);
 // even if current thread would ordinarily continue to run.
 void ThrdYield(void);
 typedef enum ThrdPrio_ {
-    kLowPrio,
-    kNormalPrio,
-    kHighPrio,
-    kHighestPrio,
-    kRealtimePrio,
+    kLowPrio = thrd_priority_low,
+    kNormalPrio = thrd_priority_normal,
+    kHighPrio = thrd_priority_high,
+    kHighestPrio = thrd_priority_highest,
+    kRealtimePrio = thrd_priority_realtime,
 } ThrdPrio;
 // Set the priority of the thread. Must be called when thread is running.
 bool ThrdSetPrio(Thrd thr, ThrdPrio prio);

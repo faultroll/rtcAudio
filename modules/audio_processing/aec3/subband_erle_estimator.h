@@ -13,11 +13,11 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
@@ -35,18 +35,18 @@ class SubbandErleEstimator {
   void Reset();
 
   // Updates the ERLE estimate.
-  void Update(rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+  void Update(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
               const std::vector<bool>& converged_filters);
 
   // Returns the ERLE estimate.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Erle() const {
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& Erle() const {
     return erle_;
   }
 
   // Returns the ERLE estimate at onsets (only used for testing).
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> ErleOnsets()
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& ErleOnsets()
       const {
     return erle_onsets_;
   }
@@ -67,9 +67,9 @@ class SubbandErleEstimator {
   };
 
   void UpdateAccumulatedSpectra(
-      rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-      rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+      RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+      const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
       const std::vector<bool>& converged_filters);
 
   void ResetAccumulatedSpectra();

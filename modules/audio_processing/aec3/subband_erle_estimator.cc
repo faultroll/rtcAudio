@@ -11,7 +11,7 @@
 #include "modules/audio_processing/aec3/subband_erle_estimator.h"
 
 #include <algorithm>
-#include <functional>
+// #include <functional>
 
 #include "rtc_base/checks.h"
 #include "rtc_base/numerics/safe_minmax.h"
@@ -54,7 +54,7 @@ SubbandErleEstimator::SubbandErleEstimator(const EchoCanceller3Config& config,
   Reset();
 }
 
-SubbandErleEstimator::~SubbandErleEstimator() = default;
+SubbandErleEstimator::~SubbandErleEstimator() {}
 
 void SubbandErleEstimator::Reset() {
   for (auto& erle : erle_) {
@@ -69,9 +69,9 @@ void SubbandErleEstimator::Reset() {
 }
 
 void SubbandErleEstimator::Update(
-    rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
     const std::vector<bool>& converged_filters) {
   UpdateAccumulatedSpectra(X2, Y2, E2, converged_filters);
   UpdateBands(converged_filters);
@@ -88,7 +88,8 @@ void SubbandErleEstimator::Update(
 
 void SubbandErleEstimator::Dump(
     const std::unique_ptr<ApmDataDumper>& data_dumper) const {
-  data_dumper->DumpRaw("aec3_erle_onset", ErleOnsets()[0]);
+  data_dumper->DumpRaw(
+      "aec3_erle_onset", RTC_MAKE_VIEW(const float)(ErleOnsets()[0]));
 }
 
 void SubbandErleEstimator::UpdateBands(
@@ -176,9 +177,9 @@ void SubbandErleEstimator::ResetAccumulatedSpectra() {
 }
 
 void SubbandErleEstimator::UpdateAccumulatedSpectra(
-    rtc::ArrayView<const float, kFftLengthBy2Plus1> X2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ X2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
     const std::vector<bool>& converged_filters) {
   auto& st = accum_spectra_;
   RTC_DCHECK_EQ(st.E2.size(), E2.size());

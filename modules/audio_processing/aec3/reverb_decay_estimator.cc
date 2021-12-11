@@ -16,7 +16,7 @@
 #include <cmath>
 #include <numeric>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
@@ -32,7 +32,7 @@ constexpr float kEarlyReverbFirstPointAtLinearRegressors =
     -0.5f * kBlocksPerSection * kFftLengthBy2 + 0.5f;
 
 // Averages the values in a block of size kFftLengthBy2;
-float BlockAverage(rtc::ArrayView<const float> v, size_t block_index) {
+float BlockAverage(RTC_VIEW(const float) v, size_t block_index) {
   constexpr float kOneByFftLengthBy2 = 1.f / kFftLengthBy2;
   const int i = block_index * kFftLengthBy2;
   RTC_DCHECK_GE(v.size(), i + kFftLengthBy2);
@@ -42,7 +42,7 @@ float BlockAverage(rtc::ArrayView<const float> v, size_t block_index) {
 }
 
 // Analyzes the gain in a block.
-void AnalyzeBlockGain(const std::array<float, kFftLengthBy2>& h2,
+void AnalyzeBlockGain(RTC_VIEW(const float) /* kFftLengthBy2 */ h2,
                       float floor_gain,
                       float* previous_gain,
                       bool* block_adapting,
@@ -60,7 +60,7 @@ constexpr float SymmetricArithmetricSum(int N) {
 }
 
 // Returns the peak energy of an impulse response.
-float BlockEnergyPeak(rtc::ArrayView<const float> h, int peak_block) {
+float BlockEnergyPeak(RTC_VIEW(const float) h, int peak_block) {
   RTC_DCHECK_LE((peak_block + 1) * kFftLengthBy2, h.size());
   RTC_DCHECK_GE(peak_block, 0);
   float peak_value =
@@ -71,7 +71,7 @@ float BlockEnergyPeak(rtc::ArrayView<const float> h, int peak_block) {
 }
 
 // Returns the average energy of an impulse response block.
-float BlockEnergyAverage(rtc::ArrayView<const float> h, int block_index) {
+float BlockEnergyAverage(RTC_VIEW(const float) h, int block_index) {
   RTC_DCHECK_LE((block_index + 1) * kFftLengthBy2, h.size());
   RTC_DCHECK_GE(block_index, 0);
   constexpr float kOneByFftLengthBy2 = 1.f / kFftLengthBy2;
@@ -98,9 +98,9 @@ ReverbDecayEstimator::ReverbDecayEstimator(const EchoCanceller3Config& config)
                 static_cast<size_t>(kEarlyReverbMinSizeBlocks));
 }
 
-ReverbDecayEstimator::~ReverbDecayEstimator() = default;
+ReverbDecayEstimator::~ReverbDecayEstimator() {}
 
-void ReverbDecayEstimator::Update(rtc::ArrayView<const float> filter,
+void ReverbDecayEstimator::Update(RTC_VIEW(const float) filter,
                                   const rtc::Optional<float>& filter_quality,
                                   int filter_delay_blocks,
                                   bool usable_linear_filter,
@@ -156,7 +156,7 @@ void ReverbDecayEstimator::ResetDecayEstimation() {
   late_reverb_end_ = 0;
 }
 
-void ReverbDecayEstimator::EstimateDecay(rtc::ArrayView<const float> filter,
+void ReverbDecayEstimator::EstimateDecay(RTC_VIEW(const float) filter,
                                          int peak_block) {
   auto& h = filter;
   RTC_DCHECK_EQ(0, h.size() % kFftLengthBy2);
@@ -220,18 +220,19 @@ void ReverbDecayEstimator::EstimateDecay(rtc::ArrayView<const float> filter,
   early_reverb_estimator_.Reset();
 }
 
-void ReverbDecayEstimator::AnalyzeFilter(rtc::ArrayView<const float> filter) {
-  auto h = rtc::ArrayView<const float>(
+void ReverbDecayEstimator::AnalyzeFilter(RTC_VIEW(const float) filter) {
+  auto h = RTC_VIEW(const float)(
       filter.begin() + block_to_analyze_ * kFftLengthBy2, kFftLengthBy2);
 
   // Compute squared filter coeffiecients for the block to analyze_;
-  std::array<float, kFftLengthBy2> h2;
-  std::transform(h.begin(), h.end(), h2.begin(), [](float a) { return a * a; });
+  float h2[kFftLengthBy2];
+  RTC_VIEW(float) h2_view = RTC_MAKE_VIEW(float)(h2);
+  std::transform(h.begin(), h.end(), h2_view.begin(), [](float a) { return a * a; });
 
   // Map out the region for estimating the reverb decay.
   bool adapting;
   bool above_noise_floor;
-  AnalyzeBlockGain(h2, tail_gain_, &previous_gains_[block_to_analyze_],
+  AnalyzeBlockGain(h2_view, tail_gain_, &previous_gains_[block_to_analyze_],
                    &adapting, &above_noise_floor);
 
   // Count consecutive number of "good" filter sections, where "good" means:
@@ -247,13 +248,13 @@ void ReverbDecayEstimator::AnalyzeFilter(rtc::ArrayView<const float> filter) {
   // reflections.
   if (block_to_analyze_ <= late_reverb_end_) {
     if (block_to_analyze_ >= late_reverb_start_) {
-      for (float h2_k : h2) {
+      for (float h2_k : h2_view) {
         float h2_log2 = FastApproxLog2f(h2_k + 1e-10);
         late_reverb_decay_estimator_.Accumulate(h2_log2);
         early_reverb_estimator_.Accumulate(h2_log2, smoothing_constant_);
       }
     } else {
-      for (float h2_k : h2) {
+      for (float h2_k : h2_view) {
         float h2_log2 = FastApproxLog2f(h2_k + 1e-10);
         early_reverb_estimator_.Accumulate(h2_log2, smoothing_constant_);
       }
@@ -310,7 +311,7 @@ ReverbDecayEstimator::EarlyReverbLengthEstimator::EarlyReverbLengthEstimator(
 }
 
 ReverbDecayEstimator::EarlyReverbLengthEstimator::
-    ~EarlyReverbLengthEstimator() = default;
+    ~EarlyReverbLengthEstimator() {}
 
 void ReverbDecayEstimator::EarlyReverbLengthEstimator::Reset() {
   coefficients_counter_ = 0;
@@ -403,7 +404,8 @@ int ReverbDecayEstimator::EarlyReverbLengthEstimator::Estimate() {
 
 void ReverbDecayEstimator::EarlyReverbLengthEstimator::Dump(
     ApmDataDumper* data_dumper) const {
-  data_dumper->DumpRaw("aec3_er_acum_numerator", numerators_smooth_);
+  data_dumper->DumpRaw(
+      "aec3_er_acum_numerator", RTC_MAKE_VIEW(const float)(numerators_smooth_));
 }
 
 }  // namespace webrtc

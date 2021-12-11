@@ -18,9 +18,11 @@
     - level_controllor in m59 is agc2 in m70
     - ns in m88 renamed to ns2
     - using m88 |agc_manager_direct| instead of current
+7. remove =default, =delete
 
 TODOs
 1. remove aligned_array (lapped_transform uses this)
 2. change array_view (many use) to pure c
 4. use constructor_magic, remove = default
 5. use WEBRTC_TRACE instead of LOG_XXX (more c-like)
+6. remove CritScope in apm submodules(aec/agc/...) like m88 (thread safe is controlled by user(like apm), just algorithm)

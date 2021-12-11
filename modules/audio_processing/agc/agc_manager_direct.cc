@@ -14,7 +14,7 @@
 #include <cmath>
 
 #include "common_audio/include/audio_util.h"
-#include "modules/audio_processing/include/gain_control.h"
+// #include "modules/audio_processing/include/gain_control.h"
 #include "modules/audio_processing/agc/gain_map_internal.h"
 // #include "modules/audio_processing/agc2/adaptive_mode_level_estimator_agc.h"
 #include "rtc_base/atomic_ops.h"
@@ -157,7 +157,7 @@ MonoAgc::MonoAgc(ApmDataDumper* data_dumper,
   }
 }
 
-MonoAgc::~MonoAgc() = default;
+MonoAgc::~MonoAgc() {}
 
 void MonoAgc::Initialize() {
   max_level_ = kMaxMicLevel;
@@ -208,7 +208,7 @@ void MonoAgc::HandleClipping() {
 }
 
 void MonoAgc::SetLevel(int new_level) {
-  int voe_level = stream_analog_level_;
+  int voe_level = stream_analog_level_; // volume_callbacks_->GetMicVolume();
   if (voe_level == 0) {
     /* RTC_DLOG(LS_INFO)
         << "[agc] VolumeCallbacks returned level=0, taking no action."; */
@@ -243,7 +243,7 @@ void MonoAgc::SetLevel(int new_level) {
     return;
   }
 
-  stream_analog_level_ = new_level;
+  stream_analog_level_ = new_level; // volume_callbacks_->SetMicVolume(new_level);
   /* RTC_DLOG(LS_INFO) << "[agc] voe_level=" << voe_level << ", level_=" << level_
                     << ", new_level=" << new_level; */
   level_ = new_level;
@@ -276,7 +276,7 @@ void MonoAgc::SetCaptureMuted(bool muted) {
 }
 
 int MonoAgc::CheckVolumeAndReset() {
-  int level = stream_analog_level_;
+  int level = stream_analog_level_; // volume_callbacks_->GetMicVolume();
   // Reasons for taking action at startup:
   // 1) A person starting a call is expected to be heard.
   // 2) Independent of interpretation of |level| == 0 we should raise it so the
@@ -297,7 +297,7 @@ int MonoAgc::CheckVolumeAndReset() {
   if (level < minLevel) {
     level = minLevel;
     /* RTC_DLOG(LS_INFO) << "[agc] Initial volume too low, raising to " << level; */
-    stream_analog_level_ = level;
+    stream_analog_level_ = level; // volume_callbacks_->SetMicVolume(level);
   }
   agc_->Reset();
   level_ = level;
@@ -403,25 +403,29 @@ void MonoAgc::UpdateCompressor() {
     compression_ = new_compression;
     compression_accumulator_ = new_compression;
     new_compression_to_set_ = compression_;
+    /* if (gctrl_->set_compression_gain_db(compression_) != 0) {
+      RTC_LOG(LS_ERROR) << "set_compression_gain_db(" << compression_
+                        << ") failed.";
+    } */
   }
 }
 
 int AgcManagerDirect::instance_counter_ = 0;
 
-AgcManagerDirect::AgcManagerDirect(Agc* agc,
-                                   int startup_min_level,
-                                   int clipped_level_min,
-                                   int sample_rate_hz)
-    : AgcManagerDirect(/*num_capture_channels*/ 1,
-                       startup_min_level,
-                       clipped_level_min,
-                       /*use_agc2_level_estimation*/ false,
-                       /*disable_digital_adaptive*/ false,
-                       sample_rate_hz) {
-  RTC_DCHECK(channel_agcs_[0]);
-  RTC_DCHECK(agc);
-  channel_agcs_[0]->set_agc(agc);
-}
+// AgcManagerDirect::AgcManagerDirect(Agc* agc,
+//                                    int startup_min_level,
+//                                    int clipped_level_min,
+//                                    int sample_rate_hz)
+//     : AgcManagerDirect(/*num_capture_channels*/ 1,
+//                        startup_min_level,
+//                        clipped_level_min,
+//                        /*use_agc2_level_estimation*/ false,
+//                        /*disable_digital_adaptive*/ false,
+//                        sample_rate_hz) {
+//   RTC_DCHECK(channel_agcs_[0]);
+//   RTC_DCHECK(agc);
+//   channel_agcs_[0]->set_agc(agc);
+// }
 
 AgcManagerDirect::AgcManagerDirect(int num_capture_channels,
                                    int startup_min_level,
@@ -464,26 +468,26 @@ void AgcManagerDirect::Initialize() {
   AggregateChannelLevels();
 }
 
-void AgcManagerDirect::SetupDigitalGainControl(
+/* void AgcManagerDirect::SetupDigitalGainControl(
     GainControl* gain_control) const {
   RTC_DCHECK(gain_control);
   if (gain_control->set_mode(GainControl::kFixedDigital) != 0) {
-    /* RTC_LOG(LS_ERROR) << "set_mode(GainControl::kFixedDigital) failed."; */
+    RTC_LOG(LS_ERROR) << "set_mode(GainControl::kFixedDigital) failed.";
   }
   const int target_level_dbfs = disable_digital_adaptive_ ? 0 : 2;
   if (gain_control->set_target_level_dbfs(target_level_dbfs) != 0) {
-    /* RTC_LOG(LS_ERROR) << "set_target_level_dbfs() failed."; */
+    RTC_LOG(LS_ERROR) << "set_target_level_dbfs() failed.";
   }
   const int compression_gain_db =
       disable_digital_adaptive_ ? 0 : kDefaultCompressionGain;
   if (gain_control->set_compression_gain_db(compression_gain_db) != 0) {
-    /* RTC_LOG(LS_ERROR) << "set_compression_gain_db() failed."; */
+    RTC_LOG(LS_ERROR) << "set_compression_gain_db() failed.";
   }
   const bool enable_limiter = !disable_digital_adaptive_;
   if (gain_control->enable_limiter(enable_limiter) != 0) {
-    /* RTC_LOG(LS_ERROR) << "enable_limiter() failed."; */
+    RTC_LOG(LS_ERROR) << "enable_limiter() failed.";
   }
-}
+} */
 
 void AgcManagerDirect::AnalyzePreProcess(const AudioBuffer* audio) {
   RTC_DCHECK(audio);

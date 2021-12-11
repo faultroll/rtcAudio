@@ -8,13 +8,13 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef MODULES_AUDIO_PROCESSING_INCLUDE_GAIN_CONTROL_H_
-#define MODULES_AUDIO_PROCESSING_INCLUDE_GAIN_CONTROL_H_
+#ifndef MODULES_AUDIO_PROCESSING_AGC_GAIN_CONTROL_H_
+#define MODULES_AUDIO_PROCESSING_AGC_GAIN_CONTROL_H_
 
-#include <stddef.h>
-#include <stdbool.h>
+// #include <stddef.h>
+// #include <stdbool.h>
 #include <stdint.h>
-#include "modules/audio_processing/include/common.h"
+#include "modules/audio_processing/include/common.h" // errors
 
 namespace webrtc {
 
@@ -36,7 +36,7 @@ class GainControl {
   // When an analog mode is set, this should be called after |ProcessStream()|
   // to obtain the recommended new analog level for the audio HAL. It is the
   // users responsibility to apply this level.
-  virtual int stream_analog_level() /* const */ = 0;
+  virtual int stream_analog_level() const = 0;
 
   enum Mode {
     // Adaptive mode intended for use if an analog volume control is available
@@ -110,4 +110,4 @@ class GainControl {
 };
 }  // namespace webrtc
 
-#endif  // MODULES_AUDIO_PROCESSING_INCLUDE_GAIN_CONTROL_H_
+#endif  // MODULES_AUDIO_PROCESSING_AGC_GAIN_CONTROL_H_

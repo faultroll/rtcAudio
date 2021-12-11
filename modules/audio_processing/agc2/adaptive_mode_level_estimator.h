@@ -17,24 +17,21 @@
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/agc2/saturation_protector.h"
 #include "modules/audio_processing/agc2/vad_with_level.h"
-// #include "modules/audio_processing/include/audio_processing.h"
+#include "modules/audio_processing/agc2/agc2_config.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 class ApmDataDumper;
 
-enum LevelEstimator { kRms, kPeak };
+// enum LevelEstimator { kRms, kPeak };
 
 // Level estimator for the digital adaptive gain controller.
 class AdaptiveModeLevelEstimator {
  public:
   explicit AdaptiveModeLevelEstimator(ApmDataDumper* apm_data_dumper);
-  /* AdaptiveModeLevelEstimator(const AdaptiveModeLevelEstimator&) = delete;
-  AdaptiveModeLevelEstimator& operator=(const AdaptiveModeLevelEstimator&) =
-      delete; */
   AdaptiveModeLevelEstimator(
       ApmDataDumper* apm_data_dumper,
-      /* AudioProcessing::Config::GainController2:: */LevelEstimator level_estimator,
+      Agc2Config::LevelEstimator level_estimator,
       int adjacent_speech_frames_threshold,
       float initial_saturation_margin_db,
       float extra_saturation_margin_db);
@@ -73,8 +70,7 @@ class AdaptiveModeLevelEstimator {
 
   ApmDataDumper* const apm_data_dumper_;
 
-  const /* AudioProcessing::Config::GainController2:: */LevelEstimator
-      level_estimator_type_;
+  const Agc2Config::LevelEstimator level_estimator_type_;
   const int adjacent_speech_frames_threshold_;
   const float initial_saturation_margin_db_;
   const float extra_saturation_margin_db_;

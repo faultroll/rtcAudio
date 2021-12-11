@@ -17,7 +17,7 @@
 namespace webrtc {
 
 CircularBuffer::CircularBuffer(size_t size) : buffer_(size) {}
-CircularBuffer::~CircularBuffer() = default;
+CircularBuffer::~CircularBuffer() {}
 
 void CircularBuffer::Push(float value) {
   buffer_[next_insertion_index_] = value;

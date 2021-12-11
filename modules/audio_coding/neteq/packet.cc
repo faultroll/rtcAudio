@@ -12,10 +12,10 @@
 
 namespace webrtc {
 
-Packet::Packet() = default;
+Packet::Packet() {}
 Packet::Packet(Packet&& b) = default;
 
-Packet::~Packet() = default;
+Packet::~Packet() {}
 
 Packet& Packet::operator=(Packet&& b) = default;
 

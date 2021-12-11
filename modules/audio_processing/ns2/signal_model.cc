@@ -9,6 +9,7 @@
  */
 
 #include "modules/audio_processing/ns2/signal_model.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 
@@ -18,7 +19,10 @@ SignalModel::SignalModel() {
   lrt = kLtrFeatureThr;
   spectral_flatness = kSfFeatureThr;
   spectral_diff = kSfFeatureThr;
-  avg_log_lrt.fill(kLtrFeatureThr);
+
+  // avg_log_lrt.fill(kLtrFeatureThr);
+  RTC_VIEW(float) avg_log_lrt_view = RTC_MAKE_VIEW(float)(avg_log_lrt);
+  avg_log_lrt_view.fill(kLtrFeatureThr);
 }
 
 }  // namespace webrtc

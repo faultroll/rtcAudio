@@ -31,7 +31,7 @@ SplittingFilter::SplittingFilter(size_t num_channels,
   }
 }
 
-SplittingFilter::~SplittingFilter() = default;
+SplittingFilter::~SplittingFilter() {}
 
 void SplittingFilter::Analysis(const IFChannelBuffer* data,
                                IFChannelBuffer* bands) {

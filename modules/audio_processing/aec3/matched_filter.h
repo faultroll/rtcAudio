@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/system/arch.h"
@@ -33,9 +33,9 @@ namespace aec3 {
 void MatchedFilterCore_NEON(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum);
 
@@ -47,9 +47,9 @@ void MatchedFilterCore_NEON(size_t x_start_index,
 void MatchedFilterCore_SSE2(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum);
 
@@ -57,9 +57,9 @@ void MatchedFilterCore_SSE2(size_t x_start_index,
 void MatchedFilterCore_AVX2(size_t x_start_index,
                             float x2_sum_threshold,
                             float smoothing,
-                            rtc::ArrayView<const float> x,
-                            rtc::ArrayView<const float> y,
-                            rtc::ArrayView<float> h,
+                            RTC_VIEW(const float) x,
+                            RTC_VIEW(const float) y,
+                            RTC_VIEW(float) h,
                             bool* filters_updated,
                             float* error_sum);
 
@@ -69,9 +69,9 @@ void MatchedFilterCore_AVX2(size_t x_start_index,
 void MatchedFilterCore(size_t x_start_index,
                        float x2_sum_threshold,
                        float smoothing,
-                       rtc::ArrayView<const float> x,
-                       rtc::ArrayView<const float> y,
-                       rtc::ArrayView<float> h,
+                       RTC_VIEW(const float) x,
+                       RTC_VIEW(const float) y,
+                       RTC_VIEW(float) h,
                        bool* filters_updated,
                        float* error_sum);
 
@@ -84,7 +84,7 @@ class MatchedFilter {
   // Stores properties for the lag estimate corresponding to a particular signal
   // shift.
   struct LagEstimate {
-    LagEstimate() = default;
+    LagEstimate() {}
     LagEstimate(float accuracy, bool reliable, size_t lag, bool updated)
         : accuracy(accuracy), reliable(reliable), lag(lag), updated(updated) {}
 
@@ -109,14 +109,14 @@ class MatchedFilter {
 
   // Updates the correlation with the values in the capture buffer.
   void Update(const DownsampledRenderBuffer& render_buffer,
-              rtc::ArrayView<const float> capture);
+              RTC_VIEW(const float) capture);
 
   // Resets the matched filter.
   void Reset();
 
   // Returns the current lag estimates.
-  rtc::ArrayView<const MatchedFilter::LagEstimate> GetLagEstimates() const {
-    return lag_estimates_;
+  RTC_VIEW(const MatchedFilter::LagEstimate) GetLagEstimates() const {
+    return RTC_MAKE_VIEW(const MatchedFilter::LagEstimate)(lag_estimates_);
   }
 
   // Returns the maximum filter lag.

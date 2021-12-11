@@ -13,10 +13,10 @@
 #include <stddef.h>
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <numeric>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/checks.h"
 
@@ -28,8 +28,8 @@ namespace {
 // energy is computed in the power spectrum domain discarding the DC
 // contributions.
 float AverageDecayWithinFilter(
-    rtc::ArrayView<const float> freq_resp_direct_path,
-    rtc::ArrayView<const float> freq_resp_tail) {
+    RTC_VIEW(const float) freq_resp_direct_path,
+    RTC_VIEW(const float) freq_resp_tail) {
   // Skipping the DC for the ratio computation
   constexpr size_t kSkipBins = 1;
   RTC_CHECK_EQ(freq_resp_direct_path.size(), freq_resp_tail.size());
@@ -50,9 +50,9 @@ float AverageDecayWithinFilter(
 }  // namespace
 
 ReverbFrequencyResponse::ReverbFrequencyResponse() {
-  tail_response_.fill(0.f);
+  tail_response_view_.fill(0.f);
 }
-ReverbFrequencyResponse::~ReverbFrequencyResponse() = default;
+ReverbFrequencyResponse::~ReverbFrequencyResponse() {}
 
 void ReverbFrequencyResponse::Update(
     const std::vector<std::array<float, kFftLengthBy2Plus1>>&
@@ -72,10 +72,10 @@ void ReverbFrequencyResponse::Update(
         frequency_response,
     int filter_delay_blocks,
     float linear_filter_quality) {
-  rtc::ArrayView<const float> freq_resp_tail(
+  RTC_VIEW(const float) freq_resp_tail(
       frequency_response[frequency_response.size() - 1]);
 
-  rtc::ArrayView<const float> freq_resp_direct_path(
+  RTC_VIEW(const float) freq_resp_direct_path(
       frequency_response[filter_delay_blocks]);
 
   float average_decay =
@@ -85,13 +85,13 @@ void ReverbFrequencyResponse::Update(
   average_decay_ += smoothing * (average_decay - average_decay_);
 
   for (size_t k = 0; k < kFftLengthBy2Plus1; ++k) {
-    tail_response_[k] = freq_resp_direct_path[k] * average_decay_;
+    tail_response_view_[k] = freq_resp_direct_path[k] * average_decay_;
   }
 
   for (size_t k = 1; k < kFftLengthBy2; ++k) {
     const float avg_neighbour =
-        0.5f * (tail_response_[k - 1] + tail_response_[k + 1]);
-    tail_response_[k] = std::max(tail_response_[k], avg_neighbour);
+        0.5f * (tail_response_view_[k - 1] + tail_response_view_[k + 1]);
+    tail_response_view_[k] = std::max(tail_response_view_[k], avg_neighbour);
   }
 }
 

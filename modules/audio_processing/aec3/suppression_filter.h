@@ -11,9 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_FILTER_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_FILTER_H_
 
-#include <array>
+// #include <array>
 #include <vector>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/aec3_fft.h"
 #include "modules/audio_processing/aec3/fft_data.h"
@@ -27,11 +28,11 @@ class SuppressionFilter {
                     int sample_rate_hz,
                     size_t num_capture_channels_);
   ~SuppressionFilter();
-  void ApplyGain(rtc::ArrayView<const FftData> comfort_noise,
-                 rtc::ArrayView<const FftData> comfort_noise_high_bands,
-                 const std::array<float, kFftLengthBy2Plus1>& suppression_gain,
+  void ApplyGain(RTC_VIEW(const FftData) comfort_noise,
+                 RTC_VIEW(const FftData) comfort_noise_high_bands,
+                 RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ suppression_gain,
                  float high_bands_gain,
-                 rtc::ArrayView<const FftData> E_lowest_band,
+                 RTC_VIEW(const FftData) E_lowest_band,
                  std::vector<std::vector<std::vector<float>>>* e);
 
  private:

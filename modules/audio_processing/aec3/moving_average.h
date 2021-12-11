@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 namespace aec3 {
@@ -29,7 +29,7 @@ class MovingAverage {
 
   // Computes the average of input and mem_len-1 previous inputs and stores the
   // result in output.
-  void Average(rtc::ArrayView<const float> input, rtc::ArrayView<float> output);
+  void Average(RTC_VIEW(const float) input, RTC_VIEW(float) output);
 
  private:
   const size_t num_elem_;

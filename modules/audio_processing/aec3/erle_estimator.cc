@@ -10,6 +10,7 @@
 
 #include "modules/audio_processing/aec3/erle_estimator.h"
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "rtc_base/checks.h"
 
@@ -24,13 +25,12 @@ ErleEstimator::ErleEstimator(size_t startup_phase_length_blocks,
   if (config.erle.num_sections > 1) {
     signal_dependent_erle_estimator_ =
         std::unique_ptr<SignalDependentErleEstimator>(
-            new SignalDependentErleEstimator(
-                config, num_capture_channels));
+            new SignalDependentErleEstimator(config, num_capture_channels));
   }
   Reset(true);
 }
 
-ErleEstimator::~ErleEstimator() = default;
+ErleEstimator::~ErleEstimator() {}
 
 void ErleEstimator::Reset(bool delay_change) {
   fullband_erle_estimator_.Reset();
@@ -45,13 +45,11 @@ void ErleEstimator::Reset(bool delay_change) {
 
 void ErleEstimator::Update(
     const RenderBuffer& render_buffer,
-    rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+    const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
         filter_frequency_responses,
-    rtc::ArrayView<const float, kFftLengthBy2Plus1>
-        avg_render_spectrum_with_reverb,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> capture_spectra,
-    rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
-        subtractor_spectra,
+    RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ avg_render_spectrum_with_reverb,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& capture_spectra,
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& subtractor_spectra,
     const std::vector<bool>& converged_filters) {
   RTC_DCHECK_EQ(subband_erle_estimator_.Erle().size(), capture_spectra.size());
   RTC_DCHECK_EQ(subband_erle_estimator_.Erle().size(),

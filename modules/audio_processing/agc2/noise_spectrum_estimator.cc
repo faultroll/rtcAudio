@@ -13,9 +13,8 @@
 #include <string.h>
 #include <algorithm>
 
-#include "rtc_base/array_view.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 namespace {
@@ -32,7 +31,7 @@ void NoiseSpectrumEstimator::Initialize() {
             kMinNoisePower);
 }
 
-void NoiseSpectrumEstimator::Update(rtc::ArrayView<const float> spectrum,
+void NoiseSpectrumEstimator::Update(RTC_VIEW(const float) spectrum,
                                     bool first_update) {
   RTC_DCHECK_EQ(65, spectrum.size());
 

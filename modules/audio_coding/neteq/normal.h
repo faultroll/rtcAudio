@@ -24,8 +24,8 @@
 
 namespace webrtc {
 
-/* // Forward declarations.
-class AudioMultiVector;
+// Forward declarations.
+/* class AudioMultiVector;
 class BackgroundNoise;
 class DecoderDatabase;
 class Expand; */

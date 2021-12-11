@@ -89,7 +89,7 @@ struct EchoCanceller3Config {
     bool use_linear_filter = true;
     bool export_linear_aec_output = false;
 
-    /* struct MainConfiguration {
+    struct MainConfiguration {
       size_t length_blocks;
       float leakage_converged;
       float leakage_diverged;
@@ -97,7 +97,7 @@ struct EchoCanceller3Config {
       float noise_gate;
     };
     MainConfiguration main = {13, 0.00005f, 0.01f, 0.1f, 20075344.f};
-    MainConfiguration main_initial = {12, 0.005f, 0.5f, 0.001f, 20075344.f}; */
+    MainConfiguration main_initial = {12, 0.005f, 0.5f, 0.001f, 20075344.f};
 
     struct ShadowConfiguration {
       size_t length_blocks;

@@ -122,7 +122,7 @@ int64_t timespec_to_millisec(struct timespec *ts)
 int timespec_get_ntptime(struct timespec *ts)
 {
     // http://doc.ntp.org/archives/4.1.2/leap/
-    static const int64_t kNtpJan1970Sec = 2208988800;
+    static const int64_t kNtpJan1970Sec = INT64_C(2208988800);
     timespec_get_utctime(ts);
     ts->tv_sec += kNtpJan1970Sec;
 

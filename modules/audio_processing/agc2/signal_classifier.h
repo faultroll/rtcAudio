@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "common_audio/third_party/ooura/fft_size_128/ooura_fft.h"
 #include "rtc_base/constructor_magic.h"
 #include "modules/audio_processing/agc2/down_sampler.h"
@@ -33,7 +33,7 @@ class SignalClassifier {
   ~SignalClassifier();
 
   void Initialize(int sample_rate_hz);
-  SignalType Analyze(rtc::ArrayView<const float> signal);
+  SignalType Analyze(RTC_VIEW(const float) signal);
   void Analyze(const AudioBuffer& audio, SignalType* signal_type);
 
  private:
@@ -42,8 +42,8 @@ class SignalClassifier {
     FrameExtender(size_t frame_size, size_t extended_frame_size);
     ~FrameExtender();
 
-    void ExtendFrame(rtc::ArrayView<const float> x,
-                     rtc::ArrayView<float> x_extended);
+    void ExtendFrame(RTC_VIEW(const float) x,
+                     RTC_VIEW(float) x_extended);
 
    private:
     std::vector<float> x_old_;

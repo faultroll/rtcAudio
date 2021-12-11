@@ -30,7 +30,7 @@
 
 #include "modules/audio_coding/neteq/dtmf_tone_generator.h"
 
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -170,8 +170,7 @@ void DtmfToneGenerator::Reset() {
 }
 
 // Generate num_samples of DTMF signal and write to |output|.
-int DtmfToneGenerator::Generate(size_t num_samples,
-                                AudioMultiVector* output) {
+int DtmfToneGenerator::Generate(size_t num_samples, AudioMultiVector* output) {
   if (!initialized_) {
     return kNotInitialized;
   }
@@ -183,10 +182,10 @@ int DtmfToneGenerator::Generate(size_t num_samples,
   output->AssertSize(num_samples);
   for (size_t i = 0; i < num_samples; ++i) {
     // Use recursion formula y[n] = a * y[n - 1] - y[n - 2].
-    int16_t temp_val_low = ((coeff1_ * sample_history1_[1] + 8192) >> 14)
-        - sample_history1_[0];
-    int16_t temp_val_high = ((coeff2_ * sample_history2_[1] + 8192) >> 14)
-        - sample_history2_[0];
+    int16_t temp_val_low =
+        ((coeff1_ * sample_history1_[1] + 8192) >> 14) - sample_history1_[0];
+    int16_t temp_val_high =
+        ((coeff2_ * sample_history2_[1] + 8192) >> 14) - sample_history2_[0];
 
     // Update recursion memory.
     sample_history1_[0] = sample_history1_[1];

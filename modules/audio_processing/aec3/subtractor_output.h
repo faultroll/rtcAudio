@@ -13,7 +13,7 @@
 
 #include <array>
 
-#include "rtc_base/array_view.h"
+// #include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/fft_data.h"
 
@@ -44,7 +44,7 @@ struct SubtractorOutput {
   void Reset();
 
   // Updates the powers of the signals.
-  void ComputeMetrics(rtc::ArrayView<const float> y);
+  void ComputeMetrics(RTC_VIEW(const float) y);
 };
 
 }  // namespace webrtc

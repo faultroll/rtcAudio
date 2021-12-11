@@ -18,11 +18,12 @@
 #include "modules/audio_conference_mixer/source/audio_frame_manipulator.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/include/common.h"
-// #include "modules/audio_processing/include/audio_processing.h"
+/* #include "modules/audio_processing/agc/gain_control_impl.h"
+#include "modules/audio_processing/vad/voice_detection_impl.h" */
 #include "modules/audio_processing/logging/apm_data_dumper.h"
-// #include "system_wrappers/include/trace.h"
-#include "rtc_base/features/make_unique.h"
-#define WEBRTC_TRACE(...)
+// #include "modules/audio_processing/agc2/fixed_gain_controller.h"
+#include "modules/audio_processing/agc2/limiter.h"
+#include "rtc_base/trace.h"
 
 #define _VAD_METHOD_ENERGY_
 // #define _VAD_METHOD_VOICE_DETECTION_
@@ -148,18 +149,17 @@ AudioConferenceMixerImpl::AudioConferenceMixerImpl(int id)
       _supportMultipleInputs(false) {}
 
 bool AudioConferenceMixerImpl::Init() {
-    /* Config config;
-    config.Set<ExperimentalAgc>(new ExperimentalAgc(false));
-    _limiter.reset(AudioProcessing::Create(config));
-    if(!_limiter.get())
-        return false; */
+    /* _limiter.reset(
+        new GainControlImpl(&crit_render_, &crit_capture_)); */
     _data_dumper = std::unique_ptr<ApmDataDumper>(new ApmDataDumper(0));
-    /* _limiter = std::unique_ptr<FixedGainController>(
-        new FixedGainController(_data_dumper.get(), "AudioConferenceMixer")); */
-    // _limiter = std::unique_ptr<Limiter>(
-    //     new Limiter(static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"));
-    _limiter = rtc::make_unique<Limiter>(
-        static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"); // only one brace!
+    // _limiter.reset(
+    //     new FixedGainController(_data_dumper.get(), "AudioConferenceMixer");
+    _limiter = std::unique_ptr<Limiter>(
+        new Limiter(static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"));
+    // _limiter = rtc::make_unique<Limiter>(
+    //     static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"); // only one brace!
+    if(!_limiter.get())
+        return false;
 
     MemoryPool<AudioFrame>::CreateMemoryPool(_audioFramePool,
                                              DEFAULT_AUDIO_FRAME_POOLSIZE);
@@ -168,26 +168,23 @@ bool AudioConferenceMixerImpl::Init() {
 
     if(SetOutputFrequency(kDefaultFrequency) == -1)
         return false;
-
-    /* if(_limiter->gain_control()->set_mode(GainControl::kFixedDigital) !=
-        _limiter->kNoError)
-        return false; */
+    
+    /* if(_limiter->set_mode(GainControl::kFixedDigital) !=
+        AudioProcessing::kNoError)
+        return false;
     // We smoothly limit the mixed frame to -7 dbFS. -6 would correspond to the
     // divide-by-2 but -7 is used instead to give a bit of headroom since the
     // AGC is not a hard limiter.
-    /* if(_limiter->gain_control()->set_target_level_dbfs(7) != _limiter->kNoError)
+    if(_limiter->set_target_level_dbfs(7) != AudioProcessing::kNoError)
         return false;
-
-    if(_limiter->gain_control()->set_compression_gain_db(0)
-        != _limiter->kNoError)
+    if(_limiter->set_compression_gain_db(0)
+        != AudioProcessing::kNoError)
         return false;
-
-    if(_limiter->gain_control()->enable_limiter(true) != _limiter->kNoError)
+    if(_limiter->enable_limiter(true) != AudioProcessing::kNoError)
         return false;
-
-    if(_limiter->gain_control()->Enable(true) != _limiter->kNoError)
+    if(_limiter->Enable(true) != AudioProcessing::kNoError)
         return false; */
-    /* limiter_.SetGain(0.f); */
+    /* // limiter_.SetGain(0.f); */
 
     return true;
 }
@@ -1038,7 +1035,8 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     }
 
     // Smoothly limit the mixed frame.
-    /* const int error = _limiter->ProcessStream(mixedAudio); */
+    /* const int error = _limiter->ProcessCaptureAudio(
+        mixedAudio, echo_cancellation()->stream_has_echo()); */
 
     AudioBuffer mixing_buffer(mixedAudio->sample_rate_hz_,
                               mixedAudio->num_channels_,
@@ -1051,9 +1049,9 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     AudioFrameView<float> mixing_buffer_view(mixing_buffer.channels_f(),
                                              mixedAudio->num_channels_,
                                              mixedAudio->samples_per_channel_);
-    /* const size_t sample_rate = mixing_buffer_view.samples_per_channel_ * 1000 /
-                               AudioConferenceMixerImpl::kProcessPeriodicityInMs; */
-    _limiter->SetSampleRate(/* sample_rate */mixedAudio->sample_rate_hz_);
+    // const size_t sample_rate = mixing_buffer_view.samples_per_channel_ * 1000 /
+    //                            AudioConferenceMixerImpl::kProcessPeriodicityInMs;
+    _limiter->SetSampleRate(mixedAudio->sample_rate_hz_);
     _limiter->Process(mixing_buffer_view);
 
     // And now we can safely restore the level. This procedure results in
@@ -1068,7 +1066,7 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     // negative value is undefined).
     AudioFrameOperations::Add(*mixedAudio, mixedAudio);
 
-    /* if(error != _limiter->kNoError) {
+    /* if(error != AudioProcessing::kNoError) {
         WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, _id,
                      "Error from AudioProcessing: %d", error);
         assert(false);

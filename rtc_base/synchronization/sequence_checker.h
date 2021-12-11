@@ -87,8 +87,6 @@ class RTC_SCOPED_LOCKABLE SequenceCheckerScope {
       RTC_EXCLUSIVE_LOCK_FUNCTION(thread_like_object) {
     RTC_UNUSED(thread_like_object);
   }
-  // SequenceCheckerScope(const SequenceCheckerScope&) = delete;
-  // SequenceCheckerScope& operator=(const SequenceCheckerScope&) = delete;
   ~SequenceCheckerScope() RTC_UNLOCK_FUNCTION() {}
 
   template <typename ThreadLikeObject>

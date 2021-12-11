@@ -1,4 +1,4 @@
-srcs_4 += \
+srcs_main += \
         demos/pffft/conference_mixer/main.cc \
         demos/pffft/mixer/main.cc \
         demos/pffft/neteq/main.cc \

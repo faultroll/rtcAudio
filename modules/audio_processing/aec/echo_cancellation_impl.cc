@@ -13,10 +13,10 @@
 #include <string.h>
 
 #include "modules/audio_processing/include/common.h"
-#include "modules/audio_processing/aec/aec_core.h"
 #include "modules/audio_processing/aec/echo_cancellation.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/constructor_magic.h"
 // #include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
@@ -62,7 +62,6 @@ bool EnforceZeroStreamDelay() {
 }  // namespace
 
 struct EchoCancellationImpl::StreamProperties {
-  StreamProperties() = delete;
   StreamProperties(int sample_rate_hz,
                    size_t num_reverse_channels,
                    size_t num_output_channels,
@@ -76,6 +75,8 @@ struct EchoCancellationImpl::StreamProperties {
   const size_t num_reverse_channels;
   const size_t num_output_channels;
   const size_t num_proc_channels;
+
+  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(StreamProperties);
 };
 
 class EchoCancellationImpl::Canceller {
@@ -122,10 +123,10 @@ EchoCancellationImpl::EchoCancellationImpl(rtc::CriticalSection* crit_render,
   RTC_DCHECK(crit_capture);
 }
 
-EchoCancellationImpl::~EchoCancellationImpl() = default;
+EchoCancellationImpl::~EchoCancellationImpl() {}
 
 void EchoCancellationImpl::ProcessRenderAudio(
-    rtc::ArrayView<const float> packed_render_audio) {
+    RTC_VIEW(const float) packed_render_audio) {
   rtc::CritScope cs_capture(crit_capture_);
   if (!enabled_) {
     return;
@@ -400,13 +401,14 @@ int EchoCancellationImpl::GetDelayMetrics(int* median,
   return AudioProcessing::kNoError;
 }
 
-struct AecCore* EchoCancellationImpl::aec_core() const {
+/* struct AecCore* EchoCancellationImpl::aec_core() const {
   rtc::CritScope cs(crit_capture_);
   if (!enabled_) {
     return NULL;
   }
-  return WebRtcAec_aec_core(cancellers_[0]->state());
-}
+  return reinterpret_cast<struct AecCore *>( // convert from ::AecCore to webrtc::AecCore
+            WebRtcAec_aec_core(cancellers_[0]->state()));
+} */
 
 void EchoCancellationImpl::Initialize(int sample_rate_hz,
                                       size_t num_reverse_channels,

@@ -16,9 +16,9 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
-#include "modules/audio_processing/aec3/echo_control.h"
+#include "modules/audio_processing/include/echo_control.h"
 #include "modules/audio_processing/aec3/api_call_jitter_metrics.h"
 #include "modules/audio_processing/aec3/block_delay_buffer.h"
 #include "modules/audio_processing/aec3/block_framer.h"
@@ -180,11 +180,11 @@ class EchoCanceller3 : public EchoControl {
       linear_output_block_ RTC_GUARDED_BY(capture_race_checker_);
   std::vector<std::vector<std::vector<float>>> capture_block_
       RTC_GUARDED_BY(capture_race_checker_);
-  std::vector<std::vector<rtc::ArrayView<float>>> render_sub_frame_view_
+  std::vector<std::vector<RTC_VIEW(float)>> render_sub_frame_view_
       RTC_GUARDED_BY(capture_race_checker_);
-  std::vector<std::vector<rtc::ArrayView<float>>> linear_output_sub_frame_view_
+  std::vector<std::vector<RTC_VIEW(float)>> linear_output_sub_frame_view_
       RTC_GUARDED_BY(capture_race_checker_);
-  std::vector<std::vector<rtc::ArrayView<float>>> capture_sub_frame_view_
+  std::vector<std::vector<RTC_VIEW(float)>> capture_sub_frame_view_
       RTC_GUARDED_BY(capture_race_checker_);
   std::unique_ptr<BlockDelayBuffer> block_delay_buffer_
       RTC_GUARDED_BY(capture_race_checker_);

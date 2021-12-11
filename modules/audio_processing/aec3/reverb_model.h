@@ -11,9 +11,9 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_H_
 
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
 namespace webrtc {
@@ -29,19 +29,19 @@ class ReverbModel {
   void Reset();
 
   // Returns the reverb.
-  rtc::ArrayView<const float, kFftLengthBy2Plus1> reverb() const {
-    return reverb_;
+  RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ reverb() const {
+    return reverb_view_;
   }
 
-  /* void AddReverbNoFreqShaping(rtc::ArrayView<const float> power_spectrum,
+  void AddReverbNoFreqShaping(RTC_VIEW(const float) power_spectrum,
                               float power_spectrum_scaling,
                               float reverb_decay,
-                              rtc::ArrayView<float> reverb_power_spectrum);
+                              RTC_VIEW(float) reverb_power_spectrum);
 
-  void AddReverb(rtc::ArrayView<const float> power_spectrum,
-                 rtc::ArrayView<const float> freq_response_tail,
+  void AddReverb(RTC_VIEW(const float) power_spectrum,
+                 RTC_VIEW(const float) freq_response_tail,
                  float reverb_decay,
-                 rtc::ArrayView<float> reverb_power_spectrum); */
+                 RTC_VIEW(float) reverb_power_spectrum);
 
   // The methods UpdateReverbNoFreqShaping and UpdateReverb update the
   // estimate of the reverberation contribution to an input/output power
@@ -49,18 +49,19 @@ class ReverbModel {
   // power spectrum is pre-scaled. Use the method UpdateReverb when a different
   // scaling should be applied per frequency and UpdateReverb_no_freq_shape if
   // the same scaling should be used for all the frequencies.
-  void UpdateReverbNoFreqShaping(rtc::ArrayView<const float> power_spectrum,
+  void UpdateReverbNoFreqShaping(RTC_VIEW(const float) power_spectrum,
                                  float power_spectrum_scaling,
                                  float reverb_decay);
 
   // Update the reverb based on new data.
-  void UpdateReverb(rtc::ArrayView<const float> power_spectrum,
-                    rtc::ArrayView<const float> power_spectrum_scaling,
+  void UpdateReverb(RTC_VIEW(const float) power_spectrum,
+                    RTC_VIEW(const float) power_spectrum_scaling,
                     float reverb_decay);
 
  private:
 
-  std::array<float, kFftLengthBy2Plus1> reverb_;
+  float reverb_[kFftLengthBy2Plus1];
+  RTC_VIEW(float) reverb_view_ = RTC_MAKE_VIEW(float)(reverb_);
 };
 
 }  // namespace webrtc

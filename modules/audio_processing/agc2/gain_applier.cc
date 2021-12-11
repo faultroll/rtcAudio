@@ -25,7 +25,7 @@ bool GainCloseToOne(float gain_factor) {
 
 void ClipSignal(AudioFrameView<float> signal) {
   for (size_t k = 0; k < signal.num_channels(); ++k) {
-    rtc::ArrayView<float> channel_view = signal.channel(k);
+    RTC_VIEW(float) channel_view = signal.channel(k);
     for (auto& sample : channel_view) {
       sample = rtc::SafeClamp<float>(sample, kMinFloatS16Value, kMaxFloatS16Value);
     }
@@ -45,7 +45,7 @@ void ApplyGainWithRamping(float last_gain_linear,
   // Gain is constant and different from 1.
   if (last_gain_linear == gain_at_end_of_frame_linear) {
     for (size_t k = 0; k < float_frame.num_channels(); ++k) {
-      rtc::ArrayView<float> channel_view = float_frame.channel(k);
+      RTC_VIEW(float) channel_view = float_frame.channel(k);
       for (auto& sample : channel_view) {
         sample *= gain_at_end_of_frame_linear;
       }

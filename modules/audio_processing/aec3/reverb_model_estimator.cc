@@ -24,14 +24,14 @@ ReverbModelEstimator::ReverbModelEstimator(const EchoCanceller3Config& config,
   }
 }
 
-ReverbModelEstimator::~ReverbModelEstimator() = default;
+ReverbModelEstimator::~ReverbModelEstimator() {}
 
 void ReverbModelEstimator::Update(
-    rtc::ArrayView<const std::vector<float>> impulse_responses,
-    rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+    RTC_VIEW(const std::vector<float>) impulse_responses,
+    const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
         frequency_responses,
-    rtc::ArrayView<const rtc::Optional<float>> linear_filter_qualities,
-    rtc::ArrayView<const int> filter_delays_blocks,
+    RTC_VIEW(const rtc::Optional<float>) linear_filter_qualities,
+    RTC_VIEW(const int) filter_delays_blocks,
     const std::vector<bool>& usable_linear_estimates,
     bool stationary_block) {
   const size_t num_capture_channels = reverb_decay_estimators_.size();

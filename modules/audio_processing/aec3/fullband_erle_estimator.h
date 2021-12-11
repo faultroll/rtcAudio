@@ -11,11 +11,12 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_FULLBAND_ERLE_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_FULLBAND_ERLE_ESTIMATOR_H_
 
+// #include <array>
 #include <memory>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
@@ -33,9 +34,9 @@ class FullBandErleEstimator {
   void Reset();
 
   // Updates the ERLE estimator.
-  void Update(rtc::ArrayView<const float> X2,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Y2,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> E2,
+  void Update(RTC_VIEW(const float) X2,
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>& Y2,
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>& E2,
               const std::vector<bool>& converged_filters);
 
   // Returns the fullband ERLE estimates in log2 units.
@@ -49,7 +50,7 @@ class FullBandErleEstimator {
 
   // Returns an estimation of the current linear filter quality. It returns a
   // float number between 0 and 1 mapping 1 to the highest possible quality.
-  rtc::ArrayView<const rtc::Optional<float>> GetInstLinearQualityEstimates()
+  RTC_VIEW(const rtc::Optional<float>) GetInstLinearQualityEstimates()
       const {
     return linear_filters_qualities_;
   }

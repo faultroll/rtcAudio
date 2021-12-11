@@ -1,47 +1,46 @@
-#include<stdio.h>
-#include"webrtc\modules\audio_processing\ns\noise_suppression.h"
-#include"webrtc\modules\audio_processing\audio_buffer.h"
+#include <stdio.h>
+#include "modules/audio_processing/ns/noise_suppression.h"
+#include "modules/audio_processing/audio_buffer.h"
 
 int main(int argc, char *argv[])
 {
-	int iSampleRate = 16000;
-	int iChannels = 2;
-	int iBit = 16;
+    int iSampleRate = 16000;
+    int iChannels = 2;
+    int iBit = 16;
 
-	FILE *pSrc = nullptr,*pOut = nullptr;
+    FILE *pSrc = nullptr, *pOut = nullptr;
 
-	errno_t er = fopen_s(&pSrc, "../../1_1600_16_2.pcm", "rb+");
+    errno_t er = fopen_s(&pSrc, "../../1_1600_16_2.pcm", "rb+");
 
-	er = fopen_s(&pOut,"../../ns.pcm","wb+");
+    er = fopen_s(&pOut, "../../ns.pcm", "wb+");
 
-	NsHandle *phandle = WebRtcNs_Create();
+    NsHandle *phandle = WebRtcNs_Create();
 
-	int ir = WebRtcNs_Init(phandle, iSampleRate);
-	
-	ir = WebRtcNs_set_policy(phandle, 0);
+    int ir = WebRtcNs_Init(phandle, iSampleRate);
 
-	short *pbuf = new short[iSampleRate  / 100];
-	float *pbuff = new float[iSampleRate  / 100];
-	float *pbout = new float[iSampleRate  / 100];
+    ir = WebRtcNs_set_policy(phandle, 0);
 
-	int iR = fread(pbuf, sizeof(short), iSampleRate  / 100, pSrc);
-	while (iR)
-	{
-		webrtc::S16ToFloat((int16_t*)pbuf,iSampleRate /100,pbuff);
+    short *pbuf = new short[iSampleRate  / 100];
+    float *pbuff = new float[iSampleRate  / 100];
+    float *pbout = new float[iSampleRate  / 100];
 
-		WebRtcNs_Analyze(phandle, pbuff);
+    int iR = fread(pbuf, sizeof(short), iSampleRate  / 100, pSrc);
+    while (iR) {
+        webrtc::S16ToFloat((int16_t *)pbuf, iSampleRate / 100, pbuff);
 
-		WebRtcNs_Process(phandle, &pbuff, 1, &pbout);
-		
-		fwrite(pbout, sizeof(float), iSampleRate  / 100, pOut);
+        WebRtcNs_Analyze(phandle, pbuff);
 
-		iR = fread(pbuf, sizeof(short), iSampleRate  / 100, pSrc);
-	}
+        WebRtcNs_Process(phandle, &pbuff, 1, &pbout);
 
-	WebRtcNs_Free(phandle);
+        fwrite(pbout, sizeof(float), iSampleRate  / 100, pOut);
 
-	fclose(pSrc);
-	fclose(pOut);
+        iR = fread(pbuf, sizeof(short), iSampleRate  / 100, pSrc);
+    }
 
-	return 0;
+    WebRtcNs_Free(phandle);
+
+    fclose(pSrc);
+    fclose(pOut);
+
+    return 0;
 }

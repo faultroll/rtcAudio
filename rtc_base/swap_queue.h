@@ -19,6 +19,7 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/system/compile_magic.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -240,8 +241,7 @@ class SwapQueue {
   // mediated by num_elements_. queue_.size() is constant.
   std::vector<T> queue_;
 
-  SwapQueue(const SwapQueue&) = delete;
-  SwapQueue& operator=(const SwapQueue&) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(SwapQueue);
 };
 
 }  // namespace webrtc

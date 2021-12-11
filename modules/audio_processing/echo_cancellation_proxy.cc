@@ -18,7 +18,7 @@ EchoCancellationProxy::EchoCancellationProxy(
     : audio_processing_(audio_processing),
       echo_cancellation_(echo_cancellation) {}
 
-EchoCancellationProxy::~EchoCancellationProxy() = default;
+EchoCancellationProxy::~EchoCancellationProxy() {}
 
 int EchoCancellationProxy::Enable(bool enable) {
   // Change the config in APM to mirror the applied settings.

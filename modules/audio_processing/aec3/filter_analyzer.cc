@@ -13,7 +13,7 @@
 #include <math.h>
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <numeric>
 
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -25,7 +25,7 @@
 namespace webrtc {
 namespace {
 
-size_t FindPeakIndex(rtc::ArrayView<const float> filter_time_domain,
+size_t FindPeakIndex(RTC_VIEW(const float) filter_time_domain,
                      size_t peak_index_in,
                      size_t start_sample,
                      size_t end_sample) {
@@ -63,7 +63,7 @@ FilterAnalyzer::FilterAnalyzer(const EchoCanceller3Config& config,
   Reset();
 }
 
-FilterAnalyzer::~FilterAnalyzer() = default;
+FilterAnalyzer::~FilterAnalyzer() {}
 
 void FilterAnalyzer::Reset() {
   blocks_since_reset_ = 0;
@@ -75,7 +75,7 @@ void FilterAnalyzer::Reset() {
 }
 
 void FilterAnalyzer::Update(
-    rtc::ArrayView<const std::vector<float>> filters_time_domain,
+    RTC_VIEW(const std::vector<float>) filters_time_domain,
     const RenderBuffer& render_buffer,
     bool* any_filter_consistent,
     float* max_echo_path_gain) {
@@ -104,12 +104,13 @@ void FilterAnalyzer::Update(
 }
 
 void FilterAnalyzer::AnalyzeRegion(
-    rtc::ArrayView<const std::vector<float>> filters_time_domain,
+    RTC_VIEW(const std::vector<float>) filters_time_domain,
     const RenderBuffer& render_buffer) {
   // Preprocess the filter to avoid issues with low-frequency components in the
   // filter.
   PreProcessFilters(filters_time_domain);
-  data_dumper_->DumpRaw("aec3_linear_filter_processed_td", h_highpass_[0]);
+  data_dumper_->DumpRaw(
+      "aec3_linear_filter_processed_td", RTC_VIEW(const float)(h_highpass_[0]));
 
   constexpr float kOneByBlockSize = 1.f / kBlockSize;
   for (size_t ch = 0; ch < filters_time_domain.size(); ++ch) {
@@ -137,7 +138,7 @@ void FilterAnalyzer::AnalyzeRegion(
 }
 
 void FilterAnalyzer::UpdateFilterGain(
-    rtc::ArrayView<const float> filter_time_domain,
+    RTC_VIEW(const float) filter_time_domain,
     FilterAnalysisState* st) {
   bool sufficient_time_to_converge =
       blocks_since_reset_ > 5 * kNumBlocksPerSecond;
@@ -157,7 +158,7 @@ void FilterAnalyzer::UpdateFilterGain(
 }
 
 void FilterAnalyzer::PreProcessFilters(
-    rtc::ArrayView<const std::vector<float>> filters_time_domain) {
+    RTC_VIEW(const std::vector<float>) filters_time_domain) {
   for (size_t ch = 0; ch < filters_time_domain.size(); ++ch) {
     RTC_DCHECK_LT(region_.start_sample_, filters_time_domain[ch].size());
     RTC_DCHECK_LT(region_.end_sample_, filters_time_domain[ch].size());
@@ -165,15 +166,15 @@ void FilterAnalyzer::PreProcessFilters(
     RTC_DCHECK_GE(h_highpass_[ch].capacity(), filters_time_domain[ch].size());
     h_highpass_[ch].resize(filters_time_domain[ch].size());
     // Minimum phase high-pass filter with cutoff frequency at about 600 Hz.
-    constexpr std::array<float, 3> h = {
-        {0.7929742f, -0.36072128f, -0.47047766f}};
+    constexpr float h[3] = {0.7929742f, -0.36072128f, -0.47047766f};
+    RTC_VIEW(const float) h_view = RTC_MAKE_VIEW(const float)(h);
 
     std::fill(h_highpass_[ch].begin() + region_.start_sample_,
               h_highpass_[ch].begin() + region_.end_sample_ + 1, 0.f);
-    for (size_t k = std::max(h.size() - 1, region_.start_sample_);
+    for (size_t k = std::max(h_view.size() - 1, region_.start_sample_);
          k <= region_.end_sample_; ++k) {
-      for (size_t j = 0; j < h.size(); ++j) {
-        h_highpass_[ch][k] += filters_time_domain[ch][k - j] * h[j];
+      for (size_t j = 0; j < h_view.size(); ++j) {
+        h_highpass_[ch][k] += filters_time_domain[ch][k - j] * h_view[j];
       }
     }
   }
@@ -217,9 +218,9 @@ void FilterAnalyzer::ConsistentFilterDetector::Reset() {
 }
 
 bool FilterAnalyzer::ConsistentFilterDetector::Detect(
-    rtc::ArrayView<const float> filter_to_analyze,
+    RTC_VIEW(const float) filter_to_analyze,
     const FilterRegion& region,
-    rtc::ArrayView<const std::vector<float>> x_block,
+    RTC_VIEW(const std::vector<float>) x_block,
     size_t peak_index,
     int delay_blocks) {
   if (region.start_sample_ == 0) {

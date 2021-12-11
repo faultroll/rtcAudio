@@ -46,7 +46,7 @@ class BlockProcessor {
       std::unique_ptr<RenderDelayController> delay_controller,
       std::unique_ptr<EchoRemover> echo_remover);
 
-  virtual ~BlockProcessor() = default;
+  virtual ~BlockProcessor() {}
 
   // Get current metrics.
   virtual void GetMetrics(EchoControl::Metrics* metrics) const = 0;

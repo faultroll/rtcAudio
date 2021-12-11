@@ -15,11 +15,39 @@
 #include <memory>
 
 // #include "api/audio_codecs/audio_decoder.h"
+#include "rtc_base/optional.h"
 #include "rtc_base/buffer.h"
 #include "modules/audio_coding/neteq/tick_timer.h"
+#include "modules/audio_coding/neteq/post_decode_vad.h" // SpeechType
 // #include "typedefs.h"
 
 namespace webrtc {
+
+class EncodedAudioFrame {
+ public:
+  struct DecodeResult {
+    size_t num_decoded_samples;
+    SpeechType speech_type;
+  };
+
+  virtual ~EncodedAudioFrame() {}
+
+  // Returns the duration in samples-per-channel of this audio frame.
+  // If no duration can be ascertained, returns zero.
+  virtual size_t Duration() const = 0;
+
+  // Returns true if this packet contains DTX.
+  virtual bool IsDtxPacket() const;
+
+  // Decodes this frame of audio and writes the result in |decoded|.
+  // |decoded| must be large enough to store as many samples as indicated by a
+  // call to Duration() . On success, returns an absl::optional containing the
+  // total number of samples across all channels, as well as whether the
+  // decoder produced comfort noise or speech. On failure, returns an empty
+  // absl::optional. Decode may be called at most once per frame object.
+  virtual rtc::Optional<DecodeResult> Decode(
+      RTC_VIEW(int16_t) decoded) const = 0;
+};
 
 // Struct for holding RTP packets.
 struct Packet {
@@ -72,7 +100,7 @@ struct Packet {
   rtc::Buffer payload;
   Priority priority;
   std::unique_ptr<TickTimer::Stopwatch> waiting_time;
-  std::unique_ptr<AudioDecoder::EncodedAudioFrame> frame;
+  std::unique_ptr<EncodedAudioFrame> frame;
 
   Packet();
   Packet(Packet&& b);

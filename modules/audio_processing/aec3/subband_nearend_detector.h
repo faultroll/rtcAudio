@@ -13,7 +13,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
+// #include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/moving_average.h"
 #include "modules/audio_processing/aec3/nearend_detector.h"
@@ -30,11 +30,11 @@ class SubbandNearendDetector : public NearendDetector {
   bool IsNearendState() const override { return nearend_state_; }
 
   // Updates the state selection based on latest spectral estimates.
-  void Update(rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+  void Update(const std::vector<std::array<float, kFftLengthBy2Plus1>>&
                   nearend_spectrum,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>&
                   residual_echo_spectrum,
-              rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>>
+              const std::vector<std::array<float, kFftLengthBy2Plus1>>&
                   comfort_noise_spectrum,
               bool initial_state) override;
 

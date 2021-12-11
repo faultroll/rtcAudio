@@ -18,15 +18,16 @@ NrFft::NrFft() : bit_reversal_state_(kFftSize / 2), tables_(kFftSize / 2) {
   // Initialize WebRtc_rdt (setting (bit_reversal_state_[0] to 0 triggers
   // initialization)
   bit_reversal_state_[0] = 0.f;
-  std::array<float, kFftSize> tmp_buffer;
-  tmp_buffer.fill(0.f);
-  WebRtc_rdft(kFftSize, 1, tmp_buffer.data(), bit_reversal_state_.data(),
+  float tmp_buffer[kFftSize];
+  RTC_VIEW(float) tmp_buffer_view = RTC_MAKE_VIEW(float)(tmp_buffer);
+  tmp_buffer_view.fill(0.f);
+  WebRtc_rdft(kFftSize, 1, tmp_buffer_view.data(), bit_reversal_state_.data(),
               tables_.data());
 }
 
-void NrFft::Fft(rtc::ArrayView<float, kFftSize> time_data,
-                rtc::ArrayView<float, kFftSize> real,
-                rtc::ArrayView<float, kFftSize> imag) {
+void NrFft::Fft(RTC_VIEW(float) /* kFftSize */ time_data,
+                RTC_VIEW(float) /* kFftSize */ real,
+                RTC_VIEW(float) /* kFftSize */ imag) {
   WebRtc_rdft(kFftSize, 1, time_data.data(), bit_reversal_state_.data(),
               tables_.data());
 
@@ -42,9 +43,9 @@ void NrFft::Fft(rtc::ArrayView<float, kFftSize> time_data,
   }
 }
 
-void NrFft::Ifft(rtc::ArrayView<const float> real,
-                 rtc::ArrayView<const float> imag,
-                 rtc::ArrayView<float> time_data) {
+void NrFft::Ifft(RTC_VIEW(const float) real,
+                 RTC_VIEW(const float) imag,
+                 RTC_VIEW(float) time_data) {
   time_data[0] = real[0];
   time_data[1] = real[kFftSizeBy2Plus1 - 1];
   for (size_t i = 1; i < kFftSizeBy2Plus1 - 1; ++i) {

@@ -11,7 +11,6 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_GAIN_LIMITER_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_SUPPRESSION_GAIN_LIMITER_H_
 
-#include "rtc_base/array_view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "rtc_base/constructor_magic.h"
 

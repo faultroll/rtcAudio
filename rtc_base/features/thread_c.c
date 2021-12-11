@@ -12,6 +12,14 @@
     static int thrd_start_wrapper_func_helper(void *wrapper);
     #if defined(_THREAD_C_USE_POSIX)
         #include <sched.h> // sched_yield()
+        #if defined(__linux__) || defined(__LINUX__) || defined(linux) || defined(LINUX)
+            #define _THREAD_C_USE_LINUX
+        #endif /* defined(__linux__) */
+        #if defined(_THREAD_C_USE_LINUX)
+            #include <sys/prctl.h> // thrd_set_name
+            #include <sys/syscall.h>
+        #endif
+        #include <math.h> // fmax
         static void *thrd_start_wrapper_func(void *wrapper)
         {
             return (void *)(intptr_t)thrd_start_wrapper_func_helper(wrapper);
@@ -66,6 +74,48 @@
         void thrd_yield(void)
         {
             sched_yield(); // nanosleep(&ts_null, NULL);
+        }
+        int thrd_set_priority(thrd_t thr, int prio)
+        {
+            const int policy = SCHED_RR;
+            const int min_prio = sched_get_priority_min(policy);
+            const int max_prio = sched_get_priority_max(policy);
+            if (min_prio == -1 || max_prio == -1)
+                return thrd_error;
+
+            if (max_prio - min_prio <= 2)
+                return thrd_error;
+
+            // Convert webrtc priority to system priorities:
+            struct sched_param param;
+            const int top_prio = max_prio - 1;
+            const int low_prio = min_prio + 1;
+            switch (prio) {
+                case thrd_priority_low:
+                    param.sched_priority = low_prio;
+                    break;
+                case thrd_priority_normal:
+                    // The -1 ensures that the |thrd_priority_high| is always
+                    // greater or equal to |thrd_priority_normal|.
+                    param.sched_priority = (low_prio + top_prio - 1) / 2;
+                    break;
+                case thrd_priority_high:
+                    param.sched_priority = /* std::max */fmax(top_prio - 2, low_prio);
+                    break;
+                case thrd_priority_highest:
+                    param.sched_priority = /* std::max */fmax(top_prio - 1, low_prio);
+                    break;
+                case thrd_priority_realtime:
+                    param.sched_priority = top_prio;
+                    break;
+            }
+            return pthread_setschedparam(thr, policy, &param);
+        }
+        void thrd_set_name(const char *name)
+        {
+        #if defined(_THREAD_C_USE_LINUX)
+            prctl(PR_SET_NAME, (unsigned long)(uintptr_t)(name));  // NOLINT
+        #endif
         }
     #elif defined(_THREAD_C_USE_WIN)
         static DWORD WINAPI thrd_start_wrapper_func(LPVOID wrapper)
@@ -137,6 +187,25 @@
         {
             // Alertable sleep to permit RaiseFlag to run and update |stop_|.
             SleepEx(0, true); // Sleep(0);
+        }
+        int thrd_set_priority(thrd_t thr, int prio)
+        {
+            return SetThreadPrio(thr, prio);
+        }
+        void thrd_set_name(const char *name)
+        {
+            struct {
+                DWORD dwType;
+                LPCSTR szName;
+                DWORD dwThreadID;
+                DWORD dwFlags;
+            } threadname_info = {0x1000, name, static_cast<DWORD>(-1), 0};
+
+            __try {
+                RaiseException(0x406D1388, 0, sizeof(threadname_info) / sizeof(DWORD),
+                            reinterpret_cast<ULONG_PTR *>(&threadname_info));
+            } __except (EXCEPTION_EXECUTE_HANDLER) {  // NOLINT
+            }
         }
     #elif defined(_THREAD_C_USE_NONE)
         // use coroutine

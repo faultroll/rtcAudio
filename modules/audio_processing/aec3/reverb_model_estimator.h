@@ -11,11 +11,11 @@
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_REVERB_MODEL_ESTIMATOR_H_
 
-#include <array>
+// #include <array>
 #include <vector>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"  // kFftLengthBy2Plus1
 #include "modules/audio_processing/aec3/reverb_decay_estimator.h"
@@ -34,11 +34,11 @@ class ReverbModelEstimator {
 
   // Updates the estimates based on new data.
   void Update(
-      rtc::ArrayView<const std::vector<float>> impulse_responses,
-      rtc::ArrayView<const std::vector<std::array<float, kFftLengthBy2Plus1>>>
+      RTC_VIEW(const std::vector<float>) impulse_responses,
+      const std::vector<std::vector<std::array<float, kFftLengthBy2Plus1>>>&
           frequency_responses,
-      rtc::ArrayView<const rtc::Optional<float>> linear_filter_qualities,
-      rtc::ArrayView<const int> filter_delays_blocks,
+      RTC_VIEW(const rtc::Optional<float>) linear_filter_qualities,
+      RTC_VIEW(const int) filter_delays_blocks,
       const std::vector<bool>& usable_linear_estimates,
       bool stationary_block);
 
@@ -48,7 +48,7 @@ class ReverbModelEstimator {
 
   // Return the frequency response of the reverberant echo.
   // TODO(peah): Correct to properly support multiple channels.
-  rtc::ArrayView<const float> GetReverbFrequencyResponse() const {
+  RTC_VIEW(const float) GetReverbFrequencyResponse() const {
     return reverb_frequency_responses_[0].FrequencyResponse();
   }
 

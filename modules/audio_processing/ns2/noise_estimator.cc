@@ -20,7 +20,7 @@ namespace webrtc {
 namespace {
 
 // Log(i).
-constexpr std::array<float, 129> log_table = {
+constexpr float log_table[129] = {
     0.f,       0.f,       0.f,       0.f,       0.f,       1.609438f, 1.791759f,
     1.945910f, 2.079442f, 2.197225f, 2.302585f, 2.397895f, 2.484907f, 2.564949f,
     2.639057f, 2.708050f, 2.772589f, 2.833213f, 2.890372f, 2.944439f, 2.995732f,
@@ -45,20 +45,26 @@ constexpr std::array<float, 129> log_table = {
 
 NoiseEstimator::NoiseEstimator(const SuppressionParams& suppression_params)
     : suppression_params_(suppression_params) {
-  noise_spectrum_.fill(0.f);
-  prev_noise_spectrum_.fill(0.f);
-  conservative_noise_spectrum_.fill(0.f);
-  parametric_noise_spectrum_.fill(0.f);
+  RTC_VIEW(float) noise_spectrum_view = RTC_MAKE_VIEW(float)(noise_spectrum_);
+  noise_spectrum_view.fill(0.f);
+  RTC_VIEW(float) prev_noise_spectrum_view = RTC_MAKE_VIEW(float)(prev_noise_spectrum_);
+  prev_noise_spectrum_view.fill(0.f);
+  RTC_VIEW(float) conservative_noise_spectrum_view = RTC_MAKE_VIEW(float)(conservative_noise_spectrum_);
+  conservative_noise_spectrum_view.fill(0.f);
+  RTC_VIEW(float) parametric_noise_spectrum_view = RTC_MAKE_VIEW(float)(parametric_noise_spectrum_);
+  parametric_noise_spectrum_view.fill(0.f);
 }
 
 void NoiseEstimator::PrepareAnalysis() {
-  std::copy(noise_spectrum_.begin(), noise_spectrum_.end(),
-            prev_noise_spectrum_.begin());
+  RTC_VIEW(float) noise_spectrum_view = RTC_MAKE_VIEW(float)(noise_spectrum_);
+  RTC_VIEW(float) prev_noise_spectrum_view = RTC_MAKE_VIEW(float)(prev_noise_spectrum_);
+  std::copy(noise_spectrum_view.begin(), noise_spectrum_view.end(),
+            prev_noise_spectrum_view.begin());
 }
 
 void NoiseEstimator::PreUpdate(
     int32_t num_analyzed_frames,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum,
     float signal_spectral_sum) {
   quantile_noise_estimator_.Estimate(signal_spectrum, noise_spectrum_);
 
@@ -147,8 +153,8 @@ void NoiseEstimator::PreUpdate(
 }
 
 void NoiseEstimator::PostUpdate(
-    rtc::ArrayView<const float> speech_probability,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum) {
+    RTC_VIEW(const float) speech_probability,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum) {
   // Time-avg parameter for noise_spectrum update.
   constexpr float kNoiseUpdate = 0.9f;
 

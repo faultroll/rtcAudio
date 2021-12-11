@@ -21,8 +21,8 @@
 
 namespace {
 
-float Power(rtc::ArrayView<const float> input) {
-  if (input.empty()) {
+float Power(RTC_VIEW(const float) input) {
+  if (input.size() == 0) {
     return 0.f;
   }
   return std::inner_product(input.begin(), input.end(), input.begin(), 0.f) /
@@ -52,10 +52,10 @@ ResidualEchoDetector::ResidualEchoDetector()
       covariances_(kLookbackFrames),
       recent_likelihood_max_(kAggregationBufferSize) {}
 
-ResidualEchoDetector::~ResidualEchoDetector() = default;
+ResidualEchoDetector::~ResidualEchoDetector() {}
 
 void ResidualEchoDetector::AnalyzeRenderAudio(
-    rtc::ArrayView<const float> render_audio) {
+    RTC_VIEW(const float) render_audio) {
   // Dump debug data assuming 48 kHz sample rate (if this assumption is not
   // valid the dumped audio will need to be converted offline accordingly).
   data_dumper_->DumpWav("ed_render", render_audio.size(), render_audio.data(),
@@ -76,7 +76,7 @@ void ResidualEchoDetector::AnalyzeRenderAudio(
 }
 
 void ResidualEchoDetector::AnalyzeCaptureAudio(
-    rtc::ArrayView<const float> capture_audio) {
+    RTC_VIEW(const float) capture_audio) {
   // Dump debug data assuming 48 kHz sample rate (if this assumption is not
   // valid the dumped audio will need to be converted offline accordingly).
   data_dumper_->DumpWav("ed_capture", capture_audio.size(),

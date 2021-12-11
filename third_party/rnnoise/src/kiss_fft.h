@@ -33,6 +33,7 @@
 #include <array>
 #include <complex>
 #include <vector>
+#include "rtc_base/constructor_magic.h"
 
 namespace rnnoise {
 
@@ -45,8 +46,6 @@ class KissFft {
   class KissFftState {
    public:
     KissFftState(int num_fft_points);
-    KissFftState(const KissFftState&) = delete;
-    KissFftState& operator=(const KissFftState&) = delete;
     ~KissFftState();
 
     const int nfft;
@@ -54,11 +53,11 @@ class KissFft {
     std::array<int16_t, 2 * kMaxFactors> factors;
     std::vector<int16_t> bitrev;
     std::vector<std::complex<float>> twiddles;
+
+    RTC_DISALLOW_COPY_AND_ASSIGN(KissFftState);
   };
 
   explicit KissFft(const int nfft);
-  KissFft(const KissFft&) = delete;
-  KissFft& operator=(const KissFft&) = delete;
   ~KissFft();
   void ForwardFft(const size_t in_size,
                   const std::complex<float>* in,
@@ -71,6 +70,8 @@ class KissFft {
 
  private:
   KissFftState state_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(KissFft);
 };
 
 }  // namespace rnnoise

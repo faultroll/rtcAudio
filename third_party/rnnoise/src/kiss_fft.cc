@@ -400,11 +400,11 @@ KissFft::KissFftState::KissFftState(int num_fft_points)
                        bitrev.data());
 }
 
-KissFft::KissFftState::~KissFftState() = default;
+KissFft::KissFftState::~KissFftState() {}
 
 KissFft::KissFft(const int nfft) : state_(nfft) {}
 
-KissFft::~KissFft() = default;
+KissFft::~KissFft() {}
 
 void KissFft::ForwardFft(const size_t in_size,
                          const std::complex<float>* in,

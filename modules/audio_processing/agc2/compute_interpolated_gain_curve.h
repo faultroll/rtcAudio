@@ -11,7 +11,7 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_COMPUTE_INTERPOLATED_GAIN_CURVE_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_COMPUTE_INTERPOLATED_GAIN_CURVE_H_
 
-#include <array>
+// #include <array>
 
 #include "modules/audio_processing/agc2/agc2_common.h"
 
@@ -33,12 +33,9 @@ namespace test {
 // |approx_params_m_| and |approx_params_q_| are the slope and the y-intercept
 // values of each piece.
 struct InterpolatedParameters {
-  std::array<float, kInterpolatedGainCurveTotalPoints>
-      computed_approximation_params_x;
-  std::array<float, kInterpolatedGainCurveTotalPoints>
-      computed_approximation_params_m;
-  std::array<float, kInterpolatedGainCurveTotalPoints>
-      computed_approximation_params_q;
+  float computed_approximation_params_x[kInterpolatedGainCurveTotalPoints];
+  float computed_approximation_params_m[kInterpolatedGainCurveTotalPoints];
+  float computed_approximation_params_q[kInterpolatedGainCurveTotalPoints];
 };
 
 InterpolatedParameters ComputeInterpolatedGainCurveApproximationParams();

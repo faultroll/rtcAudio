@@ -11,12 +11,15 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SYMMETRIC_MATRIX_BUFFER_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_RNN_VAD_SYMMETRIC_MATRIX_BUFFER_H_
 
-#include <algorithm>
-#include <array>
-#include <cstring>
-#include <utility>
+#include <stddef.h>
+#include <string.h>
 
-#include "rtc_base/array_view.h"
+#include <algorithm>
+// #include <array>
+// #include <cstring>
+// #include <utility>
+
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/constructor_magic.h"
 
@@ -35,15 +38,14 @@ class SymmetricMatrixBuffer {
   static_assert(S > 2, "");
 
  public:
-  SymmetricMatrixBuffer() {}
-  /* SymmetricMatrixBuffer(const SymmetricMatrixBuffer&) = delete;
-  SymmetricMatrixBuffer& operator=(const SymmetricMatrixBuffer&) = delete; */
+  SymmetricMatrixBuffer() : 
+    buf_view_(RTC_MAKE_VIEW(T)(buf_)) {}
   ~SymmetricMatrixBuffer() {}
   // Sets the buffer values to zero.
   void Reset() {
-    static_assert(std::is_arithmetic<T>::value,
-                  "Integral or floating point required.");
-    buf_.fill(0);
+    // static_assert(std::is_arithmetic<T>::value,
+    //               "Integral or floating point required.");
+    buf_view_.fill(0);
   }
   // Pushes the results from the comparison between the most recent item and
   // those that are still in the ring buffer. The first element in |values| must
@@ -51,16 +53,16 @@ class SymmetricMatrixBuffer {
   // most recent one in the ring buffer, whereas the last element in |values|
   // must correspond to the comparison between the most recent item and the
   // oldest one in the ring buffer.
-  void Push(rtc::ArrayView<T, S - 1> values) {
+  void Push(RTC_VIEW(T) /* S - 1 */ values) {
     // Move the lower-right sub-matrix of size (S-2) x (S-2) one row up and one
     // column left.
-    std::memmove(buf_.data(), buf_.data() + S, (buf_.size() - S) * sizeof(T));
+    memmove(buf_view_.data(), buf_view_.data() + S, (buf_view_.size() - S) * sizeof(T));
     // Copy new values in the last column in the right order.
     for (size_t i = 0; i < values.size(); ++i) {
       const size_t index = (S - 1 - i) * (S - 1) - 1;
       RTC_DCHECK_LE(static_cast<size_t>(0), index);
-      RTC_DCHECK_LT(index, buf_.size());
-      buf_[index] = values[i];
+      RTC_DCHECK_LT(index, buf_view_.size());
+      buf_view_[index] = values[i];
     }
   }
   // Reads the value that corresponds to comparison of two items in the ring
@@ -78,15 +80,16 @@ class SymmetricMatrixBuffer {
     RTC_DCHECK_LT(col, S);
     const int index = row * (S - 1) + (col - 1);
     RTC_DCHECK_LE(0, index);
-    RTC_DCHECK_LT(index, buf_.size());
-    return buf_[index];
+    RTC_DCHECK_LT(index, buf_view_.size());
+    return buf_view_[index];
   }
 
  private:
   // Encode an upper-right triangular matrix (excluding its diagonal) using a
   // square matrix. This allows to move the data in Push() with one single
   // operation.
-  std::array<T, (S - 1) * (S - 1)> buf_{{}};
+  T buf_[(S - 1) * (S - 1)];
+  RTC_VIEW(T) /* (S - 1) * (S - 1) */ buf_view_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(SymmetricMatrixBuffer);
 };

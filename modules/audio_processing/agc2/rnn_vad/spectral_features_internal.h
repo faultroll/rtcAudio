@@ -13,11 +13,12 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -34,7 +35,7 @@ static_assert(kOpusBands24kHz < kNumBands,
 // sample rate of 24 kHz for 20 ms frames.
 // Declared here for unit testing.
 constexpr std::array<int, kOpusBands24kHz - 1> GetOpusScaleNumBins24kHz20ms() {
-  return {4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 16, 16, 16, 24, 24, 32, 48};
+  return {{4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 16, 16, 16, 24, 24, 32, 48}};
 }
 
 // TODO(bugs.webrtc.org/10480): Move to a separate file.
@@ -45,8 +46,6 @@ class SpectralCorrelator {
  public:
   // Ctor.
   SpectralCorrelator();
-  SpectralCorrelator(const SpectralCorrelator&) = delete;
-  SpectralCorrelator& operator=(const SpectralCorrelator&) = delete;
   ~SpectralCorrelator();
 
   // Computes the band-wise spectral auto-correlations.
@@ -55,8 +54,8 @@ class SpectralCorrelator {
   //  - be encoded as vectors of interleaved real-complex FFT coefficients
   //    where x[1] = y[1] = 0 (the Nyquist frequency coefficient is omitted).
   void ComputeAutoCorrelation(
-      rtc::ArrayView<const float> x,
-      rtc::ArrayView<float, kOpusBands24kHz> auto_corr) const;
+      RTC_VIEW(const float) x,
+      RTC_VIEW(float) /* kOpusBands24kHz */ auto_corr) const;
 
   // Computes the band-wise spectral cross-correlations.
   // |x| and |y| must:
@@ -64,12 +63,14 @@ class SpectralCorrelator {
   //  - be encoded as vectors of interleaved real-complex FFT coefficients where
   //    x[1] = y[1] = 0 (the Nyquist frequency coefficient is omitted).
   void ComputeCrossCorrelation(
-      rtc::ArrayView<const float> x,
-      rtc::ArrayView<const float> y,
-      rtc::ArrayView<float, kOpusBands24kHz> cross_corr) const;
+      RTC_VIEW(const float) x,
+      RTC_VIEW(const float) y,
+      RTC_VIEW(float) /* kOpusBands24kHz */ cross_corr) const;
 
  private:
   const std::vector<float> weights_;  // Weights for each Fourier coefficient.
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(SpectralCorrelator);
 };
 
 // TODO(bugs.webrtc.org/10480): Move to anonymous namespace in
@@ -77,22 +78,22 @@ class SpectralCorrelator {
 // computes the log magnitude spectrum applying smoothing both over time and
 // over frequency. Declared here for unit testing.
 void ComputeSmoothedLogMagnitudeSpectrum(
-    rtc::ArrayView<const float> bands_energy,
-    rtc::ArrayView<float, kNumBands> log_bands_energy);
+    RTC_VIEW(const float) bands_energy,
+    RTC_VIEW(float) /* kNumBands */ log_bands_energy);
 
 // TODO(bugs.webrtc.org/10480): Move to anonymous namespace in
 // spectral_features.cc. Creates a DCT table for arrays having size equal to
 // |kNumBands|. Declared here for unit testing.
-std::array<float, kNumBands * kNumBands> ComputeDctTable();
+void ComputeDctTable(RTC_VIEW(float) /* kNumBands * kNumBands */ dct_table);
 
 // TODO(bugs.webrtc.org/10480): Move to anonymous namespace in
 // spectral_features.cc. Computes DCT for |in| given a pre-computed DCT table.
 // In-place computation is not allowed and |out| can be smaller than |in| in
 // order to only compute the first DCT coefficients. Declared here for unit
 // testing.
-void ComputeDct(rtc::ArrayView<const float> in,
-                rtc::ArrayView<const float, kNumBands * kNumBands> dct_table,
-                rtc::ArrayView<float> out);
+void ComputeDct(RTC_VIEW(const float) in,
+                RTC_VIEW(const float) /* kNumBands * kNumBands */ dct_table,
+                RTC_VIEW(float) out);
 
 }  // namespace rnn_vad
 }  // namespace webrtc

@@ -13,8 +13,7 @@
 
 #include <vector>
 
-#include "rtc_base/array_view.h"
-#include "rtc_base/arraysize.h"
+#include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
@@ -30,7 +29,7 @@ class BiQuadFilter {
     float a[2];
   };
 
-  BiQuadFilter() = default;
+  BiQuadFilter() {}
 
   void Initialize(const BiQuadCoefficients& coefficients) {
     coefficients_ = coefficients;
@@ -40,7 +39,7 @@ class BiQuadFilter {
 
   // Produces a filtered output y of the input x. Both x and y need to
   // have the same length. In-place modification is allowed.
-  void Process(rtc::ArrayView<const float> x, rtc::ArrayView<float> y);
+  void Process(RTC_VIEW(const float) x, RTC_VIEW(float) y);
 
  private:
   struct BiQuadState {

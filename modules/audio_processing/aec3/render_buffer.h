@@ -13,10 +13,10 @@
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/block_buffer.h"
 #include "modules/audio_processing/aec3/fft_buffer.h"
@@ -44,7 +44,7 @@ class RenderBuffer {
   }
 
   // Get the spectrum from one of the FFTs in the buffer.
-  rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> Spectrum(
+  const std::vector<std::array<float, kFftLengthBy2Plus1>>& Spectrum(
       int buffer_offset_ffts) const {
     int position = spectrum_buffer_->OffsetIndex(spectrum_buffer_->read,
                                                  buffer_offset_ffts);
@@ -52,7 +52,7 @@ class RenderBuffer {
   }
 
   // Returns the circular fft buffer.
-  rtc::ArrayView<const std::vector<FftData>> GetFftBuffer() const {
+  RTC_VIEW(const std::vector<FftData>) GetFftBuffer() const {
     return fft_buffer_->buffer;
   }
 
@@ -65,13 +65,13 @@ class RenderBuffer {
 
   // Returns the sum of the spectrums for a certain number of FFTs.
   void SpectralSum(size_t num_spectra,
-                   std::array<float, kFftLengthBy2Plus1>* X2) const;
+                   RTC_VIEW(float) /* kFftLengthBy2Plus1 */ X2) const;
 
   // Returns the sums of the spectrums for two numbers of FFTs.
   void SpectralSums(size_t num_spectra_shorter,
                     size_t num_spectra_longer,
-                    std::array<float, kFftLengthBy2Plus1>* X2_shorter,
-                    std::array<float, kFftLengthBy2Plus1>* X2_longer) const;
+                    RTC_VIEW(float) /* kFftLengthBy2Plus1 */ X2_shorter,
+                    RTC_VIEW(float) /* kFftLengthBy2Plus1 */ X2_longer) const;
 
   // Gets the recent activity seen in the render signal.
   bool GetRenderActivity() const { return render_activity_; }

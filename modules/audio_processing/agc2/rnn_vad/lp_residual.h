@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -24,16 +24,16 @@ constexpr size_t kNumLpcCoefficients = 5;
 // Given a frame |x|, computes a post-processed version of LPC coefficients
 // tailored for pitch estimation.
 void ComputeAndPostProcessLpcCoefficients(
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float, kNumLpcCoefficients> lpc_coeffs);
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) /* kNumLpcCoefficients */ lpc_coeffs);
 
 // Computes the LP residual for the input frame |x| and the LPC coefficients
 // |lpc_coeffs|. |y| and |x| can point to the same array for in-place
 // computation.
 void ComputeLpResidual(
-    rtc::ArrayView<const float, kNumLpcCoefficients> lpc_coeffs,
-    rtc::ArrayView<const float> x,
-    rtc::ArrayView<float> y);
+    RTC_VIEW(const float) /* kNumLpcCoefficients */ lpc_coeffs,
+    RTC_VIEW(const float) x,
+    RTC_VIEW(float) y);
 
 }  // namespace rnn_vad
 }  // namespace webrtc

@@ -43,9 +43,6 @@ class AdaptiveDigitalGainApplier {
                              int adjacent_speech_frames_threshold,
                              float max_gain_change_db_per_second,
                              float max_output_noise_level_dbfs);
-  AdaptiveDigitalGainApplier(const AdaptiveDigitalGainApplier&) = delete;
-  AdaptiveDigitalGainApplier& operator=(const AdaptiveDigitalGainApplier&) =
-      delete;
 
   // Analyzes `info`, updates the digital gain and applies it to a 10 ms
   // `frame`. Supports any sample rate supported by APM.
@@ -62,6 +59,8 @@ class AdaptiveDigitalGainApplier {
   int calls_since_last_gain_log_;
   int frames_to_gain_increase_allowed_;
   float last_gain_db_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(AdaptiveDigitalGainApplier);
 };
 
 }  // namespace webrtc

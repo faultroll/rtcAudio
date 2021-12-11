@@ -27,14 +27,14 @@ using saturation_protector_impl::RingBuffer;
 }  // namespace
 
 bool RingBuffer::operator==(const RingBuffer& b) const {
-  RTC_DCHECK_LE(size_, buffer_.size());
-  RTC_DCHECK_LE(b.size_, b.buffer_.size());
+  RTC_DCHECK_LE(size_, buffer_view_.size());
+  RTC_DCHECK_LE(b.size_, b.buffer_view_.size());
   if (size_ != b.size_) {
     return false;
   }
   for (int i = 0, i0 = FrontIndex(), i1 = b.FrontIndex(); i < (int)size_;
        ++i, ++i0, ++i1) {
-    if (buffer_[i0 % buffer_.size()] != b.buffer_[i1 % b.buffer_.size()]) {
+    if (buffer_view_[i0 % buffer_view_.size()] != b.buffer_view_[i1 % b.buffer_view_.size()]) {
       return false;
     }
   }
@@ -49,13 +49,13 @@ void RingBuffer::Reset() {
 void RingBuffer::PushBack(float v) {
   RTC_DCHECK_GE(next_, 0);
   // RTC_DCHECK_GE(size_, 0);
-  RTC_DCHECK_LT(next_, (int)buffer_.size());
-  RTC_DCHECK_LE(size_, buffer_.size());
-  buffer_[next_++] = v;
-  if (rtc::SafeEq(next_, (int)buffer_.size())) {
+  RTC_DCHECK_LT(next_, (int)buffer_view_.size());
+  RTC_DCHECK_LE(size_, buffer_view_.size());
+  buffer_view_[next_++] = v;
+  if (rtc::SafeEq(next_, (int)buffer_view_.size())) {
     next_ = 0;
   }
-  if (rtc::SafeLt(size_, buffer_.size())) {
+  if (rtc::SafeLt(size_, buffer_view_.size())) {
     size_++;
   }
 }
@@ -64,8 +64,8 @@ rtc::Optional<float> RingBuffer::Front() const {
   if (size_ == 0) {
     return rtc::nullopt;
   }
-  RTC_DCHECK_LT(FrontIndex(), (int)buffer_.size());
-  return buffer_[FrontIndex()];
+  RTC_DCHECK_LT(FrontIndex(), (int)buffer_view_.size());
+  return buffer_view_[FrontIndex()];
 }
 
 bool SaturationProtectorState::operator==(

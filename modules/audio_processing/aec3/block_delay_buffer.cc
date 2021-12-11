@@ -9,7 +9,7 @@
  */
 #include "modules/audio_processing/aec3/block_delay_buffer.h"
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -24,7 +24,7 @@ BlockDelayBuffer::BlockDelayBuffer(size_t num_channels,
            std::vector<std::vector<float>>(num_bands,
                                            std::vector<float>(delay_, 0.f))) {}
 
-BlockDelayBuffer::~BlockDelayBuffer() = default;
+BlockDelayBuffer::~BlockDelayBuffer() {}
 
 void BlockDelayBuffer::DelaySignal(AudioBuffer* frame) {
   RTC_DCHECK_EQ(buf_.size(), frame->num_channels());
@@ -40,7 +40,8 @@ void BlockDelayBuffer::DelaySignal(AudioBuffer* frame) {
   for (size_t ch = 0; ch < num_channels; ++ch) {
     RTC_DCHECK_EQ(buf_[ch].size(), frame->num_bands());
     RTC_DCHECK_EQ(buf_[ch].size(), num_bands);
-    rtc::ArrayView<float* const> frame_ch(frame->split_bands_f(ch), num_bands);
+    RTC_VIEW(float* const) frame_ch = 
+        RTC_MAKE_VIEW(float* const)(frame->split_bands_f(ch), num_bands);
 
     for (size_t band = 0; band < num_bands; ++band) {
       RTC_DCHECK_EQ(delay_, buf_[ch][band].size());

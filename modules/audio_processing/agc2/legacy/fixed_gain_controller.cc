@@ -8,12 +8,12 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/fixed_gain_controller.h"
+#include "modules/audio_processing/agc2/legacy/fixed_gain_controller.h"
 
 #include <algorithm>
 #include <cmath>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "common_audio/include/audio_util.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
 #include "modules/audio_processing/agc2/interpolated_gain_curve.h"
@@ -76,7 +76,7 @@ void FixedGainController::Process(AudioFrameView<float> signal) {
   // it up considerably. Hence the check.
   if (!CloseToOne(gain_to_apply_)) {
     for (size_t k = 0; k < signal.num_channels(); ++k) {
-      rtc::ArrayView<float> channel_view = signal.channel(k);
+      RTC_VIEW(float) channel_view = signal.channel(k);
       for (auto& sample : channel_view) {
         sample *= gain_to_apply_;
       }
@@ -92,7 +92,7 @@ void FixedGainController::Process(AudioFrameView<float> signal) {
                             channel_view.size(), channel_view.data());
   // Hard-clipping.
   for (size_t k = 0; k < signal.num_channels(); ++k) {
-    rtc::ArrayView<float> channel_view = signal.channel(k);
+    RTC_VIEW(float) channel_view = signal.channel(k);
     for (auto& sample : channel_view) {
       sample = rtc::SafeClamp<float>(sample, kMinFloatS16Value, kMaxFloatS16Value);
     }

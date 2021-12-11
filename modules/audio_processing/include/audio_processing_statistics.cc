@@ -12,11 +12,11 @@
 
 namespace webrtc {
 
-AudioProcessingStats::AudioProcessingStats() = default;
+AudioProcessingStats::AudioProcessingStats() {}
 
 AudioProcessingStats::AudioProcessingStats(const AudioProcessingStats& other) =
     default;
 
-AudioProcessingStats::~AudioProcessingStats() = default;
+AudioProcessingStats::~AudioProcessingStats() {}
 
 }  // namespace webrtc

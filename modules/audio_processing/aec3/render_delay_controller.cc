@@ -15,7 +15,7 @@
 #include <memory>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/delay_estimate.h"
@@ -35,11 +35,6 @@ class RenderDelayControllerImpl final : public RenderDelayController {
   RenderDelayControllerImpl(const EchoCanceller3Config& config,
                             int sample_rate_hz,
                             size_t num_capture_channels);
-
-  RenderDelayControllerImpl() = delete;
-  RenderDelayControllerImpl(const RenderDelayControllerImpl&) = delete;
-  RenderDelayControllerImpl& operator=(const RenderDelayControllerImpl&) =
-      delete;
 
   ~RenderDelayControllerImpl() override;
   void Reset(bool reset_delay_confidence) override;
@@ -62,6 +57,8 @@ class RenderDelayControllerImpl final : public RenderDelayController {
   size_t capture_call_counter_ = 0;
   int delay_change_counter_ = 0;
   DelayEstimate::Quality last_delay_estimate_quality_;
+
+  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RenderDelayControllerImpl);
 };
 
 DelayEstimate ComputeBufferDelay(
@@ -107,7 +104,7 @@ RenderDelayControllerImpl::RenderDelayControllerImpl(
   delay_estimator_.LogDelayEstimationProperties(sample_rate_hz, 0);
 }
 
-RenderDelayControllerImpl::~RenderDelayControllerImpl() = default;
+RenderDelayControllerImpl::~RenderDelayControllerImpl() {}
 
 void RenderDelayControllerImpl::Reset(bool reset_delay_confidence) {
   delay_ = rtc::nullopt;

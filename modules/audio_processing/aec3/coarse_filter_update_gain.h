@@ -7,14 +7,16 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
+// Same as shadow_filter_update_gain.h
 
 #ifndef MODULES_AUDIO_PROCESSING_AEC3_COARSE_FILTER_UPDATE_GAIN_H_
 #define MODULES_AUDIO_PROCESSING_AEC3_COARSE_FILTER_UPDATE_GAIN_H_
 
 #include <stddef.h>
 
-#include <array>
+// #include <array>
 
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/echo_canceller3_config.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 #include "modules/audio_processing/aec3/fft_data.h"
@@ -33,7 +35,7 @@ class CoarseFilterUpdateGain {
   void HandleEchoPathChange();
 
   // Computes the gain.
-  void Compute(const std::array<float, kFftLengthBy2Plus1>& render_power,
+  void Compute(RTC_VIEW(const float) /* kFftLengthBy2Plus1 */ render_power,
                const RenderSignalAnalyzer& render_signal_analyzer,
                const FftData& E_coarse,
                size_t size_partitions,

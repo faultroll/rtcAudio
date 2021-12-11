@@ -1,6 +1,6 @@
 
 ## basic:
-- features // `<catomic.h> <cthread.h> <ctime.h> for c11 features, optional/make_unique for c++14/17 features`
+- features // `<catomic.h> <cthread.h> <ctime.h> for c11 features, optional for c++14/17 features`
 - atomic_ops.h // `c11 <stdatomic.h> with other funcs`
 - checks.cc
 - checks.h // check macros

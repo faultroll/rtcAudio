@@ -22,17 +22,20 @@ namespace webrtc {
 
 WienerFilter::WienerFilter(const SuppressionParams& suppression_params)
     : suppression_params_(suppression_params) {
-  filter_.fill(1.f);
-  initial_spectral_estimate_.fill(0.f);
-  spectrum_prev_process_.fill(0.f);
+  RTC_VIEW(float) filter_view = RTC_MAKE_VIEW(float)(filter_);
+  filter_view.fill(1.f);
+  RTC_VIEW(float) initial_spectral_estimate_view = RTC_MAKE_VIEW(float)(initial_spectral_estimate_);
+  initial_spectral_estimate_view.fill(0.f);
+  RTC_VIEW(float) spectrum_prev_process_view = RTC_MAKE_VIEW(float)(spectrum_prev_process_);
+  spectrum_prev_process_view.fill(0.f);
 }
 
 void WienerFilter::Update(
     int32_t num_analyzed_frames,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> noise_spectrum,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> prev_noise_spectrum,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> parametric_noise_spectrum,
-    rtc::ArrayView<const float, kFftSizeBy2Plus1> signal_spectrum) {
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ noise_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ prev_noise_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ parametric_noise_spectrum,
+    RTC_VIEW(const float) /* kFftSizeBy2Plus1 */ signal_spectrum) {
   for (size_t i = 0; i < kFftSizeBy2Plus1; ++i) {
     // Previous estimate based on previous frame with gain filter.
     float prev_tsa = spectrum_prev_process_[i] /
@@ -76,8 +79,9 @@ void WienerFilter::Update(
     }
   }
 
+  RTC_VIEW(float) spectrum_prev_process_view = RTC_MAKE_VIEW(float)(spectrum_prev_process_);
   std::copy(signal_spectrum.begin(), signal_spectrum.end(),
-            spectrum_prev_process_.begin());
+            spectrum_prev_process_view.begin());
 }
 
 float WienerFilter::ComputeOverallScalingFactor(

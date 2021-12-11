@@ -1,11 +1,11 @@
 # in use
-srcs_1 += \
+srcs_c += \
         rtc_base/features/align_c.c \
         rtc_base/features/time_c.c \
         rtc_base/features/thread_c.c \
-        rtc_base/features/optional.cc
-srcs_1 += \
-        rtc_base/checks_c.c \
+        rtc_base/checks_c.c
+srcs += \
+        rtc_base/features/optional.cc \
         rtc_base/checks.cc \
         rtc_base/time_utils.cc \
         rtc_base/platform_thread_types.cc \
@@ -13,7 +13,7 @@ srcs_1 += \
         rtc_base/memory/aligned_malloc.cc \
         rtc_base/trace_impl.cc
 # just compile, currently not in use
-srcs_2 += \
+srcs_cpl_only += \
         rtc_base/platform_thread.cc \
         rtc_base/event.cc \
         rtc_base/location.cc \

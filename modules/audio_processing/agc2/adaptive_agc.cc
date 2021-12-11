@@ -44,7 +44,30 @@ AdaptiveAgc::AdaptiveAgc(ApmDataDumper* apm_data_dumper)
   RTC_DCHECK(apm_data_dumper);
 }
 
-AdaptiveAgc::~AdaptiveAgc() = default;
+AdaptiveAgc::AdaptiveAgc(ApmDataDumper* apm_data_dumper,
+                         const Agc2Config& config)
+    : speech_level_estimator_(
+          apm_data_dumper,
+          config.adaptive_digital.level_estimator,
+          config.adaptive_digital
+              .level_estimator_adjacent_speech_frames_threshold,
+          config.adaptive_digital.initial_saturation_margin_db,
+          config.adaptive_digital.extra_saturation_margin_db),
+      vad_(config.adaptive_digital.vad_probability_attack),
+      gain_applier_(
+          apm_data_dumper,
+          config.adaptive_digital.gain_applier_adjacent_speech_frames_threshold,
+          config.adaptive_digital.max_gain_change_db_per_second,
+          config.adaptive_digital.max_output_noise_level_dbfs),
+      apm_data_dumper_(apm_data_dumper),
+      noise_level_estimator_(apm_data_dumper) {
+  RTC_DCHECK(apm_data_dumper);
+  if (!config.adaptive_digital.use_saturation_protector) {
+    /* RTC_LOG(LS_WARNING) << "The saturation protector cannot be disabled." */;
+  }
+}
+
+AdaptiveAgc::~AdaptiveAgc() {}
 
 void AdaptiveAgc::Process(AudioFrameView<float> frame, float limiter_envelope) {
   AdaptiveDigitalGainApplier::FrameInfo info;

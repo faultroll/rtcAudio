@@ -16,9 +16,10 @@
 #include "modules/audio_processing/high_pass_filter.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/atomic_ops.h"
-#include "rtc_base/experiments/field_trial_parser.h"
-#include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
+#include "rtc_base/constructor_magic.h"
+// #include "rtc_base/experiments/field_trial_parser.h"
+// #include "rtc_base/logging.h"
+// #include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 
@@ -26,7 +27,7 @@ namespace {
 
 enum class EchoCanceller3ApiCall { kCapture, kRender };
 
-bool DetectSaturation(rtc::ArrayView<const float> y) {
+bool DetectSaturation(RTC_VIEW(const float) y) {
   for (auto y_k : y) {
     if (y_k >= 32700.0f || y_k <= -32700.0f) {
       return true;
@@ -38,13 +39,13 @@ bool DetectSaturation(rtc::ArrayView<const float> y) {
 // Retrieves a value from a field trial if it is available. If no value is
 // present, the default value is returned. If the retrieved value is beyond the
 // specified limits, the default value is returned instead.
-void RetrieveFieldTrialValue(const char* trial_name,
+/* void RetrieveFieldTrialValue(const char* trial_name,
                              float min,
                              float max,
                              float* value_to_update) {
   const std::string field_trial_str = field_trial::FindFullName(trial_name);
 
-  FieldTrialParameter<double> field_trial_param(/*key=*/"", *value_to_update);
+  FieldTrialParameter<double> field_trial_param("", *value_to_update);
 
   ParseFieldTrial({&field_trial_param}, field_trial_str);
   float field_trial_value = static_cast<float>(field_trial_param.Get());
@@ -60,7 +61,7 @@ void RetrieveFieldTrialValue(const char* trial_name,
                              int* value_to_update) {
   const std::string field_trial_str = field_trial::FindFullName(trial_name);
 
-  FieldTrialParameter<int> field_trial_param(/*key=*/"", *value_to_update);
+  FieldTrialParameter<int> field_trial_param("", *value_to_update);
 
   ParseFieldTrial({&field_trial_param}, field_trial_str);
   float field_trial_value = field_trial_param.Get();
@@ -68,20 +69,20 @@ void RetrieveFieldTrialValue(const char* trial_name,
   if (field_trial_value >= min && field_trial_value <= max) {
     *value_to_update = field_trial_value;
   }
-}
+} */
 
 void FillSubFrameView(
     AudioBuffer* frame,
     size_t sub_frame_index,
-    std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame_view) {
+    std::vector<std::vector<RTC_VIEW(float)>>* sub_frame_view) {
   RTC_DCHECK_GE(1, sub_frame_index);
   RTC_DCHECK_LE(0, sub_frame_index);
   RTC_DCHECK_EQ(frame->num_bands(), sub_frame_view->size());
   RTC_DCHECK_EQ(frame->num_channels(), (*sub_frame_view)[0].size());
   for (size_t band = 0; band < sub_frame_view->size(); ++band) {
     for (size_t channel = 0; channel < (*sub_frame_view)[0].size(); ++channel) {
-      (*sub_frame_view)[band][channel] = rtc::ArrayView<float>(
-          &frame->split_bands(channel)[band][sub_frame_index * kSubFrameLength],
+      (*sub_frame_view)[band][channel] = RTC_MAKE_VIEW(float)(
+          &frame->split_bands_f(channel)[band][sub_frame_index * kSubFrameLength],
           kSubFrameLength);
     }
   }
@@ -90,13 +91,13 @@ void FillSubFrameView(
 void FillSubFrameView(
     std::vector<std::vector<std::vector<float>>>* frame,
     size_t sub_frame_index,
-    std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame_view) {
+    std::vector<std::vector<RTC_VIEW(float)>>* sub_frame_view) {
   RTC_DCHECK_GE(1, sub_frame_index);
   RTC_DCHECK_EQ(frame->size(), sub_frame_view->size());
   RTC_DCHECK_EQ((*frame)[0].size(), (*sub_frame_view)[0].size());
   for (size_t band = 0; band < frame->size(); ++band) {
     for (size_t channel = 0; channel < (*frame)[band].size(); ++channel) {
-      (*sub_frame_view)[band][channel] = rtc::ArrayView<float>(
+      (*sub_frame_view)[band][channel] = RTC_MAKE_VIEW(float)(
           &(*frame)[band][channel][sub_frame_index * kSubFrameLength],
           kSubFrameLength);
     }
@@ -114,10 +115,10 @@ void ProcessCaptureFrameContent(
     BlockFramer* output_framer,
     BlockProcessor* block_processor,
     std::vector<std::vector<std::vector<float>>>* linear_output_block,
-    std::vector<std::vector<rtc::ArrayView<float>>>*
+    std::vector<std::vector<RTC_VIEW(float)>>*
         linear_output_sub_frame_view,
     std::vector<std::vector<std::vector<float>>>* capture_block,
-    std::vector<std::vector<rtc::ArrayView<float>>>* capture_sub_frame_view) {
+    std::vector<std::vector<RTC_VIEW(float)>>* capture_sub_frame_view) {
   FillSubFrameView(capture, sub_frame_index, capture_sub_frame_view);
 
   if (linear_output) {
@@ -172,7 +173,7 @@ void BufferRenderFrameContent(
     FrameBlocker* render_blocker,
     BlockProcessor* block_processor,
     std::vector<std::vector<std::vector<float>>>* block,
-    std::vector<std::vector<rtc::ArrayView<float>>>* sub_frame_view) {
+    std::vector<std::vector<RTC_VIEW(float)>>* sub_frame_view) {
   FillSubFrameView(render_frame, sub_frame_index, sub_frame_view);
   render_blocker->InsertSubFrameAndExtractBlock(*sub_frame_view, block);
   block_processor->BufferRender(*block);
@@ -198,9 +199,8 @@ void CopyBufferIntoFrame(const AudioBuffer& buffer,
   RTC_DCHECK_EQ(AudioBuffer::kSplitBandSize, (*frame)[0][0].size());
   for (size_t band = 0; band < num_bands; ++band) {
     for (size_t channel = 0; channel < num_channels; ++channel) {
-      rtc::ArrayView<const float> buffer_view(
-          &buffer.split_bands_const(channel)[band][0],
-          AudioBuffer::kSplitBandSize);
+      RTC_VIEW(const float) buffer_view = RTC_MAKE_VIEW(const float)(
+          &buffer.split_bands_const_f(channel)[band][0], AudioBuffer::kSplitBandSize);
       std::copy(buffer_view.begin(), buffer_view.end(),
                 (*frame)[band][channel].begin());
     }
@@ -210,7 +210,7 @@ void CopyBufferIntoFrame(const AudioBuffer& buffer,
 }  // namespace
 
 // TODO(webrtc:5298): Move this to a separate file.
-EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
+/* EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
   EchoCanceller3Config adjusted_cfg = config;
 
   if (field_trial::IsEnabled("WebRTC-Aec3AntiHowlingMinimizationKillSwitch")) {
@@ -565,7 +565,7 @@ EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
                           -1.f, 1.f, &adjusted_cfg.ep_strength.default_len);
 
   return adjusted_cfg;
-}
+} */
 
 class EchoCanceller3::RenderWriter {
  public:
@@ -574,10 +574,6 @@ class EchoCanceller3::RenderWriter {
                          Aec3RenderQueueItemVerifier>* render_transfer_queue,
                size_t num_bands,
                size_t num_channels);
-
-  RenderWriter() = delete;
-  RenderWriter(const RenderWriter&) = delete;
-  RenderWriter& operator=(const RenderWriter&) = delete;
 
   ~RenderWriter();
   void Insert(const AudioBuffer& input);
@@ -590,6 +586,8 @@ class EchoCanceller3::RenderWriter {
   std::vector<std::vector<std::vector<float>>> render_queue_input_frame_;
   SwapQueue<std::vector<std::vector<std::vector<float>>>,
             Aec3RenderQueueItemVerifier>* render_transfer_queue_;
+  
+  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RenderWriter);
 };
 
 EchoCanceller3::RenderWriter::RenderWriter(
@@ -611,7 +609,7 @@ EchoCanceller3::RenderWriter::RenderWriter(
   RTC_DCHECK(data_dumper);
 }
 
-EchoCanceller3::RenderWriter::~RenderWriter() = default;
+EchoCanceller3::RenderWriter::~RenderWriter() {}
 
 void EchoCanceller3::RenderWriter::Insert(const AudioBuffer& input) {
   RTC_DCHECK_EQ(AudioBuffer::kSplitBandSize, input.num_frames_per_band());
@@ -622,8 +620,9 @@ void EchoCanceller3::RenderWriter::Insert(const AudioBuffer& input) {
   if (num_bands_ != input.num_bands())
     return;
 
-  data_dumper_->DumpWav("aec3_render_input", AudioBuffer::kSplitBandSize,
-                        &input.split_bands_const(0)[0][0], 16000, 1);
+  data_dumper_->DumpWav(
+      "aec3_render_input", AudioBuffer::kSplitBandSize,
+      &input.split_bands_const_f(0)[0][0], 16000, 1);
 
   CopyBufferIntoFrame(input, num_bands_, num_channels_,
                       &render_queue_input_frame_);
@@ -638,12 +637,12 @@ EchoCanceller3::EchoCanceller3(const EchoCanceller3Config& config,
                                int sample_rate_hz,
                                size_t num_render_channels,
                                size_t num_capture_channels)
-    : EchoCanceller3(AdjustConfig(config),
+    : EchoCanceller3(/* AdjustConfig */(config),
                      sample_rate_hz,
                      num_render_channels,
                      num_capture_channels,
                      std::unique_ptr<BlockProcessor>(
-                         BlockProcessor::Create(AdjustConfig(config),
+                         BlockProcessor::Create(/* AdjustConfig */(config),
                                                 sample_rate_hz,
                                                 num_render_channels,
                                                 num_capture_channels))) {}
@@ -688,10 +687,10 @@ EchoCanceller3::EchoCanceller3(const EchoCanceller3Config& config,
                                           std::vector<float>(kBlockSize, 0.f))),
       render_sub_frame_view_(
           num_bands_,
-          std::vector<rtc::ArrayView<float>>(num_render_channels_)),
+          std::vector<RTC_VIEW(float)>(num_render_channels_)),
       capture_sub_frame_view_(
           num_bands_,
-          std::vector<rtc::ArrayView<float>>(num_capture_channels_)) {
+          std::vector<RTC_VIEW(float)>(num_capture_channels_)) {
   RTC_DCHECK(ValidFullBandRate(sample_rate_hz_));
 
   if (config_.delay.fixed_capture_delay_samples > 0) {
@@ -715,12 +714,12 @@ EchoCanceller3::EchoCanceller3(const EchoCanceller3Config& config,
             1, std::vector<std::vector<float>>(
                    num_capture_channels_, std::vector<float>(kBlockSize, 0.f))));
     linear_output_sub_frame_view_ =
-        std::vector<std::vector<rtc::ArrayView<float>>>(
-            1, std::vector<rtc::ArrayView<float>>(num_capture_channels_));
+        std::vector<std::vector<RTC_VIEW(float)>>(
+            1, std::vector<RTC_VIEW(float)>(num_capture_channels_));
   }
 }
 
-EchoCanceller3::~EchoCanceller3() = default;
+EchoCanceller3::~EchoCanceller3() {}
 
 void EchoCanceller3::AnalyzeRender(const AudioBuffer& render) {
   RTC_DCHECK_RUNS_SERIALIZED(&render_race_checker_);
@@ -734,13 +733,14 @@ void EchoCanceller3::AnalyzeRender(const AudioBuffer& render) {
 
 void EchoCanceller3::AnalyzeCapture(const AudioBuffer& capture) {
   RTC_DCHECK_RUNS_SERIALIZED(&capture_race_checker_);
-  data_dumper_->DumpWav("aec3_capture_analyze_input", capture.num_frames(),
-                        capture.channels_const()[0], sample_rate_hz_, 1);
+  data_dumper_->DumpWav(
+      "aec3_capture_analyze_input", capture.num_frames(),
+      capture.channels_const_f()[0], sample_rate_hz_, 1);
   saturated_microphone_signal_ = false;
   for (size_t channel = 0; channel < capture.num_channels(); ++channel) {
     saturated_microphone_signal_ |=
-        DetectSaturation(rtc::ArrayView<const float>(
-            capture.channels_const()[channel], capture.num_frames()));
+        DetectSaturation(RTC_VIEW(const float)(
+            capture.channels_const_f()[channel], capture.num_frames()));
     if (saturated_microphone_signal_) {
       break;
     }
@@ -763,8 +763,8 @@ void EchoCanceller3::ProcessCapture(AudioBuffer* capture,
                         static_cast<int>(EchoCanceller3ApiCall::kCapture));
 
   if (linear_output && !linear_output_framer_) {
-    RTC_LOG(LS_ERROR) << "Trying to retrieve the linear AEC output without "
-                         "properly configuring AEC3.";
+    /* RTC_LOG(LS_ERROR) << "Trying to retrieve the linear AEC output without "
+                         "properly configuring AEC3."; */
     RTC_NOTREACHED();
   }
 
@@ -778,10 +778,11 @@ void EchoCanceller3::ProcessCapture(AudioBuffer* capture,
     block_delay_buffer_->DelaySignal(capture);
   }
 
-  rtc::ArrayView<float> capture_lower_band = rtc::ArrayView<float>(
-      &capture->split_bands(0)[0][0], AudioBuffer::kSplitBandSize);
+  RTC_VIEW(float) capture_lower_band = RTC_MAKE_VIEW(float)(
+      &capture->split_bands_f(0)[0][0], AudioBuffer::kSplitBandSize);
 
-  data_dumper_->DumpWav("aec3_capture_input", capture_lower_band, 16000, 1);
+  data_dumper_->DumpWav(
+      "aec3_capture_input", RTC_MAKE_VIEW(const float)(capture_lower_band), 16000, 1);
 
   EmptyRenderQueue();
 
@@ -804,8 +805,9 @@ void EchoCanceller3::ProcessCapture(AudioBuffer* capture,
       linear_output_framer_.get(), &output_framer_, block_processor_.get(),
       linear_output_block_.get(), &capture_block_);
 
-  data_dumper_->DumpWav("aec3_capture_output", AudioBuffer::kSplitBandSize,
-                        &capture->split_bands(0)[0][0], 16000, 1);
+  data_dumper_->DumpWav(
+      "aec3_capture_output", AudioBuffer::kSplitBandSize,
+      &capture->split_bands_const_f(0)[0][0], 16000, 1);
 }
 
 EchoControl::Metrics EchoCanceller3::GetMetrics() const {

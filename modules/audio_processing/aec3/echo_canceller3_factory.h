@@ -28,7 +28,9 @@ class EchoCanceller3Factory : public EchoControlFactory {
   explicit EchoCanceller3Factory(const EchoCanceller3Config& config);
 
   // Creates an EchoCanceller3 running at the specified sampling rate.
-  std::unique_ptr<EchoControl> Create(int sample_rate_hz) override;
+  std::unique_ptr<EchoControl> Create(int sample_rate_hz,
+                                      int num_render_channels,
+                                      int num_capture_channels) override;
 
  private:
   const EchoCanceller3Config config_;

@@ -100,7 +100,7 @@ BlockProcessorImpl::BlockProcessorImpl(
   RTC_DCHECK(ValidFullBandRate(sample_rate_hz_));
 }
 
-BlockProcessorImpl::~BlockProcessorImpl() = default;
+BlockProcessorImpl::~BlockProcessorImpl() {}
 
 void BlockProcessorImpl::ProcessCapture(
     bool echo_path_gain_change,

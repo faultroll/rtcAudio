@@ -18,9 +18,9 @@
 #include <emmintrin.h>
 #endif
 #include <algorithm>
-#include <array>
+// #include <array>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/aec3_common.h"
 
 namespace webrtc {
@@ -29,23 +29,23 @@ namespace webrtc {
 struct FftData {
   // Copies the data in src.
   void Assign(const FftData& src) {
-    std::copy(src.re.begin(), src.re.end(), re.begin());
-    std::copy(src.im.begin(), src.im.end(), im.begin());
-    im[0] = im[kFftLengthBy2] = 0;
+    std::copy(src.re_view.begin(), src.re_view.end(), re_view.begin());
+    std::copy(src.im_view.begin(), src.im_view.end(), im_view.begin());
+    im_view[0] = im_view[kFftLengthBy2] = 0;
   }
 
   // Clears all the imaginary.
   void Clear() {
-    re.fill(0.f);
-    im.fill(0.f);
+    re_view.fill(0.f);
+    im_view.fill(0.f);
   }
 
   // Computes the power spectrum of the data.
-  void SpectrumAVX2(rtc::ArrayView<float> power_spectrum) const;
+  void SpectrumAVX2(RTC_VIEW(float) power_spectrum) const;
 
   // Computes the power spectrum of the data.
   void Spectrum(Aec3Optimization optimization,
-                rtc::ArrayView<float> power_spectrum) const {
+                RTC_VIEW(float) power_spectrum) const {
     RTC_DCHECK_EQ(kFftLengthBy2Plus1, power_spectrum.size());
     switch (optimization) {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
@@ -53,50 +53,52 @@ struct FftData {
         constexpr int kNumFourBinBands = kFftLengthBy2 / 4;
         constexpr int kLimit = kNumFourBinBands * 4;
         for (size_t k = 0; k < kLimit; k += 4) {
-          const __m128 r = _mm_loadu_ps(&re[k]);
-          const __m128 i = _mm_loadu_ps(&im[k]);
+          const __m128 r = _mm_loadu_ps(&re_view[k]);
+          const __m128 i = _mm_loadu_ps(&im_view[k]);
           const __m128 ii = _mm_mul_ps(i, i);
           const __m128 rr = _mm_mul_ps(r, r);
           const __m128 rrii = _mm_add_ps(rr, ii);
           _mm_storeu_ps(&power_spectrum[k], rrii);
         }
-        power_spectrum[kFftLengthBy2] = re[kFftLengthBy2] * re[kFftLengthBy2] +
-                                        im[kFftLengthBy2] * im[kFftLengthBy2];
+        power_spectrum[kFftLengthBy2] = re_view[kFftLengthBy2] * re_view[kFftLengthBy2] +
+                                        im_view[kFftLengthBy2] * im_view[kFftLengthBy2];
       } break;
       case Aec3Optimization::kAvx2:
         SpectrumAVX2(power_spectrum);
         break;
 #endif
       default:
-        std::transform(re.begin(), re.end(), im.begin(), power_spectrum.begin(),
+        std::transform(re_view.begin(), re_view.end(), im_view.begin(), power_spectrum.begin(),
                        [](float a, float b) { return a * a + b * b; });
     }
   }
 
   // Copy the data from an interleaved array.
-  void CopyFromPackedArray(const std::array<float, kFftLength>& v) {
-    re[0] = v[0];
-    re[kFftLengthBy2] = v[1];
-    im[0] = im[kFftLengthBy2] = 0;
+  void CopyFromPackedArray(RTC_VIEW(const float) /* kFftLength */ v) {
+    re_view[0] = v[0];
+    re_view[kFftLengthBy2] = v[1];
+    im_view[0] = im_view[kFftLengthBy2] = 0;
     for (size_t k = 1, j = 2; k < kFftLengthBy2; ++k) {
-      re[k] = v[j++];
-      im[k] = v[j++];
+      re_view[k] = v[j++];
+      im_view[k] = v[j++];
     }
   }
 
   // Copies the data into an interleaved array.
-  void CopyToPackedArray(std::array<float, kFftLength>* v) const {
-    RTC_DCHECK(v);
-    (*v)[0] = re[0];
-    (*v)[1] = re[kFftLengthBy2];
+  void CopyToPackedArray(RTC_VIEW(float) /* kFftLength */ v) const {
+    // RTC_DCHECK(v);
+    v[0] = re_view[0];
+    v[1] = re_view[kFftLengthBy2];
     for (size_t k = 1, j = 2; k < kFftLengthBy2; ++k) {
-      (*v)[j++] = re[k];
-      (*v)[j++] = im[k];
+      v[j++] = re_view[k];
+      v[j++] = im_view[k];
     }
   }
 
-  std::array<float, kFftLengthBy2Plus1> re;
-  std::array<float, kFftLengthBy2Plus1> im;
+  float re[kFftLengthBy2Plus1];
+  RTC_VIEW(float) re_view = RTC_MAKE_VIEW(float)(re);
+  float im[kFftLengthBy2Plus1];
+  RTC_VIEW(float) im_view = RTC_MAKE_VIEW(float)(im);
 };
 
 }  // namespace webrtc

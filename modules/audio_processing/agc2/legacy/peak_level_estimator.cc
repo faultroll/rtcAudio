@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/peak_level_estimator.h"
+#include "modules/audio_processing/agc2/legacy/peak_level_estimator.h"
 
 #include <algorithm>
 

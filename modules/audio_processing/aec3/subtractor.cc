@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/adaptive_fir_filter_erl.h"
 #include "modules/audio_processing/aec3/fft_data.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
@@ -26,26 +26,27 @@ namespace {
 
 void PredictionError(const Aec3Fft& fft,
                      const FftData& S,
-                     rtc::ArrayView<const float> y,
-                     std::array<float, kBlockSize>* e,
-                     std::array<float, kBlockSize>* s) {
-  std::array<float, kFftLength> tmp;
-  fft.Ifft(S, &tmp);
+                     RTC_VIEW(const float) y,
+                     RTC_VIEW(float) /* kBlockSize */ e,
+                     RTC_VIEW(float) /* kBlockSize */ s) {
+  float tmp[kFftLength];
+  RTC_VIEW(float) tmp_view = RTC_MAKE_VIEW(float)(tmp);
+  fft.Ifft(S, tmp_view);
   constexpr float kScale = 1.0f / kFftLengthBy2;
-  std::transform(y.begin(), y.end(), tmp.begin() + kFftLengthBy2, e->begin(),
+  std::transform(y.begin(), y.end(), tmp_view.begin() + kFftLengthBy2, e.begin(),
                  [&](float a, float b) { return a - b * kScale; });
 
-  if (s) {
-    for (size_t k = 0; k < s->size(); ++k) {
-      (*s)[k] = kScale * tmp[k + kFftLengthBy2];
+  if (s.data()) {
+    for (size_t k = 0; k < s.size(); ++k) {
+      s[k] = kScale * tmp_view[k + kFftLengthBy2];
     }
   }
 }
 
-void ScaleFilterOutput(rtc::ArrayView<const float> y,
+void ScaleFilterOutput(RTC_VIEW(const float) y,
                        float factor,
-                       rtc::ArrayView<float> e,
-                       rtc::ArrayView<float> s) {
+                       RTC_VIEW(float) e,
+                       RTC_VIEW(float) s) {
   RTC_DCHECK_EQ(y.size(), e.size());
   RTC_DCHECK_EQ(y.size(), s.size());
   for (size_t k = 0; k < y.size(); ++k) {
@@ -116,7 +117,7 @@ Subtractor::Subtractor(const EchoCanceller3Config& config,
   }
 }
 
-Subtractor::~Subtractor() = default;
+Subtractor::~Subtractor() {}
 
 void Subtractor::HandleEchoPathChange(
     const EchoPathVariability& echo_path_variability) {
@@ -162,48 +163,52 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
                          const std::vector<std::vector<float>>& capture,
                          const RenderSignalAnalyzer& render_signal_analyzer,
                          const AecState& aec_state,
-                         rtc::ArrayView<SubtractorOutput> outputs) {
+                         RTC_VIEW(SubtractorOutput) outputs) {
   RTC_DCHECK_EQ(num_capture_channels_, capture.size());
 
   // Compute the render powers.
   const bool same_filter_sizes = refined_filters_[0]->SizePartitions() ==
                                  coarse_filter_[0]->SizePartitions();
-  std::array<float, kFftLengthBy2Plus1> X2_refined;
-  std::array<float, kFftLengthBy2Plus1> X2_coarse_data;
-  auto& X2_coarse = same_filter_sizes ? X2_refined : X2_coarse_data;
+  float X2_refined[kFftLengthBy2Plus1];
+  RTC_VIEW(float) X2_refined_view = RTC_MAKE_VIEW(float)(X2_refined);
+  float X2_coarse_data[kFftLengthBy2Plus1];
+  RTC_VIEW(float) X2_coarse_data_view = RTC_MAKE_VIEW(float)(X2_coarse_data);
+  auto& X2_coarse = same_filter_sizes ? X2_refined_view : X2_coarse_data_view;
   if (same_filter_sizes) {
     render_buffer.SpectralSum(refined_filters_[0]->SizePartitions(),
-                              &X2_refined);
+                              X2_refined_view);
   } else if (refined_filters_[0]->SizePartitions() >
              coarse_filter_[0]->SizePartitions()) {
     render_buffer.SpectralSums(coarse_filter_[0]->SizePartitions(),
                                refined_filters_[0]->SizePartitions(),
-                               &X2_coarse, &X2_refined);
+                               X2_coarse, X2_refined_view);
   } else {
     render_buffer.SpectralSums(refined_filters_[0]->SizePartitions(),
-                               coarse_filter_[0]->SizePartitions(), &X2_refined,
-                               &X2_coarse);
+                               coarse_filter_[0]->SizePartitions(), X2_refined_view,
+                               X2_coarse);
   }
 
   // Process all capture channels
   for (size_t ch = 0; ch < num_capture_channels_; ++ch) {
     RTC_DCHECK_EQ(kBlockSize, capture[ch].size());
     SubtractorOutput& output = outputs[ch];
-    rtc::ArrayView<const float> y = capture[ch];
+    RTC_VIEW(const float) y = capture[ch];
     FftData& E_refined = output.E_refined;
     FftData E_coarse;
-    std::array<float, kBlockSize>& e_refined = output.e_refined;
-    std::array<float, kBlockSize>& e_coarse = output.e_coarse;
+    RTC_VIEW(float) /* kBlockSize */ e_refined = 
+        RTC_MAKE_VIEW(float)(output.e_refined);
+    RTC_VIEW(float) /* kBlockSize */ e_coarse = 
+        RTC_MAKE_VIEW(float)(output.e_coarse);
 
     FftData S;
     FftData& G = S;
 
     // Form the outputs of the refined and coarse filters.
     refined_filters_[ch]->Filter(render_buffer, &S);
-    PredictionError(fft_, S, y, &e_refined, &output.s_refined);
+    PredictionError(fft_, S, y, e_refined, RTC_MAKE_VIEW(float)(output.s_refined));
 
     coarse_filter_[ch]->Filter(render_buffer, &S);
-    PredictionError(fft_, S, y, &e_coarse, &output.s_coarse);
+    PredictionError(fft_, S, y, e_coarse, RTC_MAKE_VIEW(float)(output.s_coarse));
 
     // Compute the signal powers in the subtractor output.
     output.ComputeMetrics(y);
@@ -234,12 +239,12 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
     if (!refined_filters_adjusted) {
       std::array<float, kFftLengthBy2Plus1> erl;
       ComputeErl(optimization_, refined_frequency_responses_[ch], erl);
-      refined_gains_[ch]->Compute(X2_refined, render_signal_analyzer, output,
+      refined_gains_[ch]->Compute(X2_refined_view, render_signal_analyzer, output,
                                   erl, refined_filters_[ch]->SizePartitions(),
                                   aec_state.SaturatedCapture(), &G);
     } else {
-      G.re.fill(0.f);
-      G.im.fill(0.f);
+      G.re_view.fill(0.f);
+      G.im_view.fill(0.f);
     }
     refined_filters_[ch]->Adapt(render_buffer, G,
                                 &refined_impulse_responses_[ch]);
@@ -247,8 +252,10 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
         &refined_frequency_responses_[ch]);
 
     if (ch == 0) {
-      data_dumper_->DumpRaw("aec3_subtractor_G_refined", G.re);
-      data_dumper_->DumpRaw("aec3_subtractor_G_refined", G.im);
+      data_dumper_->DumpRaw(
+          "aec3_subtractor_G_refined", RTC_MAKE_VIEW(const float)(G.re_view));
+      data_dumper_->DumpRaw(
+          "aec3_subtractor_G_refined", RTC_MAKE_VIEW(const float)(G.im_view));
     }
 
     // Update the coarse filter.
@@ -271,8 +278,10 @@ void Subtractor::Process(const RenderBuffer& render_buffer,
 
     coarse_filter_[ch]->Adapt(render_buffer, G);
     if (ch == 0) {
-      data_dumper_->DumpRaw("aec3_subtractor_G_coarse", G.re);
-      data_dumper_->DumpRaw("aec3_subtractor_G_coarse", G.im);
+      data_dumper_->DumpRaw(
+          "aec3_subtractor_G_coarse", RTC_MAKE_VIEW(const float)(G.re_view));
+      data_dumper_->DumpRaw(
+          "aec3_subtractor_G_coarse", RTC_MAKE_VIEW(const float)(G.im_view));
       filter_misadjustment_estimators_[ch].Dump(data_dumper_);
       DumpFilters();
     }

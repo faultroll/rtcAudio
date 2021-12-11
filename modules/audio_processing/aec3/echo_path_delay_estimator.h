@@ -14,7 +14,7 @@
 #include <stddef.h>
 
 #include "rtc_base/optional.h"
-#include "rtc_base/array_view.h"
+// #include "rtc_base/view.h"
 #include "modules/audio_processing/aec3/alignment_mixer.h"
 #include "modules/audio_processing/aec3/clockdrift_detector.h"
 #include "modules/audio_processing/aec3/decimator.h"

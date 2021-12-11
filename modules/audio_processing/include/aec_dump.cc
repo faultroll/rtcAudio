@@ -11,7 +11,7 @@
 #include "modules/audio_processing/include/aec_dump.h"
 
 namespace webrtc {
-InternalAPMConfig::InternalAPMConfig() = default;
+InternalAPMConfig::InternalAPMConfig() {}
 InternalAPMConfig::InternalAPMConfig(const InternalAPMConfig&) = default;
 InternalAPMConfig::InternalAPMConfig(InternalAPMConfig&&) = default;
 InternalAPMConfig& InternalAPMConfig::operator=(const InternalAPMConfig&) =

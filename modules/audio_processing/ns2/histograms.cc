@@ -17,30 +17,38 @@ Histograms::Histograms() {
 }
 
 void Histograms::Clear() {
-  lrt_.fill(0);
-  spectral_flatness_.fill(0);
-  spectral_diff_.fill(0);
+  // lrt_.fill(0);
+  // spectral_flatness_.fill(0);
+  // spectral_diff_.fill(0);
+
+  RTC_VIEW(int) lrt_view = RTC_MAKE_VIEW(int)(lrt_);
+  lrt_view.fill(0);
+  RTC_VIEW(int) spectral_flatness_view = RTC_MAKE_VIEW(int)(spectral_flatness_);
+  spectral_flatness_view.fill(0);
+  RTC_VIEW(int) spectral_diff_view = RTC_MAKE_VIEW(int)(spectral_diff_);
+  spectral_diff_view.fill(0);
 }
 
 void Histograms::Update(const SignalModel& features_) {
   // Update the histogram for the LRT.
   constexpr float kOneByBinSizeLrt = 1.f / kBinSizeLrt;
-  if (features_.lrt < kHistogramSize * kBinSizeLrt && features_.lrt >= 0.f) {
-    ++lrt_[kOneByBinSizeLrt * features_.lrt];
+  if (features_.lrt < kHistogramSize * kBinSizeLrt &&
+      features_.lrt >= 0.f) {
+    ++lrt_[(int)(kOneByBinSizeLrt * features_.lrt)];
   }
 
   // Update histogram for the spectral flatness.
   constexpr float kOneByBinSizeSpecFlat = 1.f / kBinSizeSpecFlat;
   if (features_.spectral_flatness < kHistogramSize * kBinSizeSpecFlat &&
       features_.spectral_flatness >= 0.f) {
-    ++spectral_flatness_[features_.spectral_flatness * kOneByBinSizeSpecFlat];
+    ++spectral_flatness_[(int)(kOneByBinSizeSpecFlat * features_.spectral_flatness)];
   }
 
   // Update histogram for the spectral difference.
   constexpr float kOneByBinSizeSpecDiff = 1.f / kBinSizeSpecDiff;
   if (features_.spectral_diff < kHistogramSize * kBinSizeSpecDiff &&
       features_.spectral_diff >= 0.f) {
-    ++spectral_diff_[features_.spectral_diff * kOneByBinSizeSpecDiff];
+    ++spectral_diff_[(int)(kOneByBinSizeSpecDiff * features_.spectral_diff)];
   }
 }
 

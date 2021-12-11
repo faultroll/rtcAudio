@@ -30,7 +30,7 @@ RateStatistics::RateStatistics(int64_t window_size_ms, float scale)
       max_window_size_ms_(window_size_ms),
       current_window_size_ms_(max_window_size_ms_) {}
 
-/* RateStatistics::RateStatistics(const RateStatistics& other)
+RateStatistics::RateStatistics(const RateStatistics& other)
     : accumulated_count_(other.accumulated_count_),
       overflow_(other.overflow_),
       num_samples_(other.num_samples_),
@@ -39,12 +39,13 @@ RateStatistics::RateStatistics(int64_t window_size_ms, float scale)
       scale_(other.scale_),
       max_window_size_ms_(other.max_window_size_ms_),
       current_window_size_ms_(other.current_window_size_ms_) {
-  buckets_ = std::make_unique<Bucket[]>(other.max_window_size_ms_);
+  buckets_ = std::unique_ptr<Bucket[]>(
+      new Bucket[other.max_window_size_ms_]());
   std::copy(other.buckets_.get(),
             other.buckets_.get() + other.max_window_size_ms_, buckets_.get());
 }
 
-RateStatistics::RateStatistics(RateStatistics&& other) = default; */
+RateStatistics::RateStatistics(RateStatistics&& other) = default;
 
 RateStatistics::~RateStatistics() {}
 

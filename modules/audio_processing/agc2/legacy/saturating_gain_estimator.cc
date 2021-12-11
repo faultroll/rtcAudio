@@ -8,12 +8,12 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/saturating_gain_estimator.h"
+#include "modules/audio_processing/agc2/legacy/saturating_gain_estimator.h"
 
 #include <math.h>
 #include <algorithm>
 
-#include "modules/audio_processing/agc2/level_controller_constants.h"
+#include "modules/audio_processing/agc2/legacy/level_controller_constants.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 
 namespace webrtc {

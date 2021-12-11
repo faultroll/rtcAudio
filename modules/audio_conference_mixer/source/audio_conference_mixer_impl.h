@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include <list>
+#include <vector>
 #include <map>
 #include <memory>
 
@@ -22,12 +23,13 @@
 #include "modules/audio_conference_mixer/source/memory_pool.h"
 #include "modules/audio_conference_mixer/source/time_scheduler.h"
 #include "modules/include/audio_frame.h"
-// #include "modules/audio_processing/agc2/fixed_gain_controller.h"
-#include "modules/audio_processing/agc2/limiter.h"
+/* #include "modules/audio_processing/include/gain_control.h"
+#include "modules/audio_processing/include/voice_detection.h" */
 
 namespace webrtc {
-// class AudioProcessing;
 class ApmDataDumper;
+// class FixedGainController;
+class Limiter;
 
 struct FrameAndMuteInfo {
   FrameAndMuteInfo(AudioFrame* f, bool m) : frame(f), muted(m) {}
@@ -196,7 +198,9 @@ private:
     int16_t _processCalls;
 
     // Used for inhibiting saturation in mixing.
-    // std::unique_ptr<AudioProcessing> _limiter;
+    /* rtc::CriticalSection crit_render_ RTC_ACQUIRED_BEFORE(crit_capture_);
+    rtc::CriticalSection crit_capture_;
+    std::unique_ptr<GainControl> _limiter; */
     std::unique_ptr<ApmDataDumper> _data_dumper;
     // std::unique_ptr<FixedGainController> _limiter;
     std::unique_ptr<Limiter> _limiter;
@@ -215,6 +219,8 @@ private:
     std::map<int32_t, int64_t> _vadParticipantEnergyList;
 
     // std::map<int32_t, std::unique_ptr<AudioProcessing>> _apms;
+    /* std::map<int32_t, std::unique_ptr<VoiceDetection>> _vads;
+    std::map<int32_t, std::unique_ptr<rtc::CriticalSection>> _vad_crits; */
 
     std::vector<ParticipantVadStatistics> _vadStatistics;
 

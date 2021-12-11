@@ -9,7 +9,7 @@
  */
 #include "modules/audio_processing/aec3/decimator.h"
 
-#include <array>
+// #include <array>
 #include <vector>
 
 #include "modules/audio_processing/aec3/aec3_common.h"
@@ -69,22 +69,23 @@ Decimator::Decimator(size_t down_sampling_factor)
              down_sampling_factor_ == 8);
 }
 
-void Decimator::Decimate(rtc::ArrayView<const float> in,
-                         rtc::ArrayView<float> out) {
+void Decimator::Decimate(RTC_VIEW(const float) in,
+                         RTC_VIEW(float) out) {
   RTC_DCHECK_EQ(kBlockSize, in.size());
   RTC_DCHECK_EQ(kBlockSize / down_sampling_factor_, out.size());
-  std::array<float, kBlockSize> x;
+  float x[kBlockSize];
+  RTC_VIEW(float) x_view = RTC_MAKE_VIEW(float)(x);
 
   // Limit the frequency content of the signal to avoid aliasing.
-  anti_aliasing_filter_.Process(in, x);
+  anti_aliasing_filter_.Process(in, x_view);
 
   // Reduce the impact of near-end noise.
-  noise_reduction_filter_.Process(x);
+  noise_reduction_filter_.Process(x_view);
 
   // Downsample the signal.
   for (size_t j = 0, k = 0; j < out.size(); ++j, k += down_sampling_factor_) {
     RTC_DCHECK_GT(kBlockSize, k);
-    out[j] = x[k];
+    out[j] = x_view[k];
   }
 }
 

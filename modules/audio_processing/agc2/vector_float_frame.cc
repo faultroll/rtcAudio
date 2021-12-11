@@ -34,6 +34,6 @@ VectorFloatFrame::VectorFloatFrame(int num_channels,
                         channels_.size(),
                         samples_per_channel) {}
 
-VectorFloatFrame::~VectorFloatFrame() = default;
+VectorFloatFrame::~VectorFloatFrame() {}
 
 }  // namespace webrtc

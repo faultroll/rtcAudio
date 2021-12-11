@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "modules/include/channel_layout.h"
+#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -67,8 +68,7 @@ class ChannelMixingMatrix {
   void MixWithoutAccounting(Channels input_ch, Channels output_ch, float scale);
 
   // Delete the copy constructor and assignment operator.
-  ChannelMixingMatrix(const ChannelMixingMatrix& other) = delete;
-  ChannelMixingMatrix& operator=(const ChannelMixingMatrix& other) = delete;
+  RTC_DISALLOW_COPY_AND_ASSIGN(ChannelMixingMatrix);
 };
 
 }  // namespace webrtc

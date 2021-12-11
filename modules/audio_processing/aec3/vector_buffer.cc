@@ -22,6 +22,6 @@ VectorBuffer::VectorBuffer(size_t size, size_t height)
   }
 }
 
-VectorBuffer::~VectorBuffer() = default;
+VectorBuffer::~VectorBuffer() {}
 
 }  // namespace webrtc
