@@ -2,7 +2,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_COMMON_H_
 #define MODULES_AUDIO_PROCESSING_COMMON_H_
 
-#include "rtc_base/view.h"
+// #include <vector>
+// #include <memory> // std::unique_ptr
+
+#include "rtc_base/arraysize.h"
 
 namespace webrtc {
 namespace AudioProcessing {
@@ -49,6 +52,64 @@ namespace AudioProcessing {
   static const int kChunkSizeMs = 10;
 
 }  // namespace AudioProcessing
+
+
+// Module interface in audio processing 
+// APM operates on two audio streams on a frame-by-frame basis. Frames of the 
+// primary stream, on which all processing is applied, are passed to 
+// |ProcessStream()|. Frames of the reverse direction stream are passed to 
+// |ProcessReverseStream()|. 
+// On the client-side, this will typically be the 
+// near-end (capture) and far-end (render) streams, respectively.
+// On the server-side, the reverse stream will normally 
+// not be used, with processing occurring on each incoming stream.
+// class AudioFrame;
+class AudioBuffer;
+// struct Metrics;
+class ApmCaptureModule {
+ public:
+  // returns AudioProcessing::Error
+  // Analysis (not changing) of the capture signal.
+  virtual int AnalyzeCaptureAudio(AudioBuffer* audio_buffer) = 0;
+  // Processes the capture signal.
+  virtual int ProcessCaptureAudio(AudioBuffer* audio_buffer) = 0;
+  /* virtual int ProcessCaptureAudio(AudioFrame* audio_frame) {
+    if (!audio_buffer_.get()) {
+      audio_buffer_.reset(
+        new AudioBuffer(audio_frame->sample_rate_hz(), audio_frame->num_channels(),
+                        audio_frame->sample_rate_hz(), audio_frame->num_channels(),
+                        audio_frame->sample_rate_hz(), audio_frame->num_channels()));
+    }
+
+    audio_buffer_->DeinterleaveFrom(audio_frame);
+    const int error = ProcessCaptureAudio(audio_buffer_.get());
+    audio_buffer_->InterleaveTo(audio_frame, false);
+
+    return error;
+  } */
+
+  // Collect current metrics from the module.
+  // virtual int GetMetrics(Metrics* metrics) const = 0;
+
+ /* private:
+  std::unique_ptr<AudioBuffer> audio_buffer_; */
+};
+class ApmRenderModule {
+ public:
+  // see |ApmCaptureModule|
+  // Analysis (not changing) of the render signal.
+  virtual int AnalyzeRenderAudio(AudioBuffer* audio_buffer) = 0;
+  // Processes the render signal.
+  virtual int ProcessRenderAudio(AudioBuffer* audio_buffer) = 0;
+  // Pack an AudioBuffer into a vector<float>.
+  // virtual static void PackRenderAudioBuffer(AudioBuffer* audio_buffer,
+  //                                           std::vector<int16_t>* packed_buffer) = 0;
+  // virtual int ProcessRenderAudio(RTC_VIEW(const int16_t) packed_buffer) = 0;
+  // virtual static void PackRenderAudioBuffer(AudioBuffer* audio_buffer,
+  //                                           std::vector<float>* packed_buffer) = 0;
+  // virtual int ProcessRenderAudio(RTC_VIEW(const float) packed_buffer) = 0;
+};
+
 }  // namespace webrtc
 
 #endif  // MODULES_AUDIO_PROCESSING_COMMON_H_

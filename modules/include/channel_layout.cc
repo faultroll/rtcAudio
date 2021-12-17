@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-#include "rtc_base/view.h"
+#include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
 // #include "rtc_base/logging.h"
 

@@ -6,9 +6,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <vector>
-
 namespace webrtc {
+
+class AudioBuffer;
 
 // The voice activity detection (VAD) component analyzes the stream to
 // determine if voice is present. A facility is also provided to pass in an
@@ -56,7 +56,11 @@ class VoiceDetection {
   virtual int set_frame_size_ms(int size) = 0;
   virtual int frame_size_ms() const = 0;
 
- protected:
+  // ApmSubmodule
+  virtual void Initialize(int sample_rate_hz) = 0;
+  virtual void ProcessCaptureAudio(AudioBuffer* audio) = 0;
+
+ // protected:
   virtual ~VoiceDetection() {}
 };
 

@@ -29,7 +29,7 @@ srcs_c += \
 srcs += \
         modules/audio_processing/aecm/echo_control_mobile_impl.cc
 # aec
-srcs_c += \
+srcs += \
         modules/audio_processing/aec/aec_core_c.cc \
         modules/audio_processing/aec/aec_core_mips.cc \
         modules/audio_processing/aec/aec_core_neon.cc \
@@ -69,7 +69,7 @@ srcs += \
         modules/audio_processing/echo_detector/normalized_covariance_estimator.cc \
         modules/audio_processing/echo_detector/residual_echo_detector.cc
 # agc2(level_controller)
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/agc2/biquad_filter.cc \
         modules/audio_processing/agc2/down_sampler.cc \
         modules/audio_processing/agc2/noise_level_estimator.cc \
@@ -79,12 +79,10 @@ srcs += \
         modules/audio_processing/agc2/legacy/saturating_gain_estimator.cc \
         modules/audio_processing/agc2/signal_classifier.cc \
         modules/audio_processing/agc2/legacy/gain_applier.cc \
-        modules/audio_processing/agc2/legacy/level_controller.cc
-srcs += \
         modules/audio_processing/agc2/legacy/gain_curve_applier.cc \
-        modules/audio_processing/agc2/legacy/fixed_gain_controller.cc
+        modules/audio_processing/agc2/legacy/level_controller.cc
 # agc2(gain_controller2)
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/agc2/gain_applier.cc \
         modules/audio_processing/agc2/adaptive_agc.cc \
         modules/audio_processing/agc2/adaptive_digital_gain_applier.cc \
@@ -92,15 +90,16 @@ srcs += \
         modules/audio_processing/agc2/adaptive_mode_level_estimator.cc \
         modules/audio_processing/agc2/compute_interpolated_gain_curve.cc \
         modules/audio_processing/agc2/fixed_digital_level_estimator.cc \
+        modules/audio_processing/agc2/interpolated_gain_curve.cc \
         modules/audio_processing/agc2/limiter_db_gain_curve.cc \
         modules/audio_processing/agc2/limiter.cc \
+        modules/audio_processing/agc2/fixed_gain_controller.cc \
         modules/audio_processing/agc2/saturation_protector.cc \
         modules/audio_processing/agc2/vad_with_level.cc \
         modules/audio_processing/agc2/vector_float_frame.cc \
-        modules/audio_processing/agc2/gain_controller2.cc \
-        # modules/audio_processing/agc2/interpolated_gain_curve.cc
+        modules/audio_processing/agc2/gain_controller2.cc
 # agc2(rnn_vad)
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/agc2/rnn_vad/common.cc \
         modules/audio_processing/agc2/rnn_vad/features_extraction.cc \
         modules/audio_processing/agc2/rnn_vad/lp_residual.cc \
@@ -113,7 +112,7 @@ srcs += \
         modules/audio_processing/agc2/rnn_vad/fft_util.cc \
         # modules/audio_processing/agc2/rnn_vad/rnn_vad_tool.cc
 # ns2
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/ns2/fast_math.cc \
         modules/audio_processing/ns2/histograms.cc \
         modules/audio_processing/ns2/noise_estimator.cc \
@@ -128,7 +127,7 @@ srcs += \
         modules/audio_processing/ns2/suppression_params.cc \
         modules/audio_processing/ns2/wiener_filter.cc
 # aec3(aec_state)
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/aec3/echo_canceller3_config.cc \
         modules/audio_processing/aec3/aec3_common.cc \
         modules/audio_processing/aec3/fft_data_avx2.cc \
@@ -152,7 +151,7 @@ srcs += \
         modules/audio_processing/aec3/transparent_mode.cc \
         modules/audio_processing/aec3/aec_state.cc
 # aec3(echo_remover: suppressor, subtractor, ...)
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/aec3/dominant_nearend_detector.cc \
         modules/audio_processing/aec3/subband_nearend_detector.cc \
         modules/audio_processing/aec3/moving_average.cc \
@@ -180,7 +179,7 @@ srcs += \
         modules/audio_processing/aec3/echo_remover_metrics.cc \
         modules/audio_processing/aec3/echo_remover.cc
 # aec3(block_processor: echo_remover, render_delay_controller, )
-srcs += \
+srcs_cpl_only += \
         modules/audio_processing/aec3/matched_filter_avx2.cc \
         modules/audio_processing/aec3/matched_filter.cc \
         modules/audio_processing/aec3/matched_filter_lag_aggregator.cc \
@@ -270,7 +269,7 @@ srcs += \
         modules/audio_conference_mixer/source/audio_frame_manipulator.cc \
         modules/audio_conference_mixer/source/time_scheduler.cc
 # mixer
-srcs += \
+srcs_cpl_only += \
         modules/audio_mixer/audio_frame_manipulator.cc \
         modules/audio_mixer/audio_mixer_impl.cc \
         modules/audio_mixer/channel_mixer.cc \
@@ -294,10 +293,8 @@ srcs += \
         modules/audio_coding/neteq/delay_manager.cc \
         modules/audio_coding/neteq/buffer_level_filter.cc \
         modules/audio_coding/neteq/normal.cc
-# neteq(cng)
-srcs += \
-        modules/audio_coding/codecs/cng/webrtc_cng.cc
 srcs_cpl_only += \
+        modules/audio_coding/codecs/cng/webrtc_cng.cc \
         modules/audio_coding/neteq/background_noise.cc \
         modules/audio_coding/neteq/post_decode_vad.cc \
         modules/audio_coding/neteq/comfort_noise.cc \
@@ -311,15 +308,16 @@ srcs_cpl_only += \
         modules/audio_coding/neteq/sync_buffer.cc \
         modules/audio_coding/neteq/random_vector.cc \
         modules/audio_coding/neteq/nack_tracker.cc \
-        modules/audio_coding/neteq/audio_decoder_impl.cc \
-        # modules/audio_coding/neteq/decoder_database.cc \
         modules/audio_coding/neteq/red_payload_splitter.cc \
         modules/audio_coding/neteq/timestamp_scaler.cc \
-        modules/audio_coding/neteq/packet_buffer.cc \
-        modules/audio_coding/neteq/rtcp.cc \
-		modules/audio_coding/neteq/neteq_decoder_enum.cc \
+        modules/audio_coding/neteq/packet_buffer.cc
+srcs_cpl_only += \
+        modules/audio_coding/neteq/neteq_decoder_enum.cc \
+        modules/audio_coding/neteq/audio_decoder_impl.cc \
+        # modules/audio_coding/neteq/decoder_database_impl.cc \
         # modules/audio_coding/neteq/decision_logic.cc \
         modules/audio_coding/neteq/decision_logic_fax.cc \
         modules/audio_coding/neteq/decision_logic_normal.cc \
         modules/audio_coding/neteq/neteq.cc \
         modules/audio_coding/neteq/neteq_impl.cc \
+        # modules/audio_coding/neteq/rtcp.cc

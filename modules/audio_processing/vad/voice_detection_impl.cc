@@ -63,7 +63,8 @@ void VoiceDetectionImpl::ProcessCaptureAudio(AudioBuffer* audio) {
     return;
   }
 
-  RTC_DCHECK_GE(160, audio->num_frames_per_band());
+  RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
+                audio->num_frames_per_band());
   // TODO(ajm): concatenate data in frame buffer here.
   int vad_ret =
       WebRtcVad_Process(vad_->state(), sample_rate_hz_,

@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <vector>
 
-// #include "modules/audio_coding/neteq/decoder_database.h"
+#include "modules/audio_coding/neteq/decoder_database.h"
 #include "rtc_base/checks.h"
 // #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"

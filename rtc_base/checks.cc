@@ -41,5 +41,20 @@ RTC_NORETURN FatalMessage::~FatalMessage() {
   rtc_FatalMessage(file_.c_str(), line_, stream_.str().c_str());
 }
 
+// MSVC doesn't like complex extern templates and DLLs.
+#if 0 // !defined(COMPILER_MSVC)
+// Explicit instantiations for commonly used comparisons.
+template std::string* MakeCheckOpString<int, int>(
+    const int&, const int&, const char* names);
+template std::string* MakeCheckOpString<unsigned long, unsigned long>(
+    const unsigned long&, const unsigned long&, const char* names);
+template std::string* MakeCheckOpString<unsigned long, unsigned int>(
+    const unsigned long&, const unsigned int&, const char* names);
+template std::string* MakeCheckOpString<unsigned int, unsigned long>(
+    const unsigned int&, const unsigned long&, const char* names);
+template std::string* MakeCheckOpString<std::string, std::string>(
+    const std::string&, const std::string&, const char* name);
+#endif
+
 }  // namespace rtc
 

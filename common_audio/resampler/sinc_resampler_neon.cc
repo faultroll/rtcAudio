@@ -1,3 +1,7 @@
+
+#include "rtc_base/system/arch.h"
+#if defined(WEBRTC_HAS_NEON)
+
 /*
  *  Copyright (c) 2013 The WebRTC project authors. All Rights Reserved.
  *
@@ -10,8 +14,6 @@
 
 // Modified from the Chromium original:
 // src/media/base/sinc_resampler.cc
-
-#if defined(WEBRTC_HAS_NEON)
 
 #include "common_audio/resampler/sinc_resampler.h"
 

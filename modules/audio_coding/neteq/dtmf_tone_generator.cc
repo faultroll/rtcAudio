@@ -30,7 +30,7 @@
 
 #include "modules/audio_coding/neteq/dtmf_tone_generator.h"
 
-#include "rtc_base/view.h"
+#include "rtc_base/arraysize.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {

@@ -125,7 +125,10 @@ void PlatformThread::Run() {
   ThrdSetName(name_.c_str());
 
   if (run_function_) {
-    ThrdSetPrio(thread_, priority_);
+    // TODO(lgY): find why this happens.
+    // avoiding strange bugs running with gdb
+    // |thread_| will be 0 even if current thread successfully created
+    ThrdSetPrio(ThrdCurrent()/* thread_ */, priority_);
     run_function_(obj_);
     return;
   }

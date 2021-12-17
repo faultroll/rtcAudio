@@ -10,11 +10,12 @@
 
 #include "modules/audio_processing/agc/gain_control_impl.h"
 
-#include "rtc_base/optional.h"
 #include "modules/audio_processing/agc/legacy/gain_control.h"
+#include "modules/audio_processing/include/common.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/constructor_magic.h"
+#include "rtc_base/optional.h"
 
 namespace webrtc {
 
@@ -104,12 +105,25 @@ GainControlImpl::GainControlImpl(rtc::CriticalSection* crit_render,
       compression_gain_db_(9),
       analog_capture_level_(0),
       was_analog_level_set_(false),
-      stream_is_saturated_(false) {
+      stream_is_saturated_(false),
+      stream_has_echo_(false) {
   RTC_DCHECK(crit_render);
   RTC_DCHECK(crit_capture);
 }
 
 GainControlImpl::~GainControlImpl() {}
+
+int GainControlImpl::AnalyzeRenderAudio(AudioBuffer* audio) {
+  // RTC_NOTREACHED();
+  return AudioProcessing::kNoError;
+}
+
+int GainControlImpl::ProcessRenderAudio(AudioBuffer* audio) {
+  ProcessRenderAudio(
+    RTC_MAKE_VIEW(const int16_t)(audio->mixed_low_pass_data(),
+                                 audio->num_frames_per_band()));
+  return AudioProcessing::kNoError;
+}
 
 void GainControlImpl::ProcessRenderAudio(
     RTC_VIEW(const int16_t) packed_render_audio) {
@@ -128,7 +142,16 @@ void GainControlImpl::ProcessRenderAudio(
 void GainControlImpl::PackRenderAudioBuffer(
     AudioBuffer* audio,
     std::vector<int16_t>* packed_buffer) {
-  RTC_DCHECK_GE(AudioBuffer::kMaxSplitFrameLength, audio->num_frames_per_band());
+  // like |static const size_t xxx = vvv;| just declares not defines it, 
+  // you need to define it outside of the class declare(eg. in .cc file) like
+  // |const size_t ccc::xxx;|.
+  // when using it value, it don't bother; when using it reference/pointer,
+  // errors will occurs in linkage (no error/warning in compile)
+  // |static constexpr size_t xxx = vvv;| in c++17 doesn't
+  // need to do this(but in c++11 constexpr is treated as const). However, we
+  // can cast it to a |const size_t| using static_cast or c style cast
+  RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
+                audio->num_frames_per_band());
 
   packed_buffer->clear();
   packed_buffer->insert(
@@ -144,7 +167,8 @@ int GainControlImpl::AnalyzeCaptureAudio(AudioBuffer* audio) {
   }
 
   RTC_DCHECK(num_proc_channels_);
-  RTC_DCHECK_GE(AudioBuffer::kMaxSplitFrameLength, audio->num_frames_per_band());
+  RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
+                audio->num_frames_per_band());
   RTC_DCHECK_EQ(audio->num_channels(), *num_proc_channels_);
   RTC_DCHECK_LE(*num_proc_channels_, mono_agcs_.size());
 
@@ -178,6 +202,10 @@ int GainControlImpl::AnalyzeCaptureAudio(AudioBuffer* audio) {
   return AudioProcessing::kNoError;
 }
 
+int GainControlImpl::ProcessCaptureAudio(AudioBuffer* audio) {
+  return ProcessCaptureAudio(audio, stream_has_echo_);
+}
+
 int GainControlImpl::ProcessCaptureAudio(AudioBuffer* audio,
                                          bool stream_has_echo) {
   rtc::CritScope cs(crit_capture_);
@@ -191,7 +219,7 @@ int GainControlImpl::ProcessCaptureAudio(AudioBuffer* audio,
   }
 
   RTC_DCHECK(num_proc_channels_);
-  RTC_DCHECK_GE(AudioBuffer::kMaxSplitFrameLength,
+  RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
                 audio->num_frames_per_band());
   RTC_DCHECK_EQ(audio->num_channels(), *num_proc_channels_);
 
@@ -257,6 +285,18 @@ int GainControlImpl::ProcessCaptureAudio(AudioBuffer* audio,
 int GainControlImpl::compression_gain_db() const {
   rtc::CritScope cs(crit_capture_);
   return compression_gain_db_;
+}
+
+int GainControlImpl::set_stream_has_echo(bool stream_has_echo) {
+  rtc::CritScope cs(crit_capture_);
+  stream_has_echo_ = stream_has_echo;
+
+  return AudioProcessing::kNoError;
+}
+
+bool GainControlImpl::stream_has_echo() const {
+  rtc::CritScope cs(crit_capture_);
+  return stream_has_echo_;
 }
 
 // TODO(ajm): ensure this is called under kAdaptiveAnalog.

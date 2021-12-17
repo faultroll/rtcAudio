@@ -15,8 +15,9 @@
 
 namespace webrtc {
 
-// Interface for an acoustic echo cancellation (AEC) submodule.
 class AudioBuffer;
+
+// Interface for an acoustic echo cancellation (AEC) submodule.
 class EchoControl {
  public:
   // Analysis (not changing) of the render signal.

@@ -14,11 +14,12 @@
 
 #include "modules/audio_coding/neteq/packet_buffer.h"
 
+#include <assert.h>
 #include <algorithm>  // find_if()
 
 // #include "api/audio_codecs/audio_decoder.h"
 // #include "rtc_base/logging.h"
-// #include "modules/audio_coding/neteq/decoder_database.h"
+#include "modules/audio_coding/neteq/decoder_database.h"
 #include "modules/audio_coding/neteq/statistics_calculator.h"
 #include "modules/audio_coding/neteq/tick_timer.h"
 
@@ -41,9 +42,10 @@ class NewTimestampIsLarger {
 bool EqualSampleRates(uint8_t pt1,
                       uint8_t pt2,
                       const DecoderDatabase& decoder_database) {
-  auto* di1 = decoder_database.GetDecoderInfo(pt1);
+  /* auto* di1 = decoder_database.GetDecoderInfo(pt1);
   auto* di2 = decoder_database.GetDecoderInfo(pt2);
-  return di1 && di2 && di1->SampleRateHz() == di2->SampleRateHz();
+  return di1 && di2 && di1->SampleRateHz() == di2->SampleRateHz(); */
+  return decoder_database.SampleRateHz(pt1) == decoder_database.SampleRateHz(pt2);
 }
 
 void LogPacketDiscarded(int codec_level, StatisticsCalculator* stats) {
@@ -235,7 +237,7 @@ void PacketBuffer::DiscardOldPackets(uint32_t timestamp_limit,
          IsObsoleteTimestamp(buffer_.front().timestamp, timestamp_limit,
                              horizon_samples)) {
     if (DiscardNextPacket(stats) != kOK) {
-      LogPacketDiscarded(p.priority.codec_level, stats);
+      // LogPacketDiscarded(packet.priority.codec_level, stats);
       assert(false);  // Must be ok by design.
     }
   }
@@ -253,7 +255,7 @@ void PacketBuffer::DiscardPacketsWithPayloadType(uint8_t payload_type,
     if (packet.payload_type == payload_type) {
       it = buffer_.erase(it);
     } else {
-      LogPacketDiscarded(p.priority.codec_level, stats);
+      LogPacketDiscarded(packet.priority.codec_level, stats);
       ++it;
     }
   }

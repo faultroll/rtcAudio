@@ -19,6 +19,7 @@
 
 #include "modules/audio_processing/agc2/rnn_vad/common.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/arraysize.h"
 #include "rtc_base/view.h"
 
 namespace webrtc {

@@ -1689,7 +1689,8 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
   const v4sf * RESTRICT vb = (const v4sf*)b;
   v4sf * RESTRICT vab = (v4sf*)ab;
 
-#ifdef __arm__
+#if (defined(__arm__) || defined(__ARMEL__) || defined(__aarch64__) || defined(_M_ARM64)) \
+    && (defined(__ARM_NEON) || defined(__ARM_NEON__))
   __builtin_prefetch(va);
   __builtin_prefetch(vb);
   __builtin_prefetch(vab);
@@ -1708,7 +1709,7 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
 #endif
 
   float ar, ai, br, bi, abr, abi;
-#ifndef ZCONVOLVE_USING_INLINE_ASM
+#ifndef ZCONVOLVE_USING_INLINE_NEON_ASM
   v4sf vscal = LD_PS1(scaling);
   int i;
 #endif
@@ -1721,7 +1722,7 @@ void pffft_zconvolve_accumulate(PFFFT_Setup *s, const float *a, const float *b, 
   abr = ((v4sf_union*)vab)[0].f[0];
   abi = ((v4sf_union*)vab)[1].f[0];
  
-#ifdef ZCONVOLVE_USING_INLINE_ASM // inline asm version, unfortunately miscompiled by clang 3.2, at least on ubuntu.. so this will be restricted to gcc
+#ifdef ZCONVOLVE_USING_INLINE_NEON_ASM // inline asm version, unfortunately miscompiled by clang 3.2, at least on ubuntu.. so this will be restricted to gcc
   const float *a_ = a, *b_ = b; float *ab_ = ab;
   int N = Ncvec;
   asm volatile("mov         r8, %2                  \n"

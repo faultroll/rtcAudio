@@ -18,16 +18,17 @@
 #include "modules/audio_conference_mixer/source/audio_frame_manipulator.h"
 #include "modules/audio_processing/audio_buffer.h"
 #include "modules/audio_processing/include/common.h"
-/* #include "modules/audio_processing/agc/gain_control_impl.h"
-#include "modules/audio_processing/vad/voice_detection_impl.h" */
-#include "modules/audio_processing/logging/apm_data_dumper.h"
+#include "modules/audio_processing/agc/gain_control_impl.h"
+// #include "modules/audio_processing/vad/voice_detection_impl.h"
+#include "modules/audio_processing/vad/standalone_vad.h"
+/* #include "modules/audio_processing/logging/apm_data_dumper.h"
 // #include "modules/audio_processing/agc2/fixed_gain_controller.h"
-#include "modules/audio_processing/agc2/limiter.h"
+#include "modules/audio_processing/agc2/limiter.h" */
 #include "rtc_base/trace.h"
 
-#define _VAD_METHOD_ENERGY_
+// #define _VAD_METHOD_ENERGY_
 // #define _VAD_METHOD_VOICE_DETECTION_
-// #define _VAD_METHOD_JOINT_ENERGY_VOICE_DETECTION_
+#define _VAD_METHOD_JOINT_ENERGY_VOICE_DETECTION_
 
 #define GROUP_ID(id) (((id) >> 16) & 0xffff)
 
@@ -73,7 +74,7 @@ size_t MaxNumChannels(const AudioFrameList* list) {
   for (AudioFrameList::const_iterator iter = list->begin();
        iter != list->end();
        ++iter) {
-    max_num_channels = std::max(max_num_channels, (*iter).frame->num_channels_);
+    max_num_channels = std::max(max_num_channels, iter->frame->num_channels_);
   }
   return max_num_channels;
 }
@@ -137,7 +138,7 @@ AudioConferenceMixerImpl::AudioConferenceMixerImpl(int id)
       _participantList(),
       _additionalParticipantList(),
       _numMixedParticipants(0),
-      use_limiter_(true),
+      _use_limiter(true),
       _timeStamp(0),
       _timeScheduler(kProcessPeriodicityInMs),
       _processCalls(0),
@@ -149,15 +150,15 @@ AudioConferenceMixerImpl::AudioConferenceMixerImpl(int id)
       _supportMultipleInputs(false) {}
 
 bool AudioConferenceMixerImpl::Init() {
-    /* _limiter.reset(
-        new GainControlImpl(&crit_render_, &crit_capture_)); */
-    _data_dumper = std::unique_ptr<ApmDataDumper>(new ApmDataDumper(0));
+    _limiter.reset(
+        new GainControlImpl(&_crit_render, &_crit_capture));
+    /* _data_dumper = std::unique_ptr<ApmDataDumper>(new ApmDataDumper(0));
     // _limiter.reset(
     //     new FixedGainController(_data_dumper.get(), "AudioConferenceMixer");
-    _limiter = std::unique_ptr<Limiter>(
+    _limiter.reset(
         new Limiter(static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"));
     // _limiter = rtc::make_unique<Limiter>(
-    //     static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"); // only one brace!
+    //     static_cast<size_t>(48000), _data_dumper.get(), "AudioConferenceMixer"); // only one brace! */
     if(!_limiter.get())
         return false;
 
@@ -168,23 +169,27 @@ bool AudioConferenceMixerImpl::Init() {
 
     if(SetOutputFrequency(kDefaultFrequency) == -1)
         return false;
-    
-    /* if(_limiter->set_mode(GainControl::kFixedDigital) !=
-        AudioProcessing::kNoError)
+
+    size_t num_channels = 1;
+    _limiter->Initialize(num_channels, _outputFrequency);
+    if(_limiter->set_mode(GainControl::kFixedDigital) != AudioProcessing::kNoError)
         return false;
     // We smoothly limit the mixed frame to -7 dbFS. -6 would correspond to the
     // divide-by-2 but -7 is used instead to give a bit of headroom since the
     // AGC is not a hard limiter.
     if(_limiter->set_target_level_dbfs(7) != AudioProcessing::kNoError)
         return false;
-    if(_limiter->set_compression_gain_db(0)
-        != AudioProcessing::kNoError)
+    if(_limiter->set_compression_gain_db(0) != AudioProcessing::kNoError)
         return false;
     if(_limiter->enable_limiter(true) != AudioProcessing::kNoError)
         return false;
     if(_limiter->Enable(true) != AudioProcessing::kNoError)
-        return false; */
-    /* // limiter_.SetGain(0.f); */
+        return false;
+    /* // _limiter.SetGain(0.f); */
+    _mixed_buffer.reset(
+        new AudioBuffer(_outputFrequency, num_channels,
+                        _outputFrequency, num_channels,
+                        _outputFrequency, num_channels));
 
     return true;
 }
@@ -343,7 +348,7 @@ void AudioConferenceMixerImpl::Process() {
 
         // We only use the limiter if it supports the output sample rate and
         // we're actually mixing multiple streams.
-        use_limiter_ = false && // disable limiter
+        _use_limiter = false && // disable limiter
             _numMixedParticipants > 1 &&
             _outputFrequency <= AudioProcessing::kMaxNativeSampleRateHz;
 
@@ -506,8 +511,8 @@ int32_t AudioConferenceMixerImpl::SetMixabilityStatus(
         // API must be called with a new state.
         if(!(mixable ^ isMixed)) {
             WEBRTC_TRACE(kTraceWarning, kTraceAudioMixerServer, _id,
-                         "Mixable is aready %s",
-                         isMixed ? "ON" : "off");
+                         "Mixable is already %s",
+                         isMixed ? "ON" : "OFF");
             return -1;
         }
         bool success = false;
@@ -537,9 +542,7 @@ int32_t AudioConferenceMixerImpl::SetMixabilityStatus(
     rtc::CritScope cs(&_crit);
     _numMixedParticipants = numMixedParticipants;
 
-#if defined (_VAD_METHOD_VOICE_DETECTION_) || defined (_VAD_METHOD_JOINT_ENERGY_VOICE_DETECTION_)
-    if (!mixable) _apms.clear();
-#endif
+    /* if (!mixable) ClearVads(); */ // TODO(lgY): should we clear all vads here?
 
     return 0;
 }
@@ -713,14 +716,14 @@ void AudioConferenceMixerImpl::UpdateToMix(
                 // mixed. Only keep the ones with the highest energy.
                 AudioFrameList::iterator replaceItem;
                 uint32_t lowestEnergy =
-                    muted ? 0 : CalculateEnergy(*audioFrame);
+                    muted ? 0 : CombinedEnergy(audioFrame);
 
                 bool found_replace_item = false;
                 for (AudioFrameList::iterator iter = activeList.begin();
                      iter != activeList.end();
                      ++iter) {
                     const uint32_t energy =
-                        muted ? 0 : CalculateEnergy(*iter->frame);
+                        muted ? 0 : CombinedEnergy(iter->frame);
                     if(energy < lowestEnergy) {
                         replaceItem = iter;
                         lowestEnergy = energy;
@@ -1001,7 +1004,7 @@ int32_t AudioConferenceMixerImpl::MixFromList(
             position = 0;
         }
         if (!iter->muted) {
-          MixFrames(mixedAudio, iter->frame, use_limiter_);
+          MixFrames(mixedAudio, iter->frame, _use_limiter);
         }
 
         position++;
@@ -1023,36 +1026,32 @@ int32_t AudioConferenceMixerImpl::MixAnonomouslyFromList(
          iter != audioFrameList.end();
          ++iter) {
         if (!iter->muted) {
-            MixFrames(mixedAudio, iter->frame, use_limiter_);
+            MixFrames(mixedAudio, iter->frame, _use_limiter);
         }
     }
     return 0;
 }
 
 bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
-    if (!use_limiter_) {
+    if (!_use_limiter) {
       return true;
     }
 
-    // Smoothly limit the mixed frame.
-    /* const int error = _limiter->ProcessCaptureAudio(
-        mixedAudio, echo_cancellation()->stream_has_echo()); */
+    _mixed_buffer->DeinterleaveFrom(mixedAudio);
 
-    AudioBuffer mixing_buffer(mixedAudio->sample_rate_hz_,
-                              mixedAudio->num_channels_,
-                              mixedAudio->sample_rate_hz_,
-                              mixedAudio->num_channels_,
-                              mixedAudio->sample_rate_hz_,
-                              mixedAudio->num_channels_);
-    mixing_buffer.DeinterleaveFrom(mixedAudio);
-    // Put float data in an AudioFrameView.
-    AudioFrameView<float> mixing_buffer_view(mixing_buffer.channels_f(),
-                                             mixedAudio->num_channels_,
-                                             mixedAudio->samples_per_channel_);
-    // const size_t sample_rate = mixing_buffer_view.samples_per_channel_ * 1000 /
+    // Smoothly limit the mixed frame.
+    _limiter->AnalyzeCaptureAudio(_mixed_buffer.get());
+    const int error = _limiter->ProcessCaptureAudio(_mixed_buffer.get()/* , false */);
+    /* // Put float data in an AudioFrameView.
+    AudioFrameView<float> mixing_buffer_view(_mixed_buffer->channels_f(),
+                                             mixedAudio->num_channels(),
+                                             mixedAudio->samples_per_channel());
+    // const size_t sample_rate = mixing_buffer_view.samples_per_channel() * 1000 /
     //                            AudioConferenceMixerImpl::kProcessPeriodicityInMs;
-    _limiter->SetSampleRate(mixedAudio->sample_rate_hz_);
-    _limiter->Process(mixing_buffer_view);
+    _limiter->SetSampleRate(mixedAudio->sample_rate_hz());
+    _limiter->Process(mixing_buffer_view); */
+    
+    _mixed_buffer->InterleaveTo(mixedAudio, false);
 
     // And now we can safely restore the level. This procedure results in
     // some loss of resolution, deemed acceptable.
@@ -1066,12 +1065,12 @@ bool AudioConferenceMixerImpl::LimitMixedAudio(AudioFrame* mixedAudio) const {
     // negative value is undefined).
     AudioFrameOperations::Add(*mixedAudio, mixedAudio);
 
-    /* if(error != AudioProcessing::kNoError) {
+    if(error != AudioProcessing::kNoError) {
         WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, _id,
                      "Error from AudioProcessing: %d", error);
         assert(false);
         return false;
-    } */
+    }
     return true;
 }
 
@@ -1127,6 +1126,65 @@ int32_t AudioConferenceMixerImpl::UnRegisterMixerVadCallback() {
     return 0;
 }
 
+uint32_t AudioConferenceMixerImpl::CombinedEnergy(
+    AudioFrame* frame) const {
+#if defined (_VAD_METHOD_ENERGY_)
+    const bool use_energy = true, use_vad = false;
+#elif defined (_VAD_METHOD_VOICE_DETECTION_)
+    const bool use_energy = false, use_vad = true;
+#elif defined (_VAD_METHOD_JOINT_ENERGY_VOICE_DETECTION_)
+    const bool use_energy = true, use_vad = true;
+#else
+#error "Invalid VAD method!"
+#endif
+    uint32_t energy = 0;
+
+    if (use_energy) {
+        energy = CalculateEnergy(*frame);
+    }
+    if (use_vad) {
+        int32_t id = frame->id_;
+        if (_vads.find(id) == _vads.end()) {
+            /* _vad_buffers[id].reset(
+                new AudioBuffer(frame->sample_rate_hz(), frame->num_channels(),
+                                frame->sample_rate_hz(), frame->num_channels(),
+                                frame->sample_rate_hz(), frame->num_channels()));
+            _vad_crits[id].reset(
+                new rtc::CriticalSection());
+            _vads[id].reset(
+                new VoiceDetectionImpl(_vad_crits[id].get()));
+            _vads[id]->Enable(true);
+            _vads[id]->Initialize(frame->sample_rate_hz());
+            _vads[id]->set_likelihood(VoiceDetection::kLowLikelihood);  */ 
+            _vads[id].reset(
+                StandaloneVad::Create());
+            _vads[id]->set_mode(2); // VoiceDetection::kLowLikelihood
+        }
+        /* _vad_buffers[id]->DeinterleaveFrom(frame);
+        _vads[id]->ProcessCaptureAudio(_vad_buffers[id].get());
+        _vad_buffers[id]->InterleaveTo(frame, false);
+        bool hasVoice = _vads[id]->stream_has_voice(); */
+        double p[1] = {0}; // StandaloneVad::kMaxNum10msFrames
+        _vads[id]->AddAudio(frame->data(), frame->samples_per_channel());
+        _vads[id]->GetActivity(p, arraysize(p));
+
+        if (!use_energy) {
+            energy = p[0] * 100.0;
+        } else {
+            energy = (p[0] > 0.01) ? energy : 0;
+        }
+    }
+
+    return energy;
+}
+
+// void AudioConferenceMixerImpl::ClearVads() {
+//     /* _vads.clear();
+//     _vad_crits.clear();
+//     _vad_buffers.clear(); */
+//     _vads.clear();
+// }
+
 void AudioConferenceMixerImpl::UpdateVadStatistics(AudioFrameList* mixList) {
     WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
             "UpdateVadStatistics: %d",
@@ -1135,41 +1193,15 @@ void AudioConferenceMixerImpl::UpdateVadStatistics(AudioFrameList* mixList) {
     for (AudioFrameList::iterator iter = mixList->begin();
          iter != mixList->end();
          ++iter) {
-        if((*iter).frame->vad_activity_ == AudioFrame::kVadActive) {
-            int32_t id = (*iter).frame->id_;
+        if(iter->frame->vad_activity_ == AudioFrame::kVadActive) {
+            int32_t id = iter->frame->id_;
             uint32_t energy = 0;
 
             if (_vadParticipantEnergyList.find(id) == _vadParticipantEnergyList.end()) {
                 _vadParticipantEnergyList[id] = 0;
             }
 
-#if defined (_VAD_METHOD_ENERGY_)
-            energy = CalculateEnergy(*(*iter).frame);
-#elif defined (_VAD_METHOD_VOICE_DETECTION_)
-            if (_apms.find(id) == _apms.end()) {
-                _apms[id].reset(AudioProcessing::Create());
-                _apms[id]->voice_detection()->Enable(true);
-                _apms[id]->voice_detection()->set_likelihood (VoiceDetection::kLowLikelihood);
-            }
-            _apms[id]->ProcessStream((*iter).frame);
-
-            bool hasVoice = _apms[id]->voice_detection ()->stream_has_voice();
-            energy = hasVoice * 100;
-#elif defined (_VAD_METHOD_JOINT_ENERGY_VOICE_DETECTION_)
-            if (_apms.find(id) == _apms.end()) {
-                _apms[id].reset(AudioProcessing::Create());
-                _apms[id]->voice_detection()->Enable(true);
-                _apms[id]->voice_detection()->set_likelihood (VoiceDetection::kLowLikelihood);
-            }
-            _apms[id]->ProcessStream((*iter).frame);
-
-            bool hasVoice = _apms[id]->voice_detection ()->stream_has_voice();
-            energy = hasVoice ? CalculateEnergy(*(*iter).frame) : 0;
-#else
-#error "Invalid VAD method!"
-#endif
-
-            _vadParticipantEnergyList[id] += energy;
+            _vadParticipantEnergyList[id] += CombinedEnergy(iter->frame);
 
             WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
                     "###VadStatistics id(0x%-8x), energy(%12u), allEnergy(%12ld)",

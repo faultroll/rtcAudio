@@ -17,8 +17,8 @@ srcs += \
         common_audio/smoothing_filter.cc \
         common_audio/sparse_fir_filter.cc \
         common_audio/window_generator.cc \
-        # common_audio/wav_file.cc \
-        common_audio/wav_header.cc
+        # common_audio/wav_header.cc \
+        common_audio/wav_file.cc
 srcs += \
         common_audio/resampler/push_resampler.cc \
         common_audio/resampler/push_sinc_resampler.cc \

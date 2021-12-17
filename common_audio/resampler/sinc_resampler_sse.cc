@@ -1,3 +1,7 @@
+
+#include "rtc_base/system/arch.h"
+#if defined(WEBRTC_HAS_SSE2)
+
 /*
  *  Copyright (c) 2013 The WebRTC project authors. All Rights Reserved.
  *
@@ -10,8 +14,6 @@
 
 // Modified from the Chromium original:
 // src/media/base/simd/sinc_resampler_sse.cc
-
-#if defined(WEBRTC_HAS_SSE2)
 
 #include "common_audio/resampler/sinc_resampler.h"
 

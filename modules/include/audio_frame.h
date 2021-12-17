@@ -109,7 +109,7 @@ class AudioFrame {
     absolute_capture_timestamp_ms_ = absolute_capture_time_stamp_ms;
   }
 
-  absl::optional<int64_t> absolute_capture_timestamp_ms() const {
+  rtc::Optional<int64_t> absolute_capture_timestamp_ms() const {
     return absolute_capture_timestamp_ms_;
   } */
 
@@ -133,7 +133,7 @@ class AudioFrame {
   // Typically used for measuring elapsed time between two different points in
   // the audio path. No lock is used to save resources and we are thread safe
   // by design.
-  // TODO(nisse@webrtc.org): consider using absl::optional.
+  // TODO(nisse@webrtc.org): consider using rtc::Optional.
   int64_t profile_timestamp_ms_ = 0;
 
   // Information about packets used to assemble this audio frame. This is needed
@@ -165,7 +165,7 @@ class AudioFrame {
   // This is only valid for audio frames captured on this machine. The absolute
   // capture timestamp of a received frame is found in |packet_infos_|.
   // This timestamp MUST be based on the same clock as rtc::TimeMillis().
-  // absl::optional<int64_t> absolute_capture_timestamp_ms_;
+  // rtc::Optional<int64_t> absolute_capture_timestamp_ms_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(AudioFrame);
 };

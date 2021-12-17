@@ -156,7 +156,7 @@ void EchoControlMobileImpl::PackRenderAudioBuffer(
     size_t num_output_channels,
     size_t num_channels,
     std::vector<int16_t>* packed_buffer) {
-  RTC_DCHECK_GE(AudioBuffer::kMaxSplitFrameLength,
+  RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
                 audio->num_frames_per_band());
   RTC_DCHECK_EQ(num_channels, audio->num_channels());
 
@@ -205,7 +205,7 @@ int EchoControlMobileImpl::ProcessCaptureAudio(AudioBuffer* audio,
     // RTC_DCHECK_LT(capture, low_pass_reference_.size());
     const int16_t* noisy = audio->low_pass_reference(capture);
 
-    RTC_DCHECK_GE(AudioBuffer::kMaxSplitFrameLength,
+    RTC_DCHECK_GE((const size_t)(AudioBuffer::kMaxSplitFrameLength), 
                   audio->num_frames_per_band());
 
     const int16_t* clean = audio->split_bands_const(capture)[kBand0To8kHz];

@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "modules/audio_processing/logging/apm_data_dumper.h"
+#include "rtc_base/arraysize.h"
 #include "rtc_base/view.h"
 
 namespace webrtc {

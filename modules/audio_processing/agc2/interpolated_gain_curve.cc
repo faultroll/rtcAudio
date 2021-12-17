@@ -174,7 +174,7 @@ float InterpolatedGainCurve::LookUpGainToApply(float input_level) const {
   // Knee and limiter regions; find the linear piece index. Spelling
   // out the complete type was the only way to silence both the clang
   // plugin and the windows compilers.
-  std::array<float, kInterpolatedGainCurveTotalPoints>::const_iterator it =
+  auto it =
       std::lower_bound(approximation_params_x_view_.begin(),
                        approximation_params_x_view_.end(), input_level);
   const size_t index = std::distance(approximation_params_x_view_.begin(), it) - 1;

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "rtc_base/array_view.h"
+#include "rtc_base/view.h"
 #include "modules/include/audio_frame.h"
 #include "modules/audio_processing/include/audio_frame_view.h"
 #include "modules/audio_processing/include/audio_processing.h"

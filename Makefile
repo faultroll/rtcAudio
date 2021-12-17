@@ -18,7 +18,7 @@ include adapter_c/SOURCE.mk
 # srcs_c doesn't need libstdc++
 # srcs_c + srcs is what adapter_c uses
 # srcs_cpl_only currently not in use
-srcs    := $(srcs_c) $(srcs) $(srcs_cpl_only) # $(srcs_main)
+srcs    := $(srcs_c) $(srcs) # $(srcs_cpl_only) # $(srcs_main)
 objs    := $(patsubst %.cc,%.o,$(filter %.cc, $(srcs))) \
            $(patsubst %.c,%.o,$(filter %.c, $(srcs))) \
            $(patsubst %.S,%.o,$(filter %.S, $(srcs)))
@@ -26,8 +26,10 @@ deps    := $(patsubst %.o,%.d,$(objs))
 libs    := -lpthread
 cflags   = -I. -DWEBRTC_POSIX # -DWEBRTC_WIN
 cflags  += -Wno-unused-parameter -Wno-sign-compare -g # -DNDEBUG
+# cflags  += -mcpu=cortex-a9 -mfloat-abi=softfp -mfpu=neon # arm-hisiv600-linux-
 # cflags  += -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4 # arm-himix200-linux-
-# cflags  += -mcpu=cortex-a53 # aarch64-himix100-linux-
+# Define |PFFFT_SIMD_DISABLE| for no neon flag
+# cflags  += -mcpu=cortex-a53 -DPFFFT_SIMD_DISABLE # aarch64-himix100-linux-
 ldflags := -lstdc++
 # for reproducible build
 objs    := $(sort $(objs))

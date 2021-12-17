@@ -14,8 +14,6 @@
 #include <memory>
 #include <vector>
 
-#include "rtc_base/view.h"
-#include "rtc_base/optional.h"
 #include "modules/audio_processing/include/gain_control.h"
 // #include "modules/audio_processing/include/audio_processing.h"
 // #include "modules/audio_processing/render_queue_item_verifier.h"
@@ -23,6 +21,8 @@
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/critical_section.h"
 #include "rtc_base/thread_annotations.h"
+#include "rtc_base/view.h"
+#include "rtc_base/optional.h"
 
 namespace webrtc {
 
@@ -35,14 +35,18 @@ class GainControlImpl : public GainControl {
                   rtc::CriticalSection* crit_capture);
   ~GainControlImpl() override;
 
-  void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio);
-  int AnalyzeCaptureAudio(AudioBuffer* audio);
-  int ProcessCaptureAudio(AudioBuffer* audio, bool stream_has_echo);
-
-  void Initialize(size_t num_proc_channels, int sample_rate_hz);
-
+  // ApmSubmodule
+  int AnalyzeRenderAudio(AudioBuffer* audio) override;
+  int ProcessRenderAudio(AudioBuffer* audio) override;
+  int AnalyzeCaptureAudio(AudioBuffer* audio) override;
+  int ProcessCaptureAudio(AudioBuffer* audio) override;
+  // shoule these be private?
   static void PackRenderAudioBuffer(AudioBuffer* audio,
                                     std::vector<int16_t>* packed_buffer);
+  void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio);
+  int ProcessCaptureAudio(AudioBuffer* audio, bool stream_has_echo);
+
+  void Initialize(size_t num_proc_channels, int sample_rate_hz) override;
 
   // GainControl implementation.
   int Enable(bool enable) override;
@@ -57,6 +61,8 @@ class GainControlImpl : public GainControl {
   int set_target_level_dbfs(int level) override;
   int enable_limiter(bool enable) override;
   int set_stream_analog_level(int level) override;
+  int set_stream_has_echo(bool stream_has_echo) override;
+  bool stream_has_echo() const override;
 
  private:
   struct MonoAgcState;
@@ -86,6 +92,7 @@ class GainControlImpl : public GainControl {
   int analog_capture_level_ RTC_GUARDED_BY(crit_capture_);
   bool was_analog_level_set_ RTC_GUARDED_BY(crit_capture_);
   bool stream_is_saturated_ RTC_GUARDED_BY(crit_capture_);
+  bool stream_has_echo_ RTC_GUARDED_BY(crit_capture_);
 
   std::vector<std::unique_ptr<MonoAgcState>> mono_agcs_;
   std::vector<int> capture_levels_;

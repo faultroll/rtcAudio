@@ -25,10 +25,10 @@
 namespace webrtc {
 
 #if RTC_DCHECK_IS_ON
+#define WEBRTC_TRACE Trace::Add
+#else
 // Disable all TRACE macros. The LOG macro is still functional.
 #define WEBRTC_TRACE true ? (void) 0 : Trace::Add
-#else
-#define WEBRTC_TRACE Trace::Add
 #endif // RTC_DCHECK_IS_ON
 
 // From common_types.h
@@ -117,6 +117,7 @@ class Trace {
   // Returns what type of messages are written to the trace file.
   static int level_filter();
 
+  // TODO(lgY): move this interface to |TraceCallback|
   // Sets the file name. If add_file_counter is false the same file will be
   // reused when it fills up. If it's true a new file with incremented name
   // will be used.

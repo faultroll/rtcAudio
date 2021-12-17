@@ -45,7 +45,7 @@ namespace webrtc {
 uint32_t CalculateEnergy(const AudioFrame& audioFrame)
 {
     uint32_t energy = 0;
-    for(size_t position = 0; position < audioFrame.samples_per_channel_;
+    for(size_t position = 0; position < audioFrame.samples_per_channel();
         position++)
     {
         // TODO(andrew): this can easily overflow.
@@ -56,7 +56,7 @@ uint32_t CalculateEnergy(const AudioFrame& audioFrame)
 
 void RampIn(AudioFrame& audioFrame)
 {
-    assert(rampSize <= audioFrame.samples_per_channel_);
+    assert(rampSize <= audioFrame.samples_per_channel());
     for(size_t i = 0; i < rampSize; i++)
     {
         audioFrame.mutable_data()[i] = static_cast<int16_t>(rampArray[i] *
@@ -66,7 +66,7 @@ void RampIn(AudioFrame& audioFrame)
 
 void RampOut(AudioFrame& audioFrame)
 {
-    assert(rampSize <= audioFrame.samples_per_channel_);
+    assert(rampSize <= audioFrame.samples_per_channel());
     for(size_t i = 0; i < rampSize; i++)
     {
         const size_t rampPos = rampSize - 1 - i;
@@ -74,7 +74,7 @@ void RampOut(AudioFrame& audioFrame)
                                                    audioFrame.mutable_data()[i]);
     }
     memset(&audioFrame.mutable_data()[rampSize], 0,
-           (audioFrame.samples_per_channel_ - rampSize) *
+           (audioFrame.samples_per_channel() - rampSize) *
            sizeof(audioFrame.mutable_data()[0]));
 }
 }  // namespace webrtc

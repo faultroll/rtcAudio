@@ -15,8 +15,8 @@
 #include "rtc_base/view.h"
 // #include "api/audio_codecs/audio_decoder.h"
 // #include "rtc_base/logging.h"
-// #include "modules/audio_coding/neteq/decoder_database.h"
-#include "modules/audio_coding/codecs/cng/webrtc_cng.h"
+#include "modules/audio_coding/neteq/decoder_database.h"
+// #include "modules/audio_coding/codecs/cng/webrtc_cng.h"
 #include "modules/audio_coding/neteq/dsp_helper.h"
 #include "modules/audio_coding/neteq/sync_buffer.h"
 #include "modules/audio_coding/neteq/packet.h"
@@ -29,12 +29,12 @@ void ComfortNoise::Reset() {
 
 int ComfortNoise::UpdateParameters(const Packet& packet) {
   // Get comfort noise decoder.
-  /* if (decoder_database_->SetActiveCngDecoder(packet.payload_type) != kOK) {
+  if (decoder_database_->SetActiveCngDecoder(packet.payload_type) != kOK) {
     return kUnknownPayloadType;
   }
   ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
-  RTC_DCHECK(cng_decoder); */
-  cng_decoder_->UpdateSid(packet.payload);
+  RTC_DCHECK(cng_decoder);
+  /* cng_decoder_->UpdateSid(packet.payload); */
   return kOK;
 }
 
@@ -57,14 +57,15 @@ int ComfortNoise::Generate(size_t requested_length, AudioMultiVector* output) {
   }
   output->AssertSize(number_of_samples);
   // Get the decoder from the database.
-  /* ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
+  ComfortNoiseDecoder* cng_decoder = decoder_database_->GetActiveCngDecoder();
+  /* ComfortNoiseDecoder* cng_decoder = cng_decoder_.get(); */
   if (!cng_decoder) {
-    // LOG(LS_ERROR) << "Unknwown payload type";
+    /* LOG(LS_ERROR) << "Unknwown payload type"; */
     return kUnknownPayloadType;
-  } */
+  }
 
   std::unique_ptr<int16_t[]> temp(new int16_t[number_of_samples]);
-  if (!cng_decoder_->Generate(
+  if (!cng_decoder->Generate(
           RTC_VIEW(int16_t)(temp.get(), number_of_samples), new_period)) {
     // Error returned.
     output->Zeros(requested_length);

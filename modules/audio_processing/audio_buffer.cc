@@ -117,34 +117,46 @@ void AudioBuffer::set_downmixing_by_averaging() {
   downmix_by_averaging_ = true;
 }
 
-/* void AudioBuffer::CopyFrom(const float* const* data,
+/* void AudioBuffer::CopyFrom(const float* const* stacked_data,
                            const StreamConfig& stream_config) {
   RTC_DCHECK_EQ(stream_config.num_frames(), input_num_frames_);
   RTC_DCHECK_EQ(stream_config.num_channels(), input_num_channels_);
-  RestoreNumChannels();
+  const bool downmix_needed = input_num_channels_ > 1 && num_channels_ == 1;
+  const bool resampling_needed = input_num_frames_ != buffer_num_frames_;
+
   // Initialized lazily because there's a different condition in
   // DeinterleaveFrom.
-  const bool need_to_downmix =
-      input_num_channels_ > 1 && buffer_num_channels_ == 1;
-  if (need_to_downmix && !input_buffer_) {
+  RestoreNumChannels();
+  if (downmix_needed && !input_buffer_) {
     input_buffer_.reset(
         new IFChannelBuffer(input_num_frames_, buffer_num_channels_));
   }
 
-  if (stream_config.has_keyboard()) {
-    keyboard_data_ = data[KeyboardChannelIndex(stream_config)];
-  }
-
   // Downmix.
-  const float* const* data_ptr = data;
-  if (need_to_downmix) {
-    DownmixToMono<float, float>(data, input_num_frames_, input_num_channels_,
+  const float* const* data_ptr = stacked_data;
+  if (downmix_needed) {
+    RTC_DCHECK_GE(kMaxSamplesPerChannel, input_num_frames_);
+    DownmixToMono<float, float>(stacked_data, input_num_frames_, input_num_channels_,
                                 input_buffer_->fbuf()->channels()[0]);
     data_ptr = input_buffer_->fbuf_const()->channels();
+    // float downmix[kMaxSamplesPerChannel];
+    // if (downmix_by_averaging_) {
+    //   const float kOneByNumChannels = 1.f / input_num_channels_;
+    //   for (size_t i = 0; i < input_num_frames_; ++i) {
+    //     float value = stacked_data[0][i];
+    //     for (size_t j = 1; j < input_num_channels_; ++j) {
+    //       value += stacked_data[j][i];
+    //     }
+    //     downmix[i] = value * kOneByNumChannels;
+    //   }
+    // }
+    // const float* downmixed_data = downmix_by_averaging_
+    //                                   ? downmix.data()
+    //                                   : stacked_data[channel_for_downmixing_];
   }
 
   // Resample.
-  if (input_num_frames_ != buffer_num_frames_) {
+  if (resampling_needed) {
     for (size_t i = 0; i < buffer_num_channels_; ++i) {
       input_resamplers_[i]->Resample(data_ptr[i], input_num_frames_,
                                      process_buffer_->channels()[i],
@@ -161,14 +173,17 @@ void AudioBuffer::set_downmixing_by_averaging() {
 }
 
 void AudioBuffer::CopyTo(const StreamConfig& stream_config,
-                         float* const* data) {
+                         float* const* stacked_data) {
   RTC_DCHECK_EQ(stream_config.num_frames(), output_num_frames_);
   RTC_DCHECK(stream_config.num_channels() == num_channels_ ||
              num_channels_ == 1);
+  output_num_channels_ = stream_config.num_channels();
+  // const bool upmix_needed = output_num_channels_ > 1 || num_channels_ == 1;
+  const bool resampling_needed = output_num_frames_ != buffer_num_frames_;
 
   // Convert to the float range.
-  float* const* data_ptr = data;
-  if (output_num_frames_ != buffer_num_frames_) {
+  float* const* data_ptr = stacked_data;
+  if (resampling_needed) {
     // Convert to an intermediate buffer for subsequent resampling.
     data_ptr = process_buffer_->channels();
   }
@@ -178,16 +193,17 @@ void AudioBuffer::CopyTo(const StreamConfig& stream_config,
   }
 
   // Resample.
-  if (output_num_frames_ != buffer_num_frames_) {
+  if (resampling_needed) {
     for (size_t i = 0; i < num_channels_; ++i) {
-      output_resamplers_[i]->Resample(data_ptr[i], buffer_num_frames_, data[i],
+      output_resamplers_[i]->Resample(data_ptr[i], buffer_num_frames_, stacked_data[i],
                                       output_num_frames_);
     }
   }
 
   // Upmix.
-  for (size_t i = num_channels_; i < stream_config.num_channels(); ++i) {
-    memcpy(data[i], data[0], output_num_frames_ * sizeof(**data));
+  for (size_t i = num_channels_; i < output_num_channels_; ++i) {
+    // UpmixMonoToInterleaved
+    memcpy(stacked_data[i], stacked_data[0], output_num_frames_ * sizeof(**stacked_data));
   }
 } */
 
@@ -250,8 +266,9 @@ void AudioBuffer::set_num_channels(size_t num_channels) {
 void AudioBuffer::DeinterleaveFrom(AudioFrame* frame) {
   RTC_DCHECK_EQ(frame->num_channels_, input_num_channels_);
   RTC_DCHECK_EQ(frame->samples_per_channel_, input_num_frames_);
-  RestoreNumChannels();
+
   // Initialized lazily because there's a different condition in CopyFrom.
+  RestoreNumChannels();
   if ((input_num_frames_ != buffer_num_frames_) && !input_buffer_) {
     input_buffer_.reset(
         new IFChannelBuffer(input_num_frames_, buffer_num_channels_));

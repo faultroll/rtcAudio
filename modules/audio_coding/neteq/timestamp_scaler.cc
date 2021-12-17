@@ -10,7 +10,7 @@
 
 #include "modules/audio_coding/neteq/timestamp_scaler.h"
 
-// #include "modules/audio_coding/neteq/decoder_database.h"
+#include "modules/audio_coding/neteq/decoder_database.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
@@ -35,7 +35,7 @@ void TimestampScaler::ToInternal(PacketList* packet_list) {
 
 uint32_t TimestampScaler::ToInternal(uint32_t external_timestamp,
                                      uint8_t rtp_payload_type) {
-  const DecoderDatabase::DecoderInfo* info =
+  /* const DecoderDatabase::DecoderInfo* info =
       decoder_database_.GetDecoderInfo(rtp_payload_type);
   if (!info) {
     // Payload type is unknown. Do not scale.
@@ -64,7 +64,7 @@ uint32_t TimestampScaler::ToInternal(uint32_t external_timestamp,
     external_ref_ = external_timestamp;
     internal_ref_ += (external_diff * numerator_) / denominator_;
     return internal_ref_;
-  } else {
+  } else */ {
     // No scaling.
     return external_timestamp;
   }

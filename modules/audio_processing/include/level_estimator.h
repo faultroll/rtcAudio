@@ -11,6 +11,10 @@
 #ifndef MODULES_AUDIO_PROCESSING_LEVEL_ESTIMATOR_H_
 #define MODULES_AUDIO_PROCESSING_LEVEL_ESTIMATOR_H_
 
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
+
 namespace webrtc {
 
 // An estimation component used to retrieve level metrics.

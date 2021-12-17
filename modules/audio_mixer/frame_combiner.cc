@@ -24,6 +24,7 @@
 #include "modules/audio_processing/include/common.h"
 // #include "modules/audio_processing/include/audio_processing.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
+#include "rtc_base/arraysize.h"
 #include "rtc_base/view.h"
 #include "rtc_base/checks.h"
 #include "system_wrappers/include/metrics.h"

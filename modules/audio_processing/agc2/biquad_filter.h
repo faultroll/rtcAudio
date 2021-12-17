@@ -13,6 +13,7 @@
 
 #include <vector>
 
+#include "rtc_base/arraysize.h"
 #include "rtc_base/view.h"
 #include "rtc_base/constructor_magic.h"
 

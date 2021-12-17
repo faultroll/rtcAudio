@@ -36,7 +36,8 @@ public:
         m_samplerate(samplerate),
         m_channels(channels)
     {
-
+        // fix bugs that no audio input but gets noise
+        m_audioFrame.Reset();
     }
 
     virtual int32_t GetAudioFrame(int32_t id, webrtc::AudioFrame *audioFrame)
@@ -62,7 +63,7 @@ public:
         m_audioFrame.speech_type_ = webrtc::AudioFrame::kNormalSpeech;
         m_audioFrame.vad_activity_ = webrtc::AudioFrame::kVadActive;
 
-        memmove(m_audioFrame.data_, pData, SAMPLE2LENGTH(iSamples));
+        memmove(m_audioFrame.mutable_data(), pData, SAMPLE2LENGTH(iSamples));
     }
 
 public:
@@ -474,7 +475,7 @@ DSP_S32 Audio_Webrtc_GetMixGrpFrame(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_PUB_DATAIN
         }
 
         pMixer->pMixerImpl->Process();
-        pstData->pVirAddr = pMixer->pCb->m_audioFrame.data_;
+        pstData->pVirAddr = pMixer->pCb->m_audioFrame.data();
         pstData->s32Len = pMixer->iSz10ms;
         pstData->u64Pts = 0; // TODO rtc::TimeNanos();
         pstData->u32Seq = 0;

@@ -23,13 +23,16 @@
 #include "modules/audio_conference_mixer/source/memory_pool.h"
 #include "modules/audio_conference_mixer/source/time_scheduler.h"
 #include "modules/include/audio_frame.h"
-/* #include "modules/audio_processing/include/gain_control.h"
-#include "modules/audio_processing/include/voice_detection.h" */
+// #include "modules/audio_processing/include/gain_control.h"
+// #include "modules/audio_processing/include/voice_detection.h"
 
 namespace webrtc {
-class ApmDataDumper;
+class AudioBuffer;
+/* class ApmDataDumper;
 // class FixedGainController;
-class Limiter;
+class Limiter; */
+class GainControl;
+class StandaloneVad;
 
 struct FrameAndMuteInfo {
   FrameAndMuteInfo(AudioFrame* f, bool m) : frame(f), muted(m) {}
@@ -186,7 +189,7 @@ private:
     size_t _numMixedParticipants;
     // Determines if we will use a limiter for clipping protection during
     // mixing.
-    bool use_limiter_;
+    bool _use_limiter;
 
     uint32_t _timeStamp;
 
@@ -198,16 +201,19 @@ private:
     int16_t _processCalls;
 
     // Used for inhibiting saturation in mixing.
-    /* rtc::CriticalSection crit_render_ RTC_ACQUIRED_BEFORE(crit_capture_);
-    rtc::CriticalSection crit_capture_;
-    std::unique_ptr<GainControl> _limiter; */
-    std::unique_ptr<ApmDataDumper> _data_dumper;
+    rtc::CriticalSection _crit_render RTC_ACQUIRED_BEFORE(_crit_capture);
+    rtc::CriticalSection _crit_capture;
+    std::unique_ptr<GainControl> _limiter;
+    /* std::unique_ptr<ApmDataDumper> _data_dumper;
     // std::unique_ptr<FixedGainController> _limiter;
-    std::unique_ptr<Limiter> _limiter;
+    std::unique_ptr<Limiter> _limiter; */
+    std::unique_ptr<AudioBuffer> _mixed_buffer;
 
     // woogeen vad
     enum {kMaximumVadParticipants = 1024};
 
+    // Combine energy with vad probability
+    uint32_t CombinedEnergy(AudioFrame* frame) const;
     void UpdateVadStatistics(AudioFrameList* mixList);
 
     bool _vadEnabled;
@@ -218,9 +224,10 @@ private:
     uint32_t _amountOf10MsRemainder;
     std::map<int32_t, int64_t> _vadParticipantEnergyList;
 
-    // std::map<int32_t, std::unique_ptr<AudioProcessing>> _apms;
-    /* std::map<int32_t, std::unique_ptr<VoiceDetection>> _vads;
-    std::map<int32_t, std::unique_ptr<rtc::CriticalSection>> _vad_crits; */
+    // std::map<int32_t, std::unique_ptr<VoiceDetection>> _vads;
+    // std::map<int32_t, std::unique_ptr<rtc::CriticalSection>> _vad_crits;
+    // std::map<int32_t, std::unique_ptr<AudioBuffer>> _vad_buffers;
+    mutable std::map<int32_t, std::unique_ptr<StandaloneVad>> _vads;
 
     std::vector<ParticipantVadStatistics> _vadStatistics;
 

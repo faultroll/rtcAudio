@@ -8,6 +8,7 @@
 
 #if defined(__cplusplus)
 // C++ version.
+
 #include <algorithm>
 // #include <array>
 
@@ -161,27 +162,7 @@ struct Array {
 
 #endif /* container */
 
-// From rtc_base/arraysize.h
-#include <stddef.h>
-
-// This file defines the arraysize() macro and is derived from Chromium's
-// base/macros.h.
-
-// The arraysize(arr) macro returns the # of elements in an array arr.
-// The expression is a compile-time constant, and therefore can be
-// used in defining new arrays, for example.  If you use arraysize on
-// a pointer by mistake, you will get a compile-time error.
-
-// This template function declaration is used in defining arraysize.
-// Note that the function doesn't need an implementation, as we only
-// use its type.
-template <typename T, size_t N>
-char (&ArraySizeHelper(T (&array)[N]))[N];
-
-#define arraysize(array) (sizeof(ArraySizeHelper(array)))
-
 #elif 0 // #else  // __cplusplus not defined
-
 // C version. Lacks many features compared to the C++ version, but usage
 // guidelines are the same.
 
@@ -198,8 +179,6 @@ inline rtc_View rtc_MakeView(void *data, size_t size)
 // RTC_VIEW(float) xxx_view = RTC_MAKE_VIEW(float)(xxx.data(), xxx.size());
 
 // #define RTC_CONTAINER(T) struct { T data_; }
-
-#define arraysize(array) (sizeof(array)/sizeof(array[0]))
 
 #endif  // defined(__cplusplus)
 

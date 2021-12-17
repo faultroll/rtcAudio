@@ -18,6 +18,7 @@
 #include "rtc_base/atomic_ops.h"
 #include "rtc_base/platform_thread_types.h"
 #include "rtc_base/time_utils.h"
+#include "rtc_base/system/file_wrapper.h"
 #if defined(WEBRTC_WIN)
 #include <mmsystem.h>
 #else
@@ -42,9 +43,12 @@ namespace {
 // to stderr. At destruction, redirection is halted.
 class TraceToStderr : public TraceCallback {
  public:
-  static const int kLevelFilter = kTraceError | kTraceWarning | kTraceTerseInfo;
+  static const int kLevelFilter = kTraceError | kTraceWarning | kTraceTerseInfo /* | kTraceMemory | kTraceStream */;
+  static const size_t kMaxFileNameSize = 1024;
 
-  TraceToStderr();
+  // Cannot use |TraceToStderr() { TraceToStderr(false); }|
+  TraceToStderr() 
+    : TraceToStderr(false) {}
   // Set |override_time| to true to control the time printed with each trace
   // through SetTimeSeconds(). Otherwise, the trace's usual wallclock time is
   // used.
@@ -60,7 +64,7 @@ class TraceToStderr : public TraceCallback {
   // No attempt is made to ensure thread-safety between the trace writing and
   // time updating. In tests, since traces will normally be triggered by the
   // main thread doing the time updating, this should be of no concern.
-  virtual void SetTimeSeconds(float time);
+  virtual void SetTimeSeconds(float time) { time_seconds_ = time; }
 
  public:
   // Implements TraceCallback.
@@ -69,116 +73,49 @@ class TraceToStderr : public TraceCallback {
   bool override_time_;
   float time_seconds_;
 
-  class FileWrapper {
-   public:
-    static const size_t kMaxFileNameSize = 1024;
-
-    FileWrapper() {}
-    ~FileWrapper() { CloseFile(); }
-
-    // Returns true if a file has been opened.
-    bool is_open() const { return file_ != nullptr; }
-    // Opens a file in read or write mode, decided by the read_only parameter.
-    bool OpenFile(const char* file_name_utf8, bool read_only) {
-      size_t length = strlen(file_name_utf8);
-      if (length > kMaxFileNameSize - 1)
-        return false;
-      if (file_ != nullptr)
-        return false;
-    #if defined(WEBRTC_WIN)
-      int len = MultiByteToWideChar(CP_UTF8, 0, file_name_utf8, -1, nullptr, 0);
-      std::wstring wstr(len, 0);
-      MultiByteToWideChar(CP_UTF8, 0, file_name_utf8, -1, &wstr[0], len);
-      file_ = _wfopen(wstr.c_str(), read_only ? L"rb" : L"wb");
-    #else
-      file_ = fopen(file_name_utf8, read_only ? "rb" : "wb");
-    #endif
-      return file_ != nullptr;
-    }
-    void CloseFile() {
-      if (file_ != nullptr)
-        fclose(file_);
-      file_ = nullptr;
-    }
-    // Flush any pending writes.  Note: Flushing when closing, is not required.
-    int Flush() {
-      return (file_ != nullptr) ? fflush(file_) : -1;
-    }
-    // Rewinds the file to the start.
-    int Rewind() {
-      if (file_ != nullptr) {
-        position_ = 0;
-        return fseek(file_, 0, SEEK_SET);
-      }
-      return -1;
-    }
-    int Read(void* buf, size_t length) {
-      if (file_ == nullptr)
-        return -1;
-      size_t bytes_read = fread(buf, 1, length, file_);
-      return static_cast<int>(bytes_read);
-    }
-    bool Write(const void* buf, size_t length) {
-      if (buf == nullptr)
-        return false;
-      if (file_ == nullptr)
-        return false;
-      size_t num_bytes = fwrite(buf, 1, length, file_);
-      position_ += num_bytes;
-      return num_bytes == length;
-    }
-
-   private:
-    FILE* file_ = nullptr;
-    size_t position_ = 0;
-
-    RTC_DISALLOW_COPY_AND_ASSIGN(FileWrapper);
-  };
-
  public:
   void WriteToFile(const char* message, int length);
  private:
-  FILE* OpenFile(const char* file_name_utf8, bool read_only);
-  void CloseFile();
+  bool UpdateFileName(
+      char file_name_with_counter_utf8[kMaxFileNameSize],
+      const size_t new_count) const /* EXCLUSIVE_LOCKS_REQUIRED(crit_) */;
+  bool CreateFileName(
+    const char file_name_utf8[kMaxFileNameSize],
+    char file_name_with_counter_utf8[kMaxFileNameSize],
+    const size_t new_count) const;
+  int SetTraceFileImpl(const char* file_name, const bool add_file_counter);
 
   size_t row_count_text_;
   size_t file_count_text_;
-  const std::unique_ptr<FileWrapper> trace_file_;
   std::string trace_file_path_;
+  FileWrapper trace_file_;
 };
-
-TraceToStderr::TraceToStderr()
-    : override_time_(false),
-      time_seconds_(0),
-      row_count_text_(0),
-      file_count_text_(0),
-      trace_file_(new FileWrapper()),
-      trace_file_path_("/tmp/rtc_trace") {
-  trace_file_->OpenFile(trace_file_path_.c_str(), false);
-  Trace::set_level_filter(kLevelFilter);
-  Trace::CreateTrace();
-  Trace::SetTraceCallback(this);
-}
 
 TraceToStderr::TraceToStderr(bool override_time)
     : override_time_(override_time),
-      time_seconds_(0) {
-  Trace::set_level_filter(kLevelFilter);
+      time_seconds_(0),
+      row_count_text_(0),
+      file_count_text_(0),
+      trace_file_path_("webrtc_trace.log"),
+      trace_file_(/* FileWrapper() */FileWrapper::OpenWriteOnly(trace_file_path_)) {
+  Trace::set_level_filter(kLevelFilter); 
   Trace::CreateTrace();
-  Trace::SetTraceCallback(this);
 }
 
 TraceToStderr::~TraceToStderr() {
-  Trace::SetTraceCallback(NULL);
+  // DONE(lgY): find why this function called
+  // reason: cannot use |TraceToStderr() { TraceToStderr(false); }|
+  // this function should not be called, but strange things happens here
+  // so |WriteToFile| crashs because of |trace_file_| if nullptr
   Trace::ReturnTrace();
+  trace_file_.Close();
 }
 
-void TraceToStderr::SetTimeSeconds(float time) { time_seconds_ = time; }
-
 void TraceToStderr::Print(TraceLevel level, const char* msg, int length) {
+  // TODO(lgY): Print and WriteToFile can be different
   if (level & kLevelFilter) {
-    assert(length > Trace::kBoilerplateLength);
-    std::string msg = msg;
+    /* assert(length > Trace::kBoilerplateLength);
+    std::string msg = msg; // crashs here, stack isn't enough
     std::string msg_log = msg.substr(Trace::kBoilerplateLength);
     if (override_time_) {
       fprintf(stderr, "%.2fs %s\n", time_seconds_, msg_log.c_str());
@@ -187,58 +124,59 @@ void TraceToStderr::Print(TraceLevel level, const char* msg, int length) {
                                         Trace::kTimestampLength);
       fprintf(stderr, "%s %s\n", msg_time.c_str(), msg_log.c_str());
     }
+    fflush(stderr); */
+    fprintf(stderr, "%s\n", msg);
     fflush(stderr);
   }
 }
 
 void TraceToStderr::WriteToFile(const char* msg, int length) {
-  if (!trace_file_->is_open())
+  // TODO(lgY): what is the right logic?
+  // default not open file, but open file when filename is set? 
+  if (!trace_file_.is_open())
     return;
 
   if (row_count_text_ > WEBRTC_TRACE_MAX_FILE_SIZE) {
     // wrap file
     row_count_text_ = 0;
-    trace_file_->Flush();
+    trace_file_.Flush();
 
     if (file_count_text_ == 0) {
-      trace_file_->Rewind();
-    } /* else {
-      char new_file_name[FileWrapper::kMaxFileNameSize];
+      trace_file_.Rewind();
+    } else {
+      char new_file_name[kMaxFileNameSize];
 
       // get current name
       file_count_text_++;
       UpdateFileName(new_file_name, file_count_text_);
 
-      trace_file_->CloseFile();
+      trace_file_.Close();
       trace_file_path_.clear();
 
-      if (!trace_file_->OpenFile(new_file_name, false)) {
+      trace_file_ = FileWrapper::OpenWriteOnly(new_file_name);
+      if (!trace_file_.is_open()) {
         return;
       }
       trace_file_path_ = new_file_name;
     }
-  } */
-  /* if (row_count_text_ == 0) {
-    char message[WEBRTC_TRACE_MAX_MESSAGE_SIZE + 1];
-    int length = AddDateTimeInfo(message);
-    if (length != -1) {
-      message[length] = 0;
-      message[length - 1] = '\n';
-      trace_file_->Write(message, length);
-      row_count_text_++;
-    } */
   }
-
-  char trace_message[WEBRTC_TRACE_MAX_MESSAGE_SIZE];
-  memcpy(trace_message, msg, length);
-  trace_message[length] = 0;
-  trace_message[length - 1] = '\n';
-  trace_file_->Write(trace_message, length);
-  row_count_text_++;
+  char message[WEBRTC_TRACE_MAX_MESSAGE_SIZE + 1];
+  // TODO(lgY): Cannot access TraceImpl::AddDateTimeInfo
+  /* if (row_count_text_ == 0) {
+    length = AddDateTimeInfo(message);
+  } else */ {
+    memcpy(message, msg, length);
+  }
+  if (length != -1) {
+    message[length] = '\0';
+    message[length - 1] = '\n';
+    trace_file_.Write(message, length);
+    row_count_text_++;
+  }
 }
 
-/* bool TraceImpl::UpdateFileName(
-    char file_name_with_counter_utf8[FileWrapper::kMaxFileNameSize],
+bool TraceToStderr::UpdateFileName(
+    char file_name_with_counter_utf8[kMaxFileNameSize],
     const size_t new_count) const {
   int length = trace_file_path_.length();
 
@@ -267,11 +205,11 @@ void TraceToStderr::WriteToFile(const char* msg, int length) {
           static_cast<long unsigned int>(new_count),
           &trace_file_path_[length_without_file_ending]);
   return true;
-} */
+}
 
-/* bool TraceImpl::CreateFileName(
-    const char file_name_utf8[FileWrapper::kMaxFileNameSize],
-    char file_name_with_counter_utf8[FileWrapper::kMaxFileNameSize],
+bool TraceToStderr::CreateFileName(
+    const char file_name_utf8[kMaxFileNameSize],
+    char file_name_with_counter_utf8[kMaxFileNameSize],
     const size_t new_count) const {
   int length = strlen(file_name_utf8);
   if (length < 0) {
@@ -295,54 +233,62 @@ void TraceToStderr::WriteToFile(const char* msg, int length) {
           static_cast<long unsigned int>(new_count),
           file_name_utf8 + length_without_file_ending);
   return true;
-} */
+}
 
-/* int TraceImpl::SetTraceFileImpl(const char* file_name_utf8,
+int TraceToStderr::SetTraceFileImpl(const char* file_name_utf8,
                                    const bool add_file_counter) {
-  rtc::CritScope lock(&crit_);
+  // rtc::CritScope lock(&crit_);
 
-  trace_file_->CloseFile();
+  trace_file_.Close();
   trace_file_path_.clear();
 
   if (file_name_utf8) {
-    is_stderr_ = false;
+    // is_stderr_ = false;
 
     if (add_file_counter) {
       file_count_text_ = 1;
 
-      char file_name_with_counter_utf8[FileWrapper::kMaxFileNameSize];
+      char file_name_with_counter_utf8[kMaxFileNameSize];
       CreateFileName(file_name_utf8, file_name_with_counter_utf8,
                      file_count_text_);
-      if (!trace_file_->OpenFile(file_name_with_counter_utf8, false)) {
+      trace_file_ = FileWrapper::OpenWriteOnly(file_name_with_counter_utf8);
+      if (!trace_file_.is_open()) {
         return -1;
       }
       trace_file_path_ = file_name_with_counter_utf8;
     } else {
       file_count_text_ = 0;
-      if (!trace_file_->OpenFile(file_name_utf8, false)) {
+      trace_file_ = FileWrapper::OpenWriteOnly(file_name_utf8);
+      if (!trace_file_.is_open()) {
         return -1;
       }
       trace_file_path_ = file_name_utf8;
     }
   } else {
-    is_stderr_ = true;
+    // is_stderr_ = true;
 
-    if (!trace_file_->OpenFromFileHandle(stderr)) {
+    trace_file_ = FileWrapper(stderr);
+    if (!trace_file_.is_open()) {
       return -1;
     }
   }
   row_count_text_ = 0;
   return 0;
-} */
+}
 
 }  // namespace
 
 TraceImpl::TraceImpl()
     : callback_(new TraceToStderr()) {
-  prev_api_tick_count_ = prev_tick_count_ = 0;
+  // trace->SetTraceCallbackImpl(callback_.get());
+  struct timespec ts;
+  timespec_get_systime(&ts);
+  int64_t dw_current_time = timespec_to_millisec(&ts);
+  prev_api_tick_count_ = prev_tick_count_ = dw_current_time;;
 }
 
 TraceImpl::~TraceImpl() {
+  // trace->SetTraceCallbackImpl(NULL);
 }
 
 int TraceImpl::AddThreadId(char* trace_message) const {
@@ -693,6 +639,7 @@ void TraceImpl::AddMessageToList(
     const int length,
     const TraceLevel level) {
   rtc::CritScope lock(&crit_);
+  // printf("callback_: %p, trace_message: %s\n", callback_.get(), trace_message);
   if (callback_) {
     callback_->Print(level, trace_message, length);
     callback_->WriteToFile(trace_message, length);

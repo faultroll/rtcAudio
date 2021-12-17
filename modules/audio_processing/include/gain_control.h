@@ -11,19 +11,24 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC_GAIN_CONTROL_H_
 #define MODULES_AUDIO_PROCESSING_AGC_GAIN_CONTROL_H_
 
-// #include <stddef.h>
-// #include <stdbool.h>
+#include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include "modules/audio_processing/include/common.h" // errors
+
+#include "modules/audio_processing/include/common.h"
+#include "rtc_base/view.h"
 
 namespace webrtc {
+
+class AudioBuffer;
 
 // The automatic gain control (AGC) component brings the signal to an
 // appropriate range. This is done by applying a digital gain directly and, in
 // the analog mode, prescribing an analog gain to be applied at the audio HAL.
 //
 // Recommended to be enabled on the client-side.
-class GainControl {
+class GainControl : public ApmCaptureModule,
+                    public ApmRenderModule {
  public:
   virtual int Enable(bool enable) = 0;
   virtual bool is_enabled() const = 0;
@@ -105,7 +110,16 @@ class GainControl {
   // the audio HAL.
   virtual bool stream_is_saturated() const = 0;
 
- protected:
+  virtual int set_stream_has_echo(bool stream_has_echo) = 0;
+  virtual bool stream_has_echo() const = 0;
+
+  // ApmSubmodule
+  virtual void Initialize(size_t num_proc_channels, int sample_rate_hz) = 0;
+  // virtual void ProcessRenderAudio(RTC_VIEW(const int16_t) packed_render_audio) = 0;
+  // virtual int AnalyzeCaptureAudio(AudioBuffer* audio) = 0;
+  // virtual int ProcessCaptureAudio(AudioBuffer* audio, bool stream_has_echo) = 0;
+
+ // protected:
   virtual ~GainControl() {}
 };
 }  // namespace webrtc

@@ -24,19 +24,20 @@
         {
             return (void *)(intptr_t)thrd_start_wrapper_func_helper(wrapper);
         }
-        static thrd_t thrd_create_helper(void *ti)
+        // Cannot use |static thrd_t thrd_create_helper(void *ti)|
+        // race will occur if use |thr| in |thrd_start_wrapper_func|
+        // for |thr| will be |thrd_null| if |thrd_create_helper| is not return
+        // but |thrd_start_wrapper_func| thread uses |thr|
+        static void thrd_create_helper(thrd_t *thr, void *ti)
         {
-            thrd_t thr;
             pthread_attr_t attr;
             pthread_attr_init(&attr);
             // Set the stack stack size to 1M.
             pthread_attr_setstacksize(&attr, 1024 * 1024);
-            if (pthread_create(&thr, &attr, &thrd_start_wrapper_func, (void *)ti) != 0) {
-                thr = thrd_null;
+            if (pthread_create(thr, &attr, &thrd_start_wrapper_func, (void *)ti) != 0) {
+                *thr = thrd_null;
             }
             pthread_attr_destroy(&attr);
-
-            return thr;
         }
         thrd_t thrd_current(void)
         {
@@ -128,13 +129,13 @@
 
             return (DWORD)thrd_start_wrapper_func_helper(wrapper);
         }
-        static thrd_t thrd_create_helper(void *ti)
+        static void thrd_create_helper(thrd_t *thr, void *ti)
         {
             // Create the thread
             // See bug 2902 for background on STACK_SIZE_PARAM_IS_A_RESERVATION.
             // Set the reserved stack stack size to 1M, which is the default on Windows
             // and Linux.
-            return CreateThread(NULL, 1024 * 1024, &thrd_start_wrapper_func, (LPVOID) ti,
+            *thr = CreateThread(NULL, 1024 * 1024, &thrd_start_wrapper_func, (LPVOID) ti,
                                 STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
         }
         thrd_t thrd_current(void)
@@ -251,7 +252,7 @@
         ti->func_ = func;
         ti->arg_ = arg;
 
-        *thr = thrd_create_helper((void *)ti);
+        thrd_create_helper(thr, (void *)ti);
 
         // Did we fail to create the thread?
         if (thrd_null == *thr) {

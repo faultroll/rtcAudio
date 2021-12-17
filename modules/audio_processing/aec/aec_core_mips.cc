@@ -23,13 +23,14 @@
 extern "C" {
 #include "common_audio/signal_processing/include/signal_processing_library.h"
 }
+#include "modules/audio_processing/aec/aec_common.h"
 #include "modules/audio_processing/aec/aec_core_optimized_methods.h"
 #include "common_audio/third_party/ooura/fft_size_128/ooura_fft.h"
 
 // namespace webrtc {
 
-extern const float WebRtcAec_weightCurve[65];
-extern const float WebRtcAec_overDriveCurve[65];
+// extern const float WebRtcAec_weightCurve[65];
+// extern const float WebRtcAec_overDriveCurve[65];
 
 void WebRtcAec_FilterFar_mips(
     int num_partitions,

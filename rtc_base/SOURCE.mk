@@ -11,6 +11,7 @@ srcs += \
         rtc_base/platform_thread_types.cc \
         rtc_base/critical_section.cc \
         rtc_base/memory/aligned_malloc.cc \
+        rtc_base/system/file_wrapper.cc \
         rtc_base/trace_impl.cc
 # just compile, currently not in use
 srcs_cpl_only += \

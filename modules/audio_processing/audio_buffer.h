@@ -36,6 +36,7 @@ class AudioBuffer {
   // TODO(ajm): Switch to take ChannelLayouts.
   static const int kSplitBandSize = 160;
   static const size_t kMaxSampleRate = 384000;
+
   AudioBuffer(size_t input_rate,
               size_t input_num_channels,
               size_t buffer_rate,

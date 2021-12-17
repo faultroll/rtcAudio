@@ -1,6 +1,7 @@
-#include<stdio.h>
-#include"webrtc/modules/audio_conference_mixer/include/audio_conference_mixer.h"
-// #include"webrtc/modules/audio_conference_mixer/include/audio_conference_mixer_defines.h"
+#include <stdio.h>
+#include <string.h>
+#include "modules/audio_conference_mixer/include/audio_conference_mixer.h"
+// #include "modules/audio_conference_mixer/include/audio_conference_mixer_defines.h"
 
 static const int iSampleRate = 48000;
 static const int iChannels = 2;
@@ -53,7 +54,7 @@ public:
         m_audioFrame.speech_type_ = webrtc::AudioFrame::kNormalSpeech;
         m_audioFrame.vad_activity_ = webrtc::AudioFrame::kVadActive;
 
-        memcpy(m_audioFrame.data_, pdata, iSample * sizeof(short));
+        memcpy(m_audioFrame.mutable_data(), pdata, iSample * sizeof(short));
     }
 
 public:
@@ -70,13 +71,13 @@ int main(int argc, char *argv[])
           *pSrc4 = nullptr, *pSrc5 = nullptr, *pSrc6 = nullptr;
     FILE *pOut = nullptr;
 
-    pSrc1 = fopen("1_4800_16_2.pcm", "rb+");
-    pSrc2 = fopen("2_4800_16_2.pcm", "rb+");
-    pSrc3 = fopen("3_4800_16_2.pcm", "rb+");
-    pSrc4 = fopen("4_4800_16_2.pcm", "rb+");
-    pSrc5 = fopen("5_4800_16_2.pcm", "rb+");
-    pSrc6 = fopen("6_4800_16_2.pcm", "rb+");
-    pOut = fopen("conferencemix.pcm", "wb+");
+    pSrc1 = fopen("demos/samples/1_48000_16_2.pcm", "rb+");
+    pSrc2 = fopen("demos/samples/2_48000_16_2.pcm", "rb+");
+    pSrc3 = fopen("demos/samples/3_48000_16_2.pcm", "rb+");
+    pSrc4 = fopen("demos/samples/4_48000_16_2.pcm", "rb+");
+    pSrc5 = fopen("demos/samples/5_48000_16_2.pcm", "rb+");
+    pSrc6 = fopen("demos/samples/6_48000_16_2.pcm", "rb+");
+    pOut = fopen("conference_mixed_48000_16_2.pcm", "wb+");
 
     int iId = 0;
     short *pBuf1 = new short[i10msSz];
@@ -88,37 +89,37 @@ int main(int argc, char *argv[])
     webrtc::AudioConferenceMixer *pMixer = webrtc::AudioConferenceMixer::Create(iId);
 
     Participant *pPar1 = new Participant(1);
-    Participant *pPar2 = new Participant(2);
+    Participant *pPar2 = new Participant(6); // test id sequence
     Participant *pPar3 = new Participant(3);
     Participant *pPar4 = new Participant(4);
     Participant *pPar5 = new Participant(5);
-    Participant *pPar6 = new Participant(6);
+    Participant *pPar6 = new Participant(2);
 
-    pMixer->SetMixabilityStatus(pPar1, false);
+    pMixer->SetMixabilityStatus(pPar1, true);
     pMixer->SetMixabilityStatus(pPar2, true);
     pMixer->SetMixabilityStatus(pPar3, true);
-    pMixer->SetMixabilityStatus(pPar4, false);
-    pMixer->SetMixabilityStatus(pPar5, false);
-    pMixer->SetMixabilityStatus(pPar6, false);
+    pMixer->SetMixabilityStatus(pPar4, true);
+    pMixer->SetMixabilityStatus(pPar5, true);
+    pMixer->SetMixabilityStatus(pPar6, true);
 
     AudioCallback *pCb = new AudioCallback;
 
     pMixer->RegisterMixedStreamCallback(pCb);
 
     int iR1 = 0, iR2 = 0, iR3 = 0, iR4 = 0, iR5 = 0, iR6 = 0;
-    int64_t timeLeft = 0, mixCount = 0;
+    int timeLeft = 0, mixCount = 0;
 
     do
     {
         if ((timeLeft = pMixer->TimeUntilNextProcess()) != 0)
         {
-            // printf("left (%lld) ms\n", timeLeft);
+            // printf("left (%d) ms\n", timeLeft);
 
             continue;
         }
         else
         {
-            // printf("mix (%lld) times\n", ++mixCount); // mixCount * i10msSz * sizeof(short) / 1024 == filesize of pOut
+            // printf("mix (%d) times\n", ++mixCount); // mixCount * i10msSz * sizeof(short) / 1024 == filesize of pOut
 
             iR1 = fread(pBuf1, sizeof(short), i10msSz, pSrc1);
             iR2 = fread(pBuf2, sizeof(short), i10msSz, pSrc2);
@@ -136,12 +137,13 @@ int main(int argc, char *argv[])
 
             pMixer->Process();
 
-            fwrite(pCb->m_audioFrame.data_, sizeof(short), iR1, pOut);
+            fwrite(pCb->m_audioFrame.data(), sizeof(short), iR1, pOut);
         }
     }
     while (iR1 && iR2 && iR3 && iR4 && iR5 && iR6);
 
     pMixer->UnRegisterMixedStreamCallback();
+    delete pCb;
     delete pPar1;
     delete pPar2;
     delete pPar3;
@@ -149,6 +151,13 @@ int main(int argc, char *argv[])
     delete pPar5;
     delete pPar6;
     delete pMixer;
+
+    delete[] pBuf1;
+    delete[] pBuf2;
+    delete[] pBuf3;
+    delete[] pBuf4;
+    delete[] pBuf5;
+    delete[] pBuf6;
 
     fclose(pSrc1);
     fclose(pSrc2);
