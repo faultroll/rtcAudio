@@ -37,8 +37,8 @@ class PlatformThread {
 
   // Sets the thread's name. Must be called before Start().
   // If |obj| is non-null, its value is appended to |name|.
-  const std::string& name() const { return name_; }
-  bool SetName(const std::string& name, const void* obj);
+  // const std::string& name() const { return name_; }
+  // bool SetName(const std::string& name, const void* obj);
 
   // Spawns a thread and tries to set thread priority according to the priority
   // from when CreateThread was called.
@@ -52,10 +52,6 @@ class PlatformThread {
 
   // Stops (joins) the spawned thread.
   void Stop();
-  
-  // Set the priority of the thread. Must be called when thread is running.
-  // TODO(tommi): Make private and only allow public support via ctor.
-  bool SetPriority(ThrdPrio priority);
 
  protected:
 #if defined(WEBRTC_WIN)
@@ -65,13 +61,16 @@ class PlatformThread {
 
  private:
   void Run();
+  // Set the priority of the thread. Must be called when thread is running.
+  // TODO(tommi): Make private and only allow public support via ctor.
+  // bool SetPriority(ThrdPrio priority);
 
   ThreadRunFunction const run_function_ = nullptr;
   const ThrdPrio priority_ = kNormalPrio;
   void* const obj_;
   // TODO(pbos): Make sure call sites use string literals and update to a const
   // char* instead of a std::string.
-  /* const */ std::string name_;
+  const std::string name_;
   rtc::SequenceChecker thread_checker_;
   rtc::SequenceChecker spawned_thread_checker_;
   

@@ -26,7 +26,8 @@ int64_t timespec_to_millisec(struct timespec *ts)
     int timespec_get_systime(struct timespec *ts)
     {
         // how to get systick?
-        return timespec_get(ts, TIME_UTC);
+        // cannot use |timespec_get|, for it gets |CLOCK_REALTIME|
+        return clock_gettime(CLOCK_MONOTONIC, ts);
     }
     int timespec_get_utctime(struct timespec *ts)
     {

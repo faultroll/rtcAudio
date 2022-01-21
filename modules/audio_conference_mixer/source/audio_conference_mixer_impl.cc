@@ -670,7 +670,7 @@ void AudioConferenceMixerImpl::UpdateToMix(
     std::map<int, MixerParticipant*>* mixParticipantList,
     size_t* maxAudioFrameCounter) const {
     WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
-                 "UpdateToMix(mixList,rampOutList,mixParticipantList,%d)",
+                 "UpdateToMix(mixList,rampOutList,mixParticipantList,%zu)",
                  *maxAudioFrameCounter);
     const size_t mixListStartSize = mixList->size();
     AudioFrameList activeList;

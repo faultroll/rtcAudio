@@ -27,6 +27,9 @@ static struct {
        _i < trace_impl_.handle_number; \
        ++_i, var = &trace_impl_.handles[_i])
 
+// |dw_delta_time| is meanless with different module and id
+// we need a map {(module << 16 | id), prev_tick_count} to make this work
+#if 0
 static void once(void (*func)(void));
 static inline 
 int64_t UpdateTickCount(const TraceLevel level,
@@ -48,6 +51,7 @@ int64_t UpdateTickCount(const TraceLevel level,
   }
   return dw_delta_time;
 }
+#endif
 
 #if defined(WEBRTC_WIN)
 
@@ -72,6 +76,7 @@ int64_t UpdateTickCount(const TraceLevel level,
 static
 int AddTime(char* trace_message,
             const TraceLevel level) {
+#if 0
   const int kMessageLength = 22;
   // tick
   int64_t dw_current_time, dw_delta_time;
@@ -120,6 +125,16 @@ int AddTime(char* trace_message,
           (long)(dw_delta_time));
   // Messages are 22 characters.
   return kMessageLength;
+#else
+  const int kMessageLength = 15;
+  // tm
+  SYSTEMTIME system_time;
+  GetSystemTime(&system_time);
+  sprintf(trace_message, "(%2u:%2u:%2u:%3u) ", system_time.wHour,
+          system_time.wMinute, system_time.wSecond, system_time.wMilliseconds);
+  // Messages are 17 characters.
+  return kMessageLength;
+#endif
 }
 
 static
@@ -179,6 +194,7 @@ void once(void (*func)(void)) {
 static
 int AddTime(char* trace_message,
             const TraceLevel level) {
+#if 0
   const int kMessageLength = 22;
   // tick
   int64_t dw_current_time, dw_delta_time;
@@ -197,6 +213,20 @@ int AddTime(char* trace_message,
           (long)(dw_delta_time));
   // Messages are 22 characters.
   return kMessageLength;
+#else
+  const int kMessageLength = 15;
+  // tm
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  struct tm buffer;
+  const struct tm* system_time = localtime_r(&ts.tv_sec, &buffer);
+  const int64_t ms_time = (int64_t)(ts.tv_nsec) / INT64_C(1000000);
+  // combine
+  sprintf(trace_message, "(%2u:%2u:%2u:%3lu) ", system_time->tm_hour,
+          system_time->tm_min, system_time->tm_sec, (long)(ms_time));
+  // Messages are 17 characters.
+  return kMessageLength;
+#endif
 }
 
 static
@@ -294,6 +324,9 @@ int AddModuleAndId(char* trace_message,
   // TODO(hellner): is this actually a problem? If so, it should be better to
   //                clean up int
   const long idl = id;
+  // const unsigned long int id_engine = id >> 16;
+  // const unsigned long int id_channel = id & 0xffff;
+  // sprintf(trace_message, "       VOICE:%5ld %5ld;", id_engine, id_channel);
   switch (module) {
     /* case kTraceUndefined:
       // Add the appropriate amount of whitespace.
@@ -439,6 +472,48 @@ void AddImpl(const TraceLevel level,
   AddTraceMessageToList(trace_message, ack_len, level);
 }
 
+// CreateFileName is same as UpdateFileName
+/* static inline 
+bool UpdateFileName(const char* file_name_utf8,
+                    char* file_name_with_counter_utf8,
+                    const size_t new_count) {
+  // TODO(lgY): check file_name_utf8 
+  size_t length = strlen(file_name_utf8);
+  if (length == 0) {
+    return false;
+  }
+  // find suffix
+  size_t length_without_file_ending = length;
+  do {
+    if (file_name_utf8[length_without_file_ending] == '.') {
+      break;
+    } else {
+      length_without_file_ending--;
+    }
+  } while (length_without_file_ending > 0);
+  if (length_without_file_ending == 0) {
+    length_without_file_ending = length;
+  }
+  // find count
+  size_t length_to = length_without_file_ending;
+  do {
+    if (file_name_utf8[length_to] == '_') {
+      break;
+    } else {
+      length_to--;
+    }
+  } while (length_to > 0);
+ if (length_to == 0) {
+    length_to = length_without_file_ending;
+  }
+
+  memcpy(&file_name_with_counter_utf8[0], &file_name_utf8[0], length_to);
+  sprintf(&file_name_with_counter_utf8[length_to], "_%lu%s",
+          (unsigned long)(new_count),
+          &file_name_utf8[length_without_file_ending]);
+  return true;
+} */
+
 static
 void WriteToFile(TraceHandle *handle,
                  const char* msg,
@@ -446,25 +521,39 @@ void WriteToFile(TraceHandle *handle,
   if (!handle->ostream.file)
     return;
 
-  if (handle->row_count_text >= WEBRTC_TRACE_MAX_FILE_SIZE) {
-    // wrap file
-    handle->row_count_text = 0;
-    fflush(handle->ostream.file);
-    fseek(handle->ostream.file, 0, SEEK_SET);
-  }
-  if (0 == handle->row_count_text) {
-    if (handle->ostream.file != stdout &&
-        handle->ostream.file != stderr) {
-      char msg_tmp[WEBRTC_TRACE_MAX_MESSAGE_SIZE];
-      int length_tmp = AddDateTimeInfo(msg_tmp);
-      msg_tmp[length_tmp] = '\0';
-      msg_tmp[length_tmp - 1] = '\n';
-      fwrite(msg_tmp, 1, length_tmp, handle->ostream.file);
-      handle->row_count_text++;
+  // if (handle->wrap_line_number > WEBRTC_TRACE_MAX_FILE_SIZE)
+  //    // no wrap will happen
+  // else // if (handle->wrap_line_number =< WEBRTC_TRACE_MAX_FILE_SIZE)
+  //    // line [handle->wrap_line_number, WEBRTC_TRACE_MAX_FILE_SIZE)
+  //    // will be wrap wriiten
+  if (handle->row_count_text >= handle->ostream.wrap_line_number) {
+    if (handle->row_count_text == handle->ostream.wrap_line_number) {
+      handle->wrap_offset = ftell(handle->ostream.file);
+    }
+    if (handle->row_count_text >= WEBRTC_TRACE_MAX_FILE_SIZE) {
+      /* if (handle->file_count_text == 0) */ {
+        // wrap file
+        handle->row_count_text = handle->ostream.wrap_line_number;
+        // fdatasync(fileno(handle->ostream.file));
+        fseek(handle->ostream.file, handle->wrap_offset, SEEK_SET);
+      } /* else {
+        char new_file_name[WEBRTC_TRACE_MAX_FILENAME_SIZE];
+        // get current name
+        handle->file_count_text++;
+        UpdateFileName(handle->ostream.file_name_utf8, new_file_name,
+                       handle->file_count_text);
+        // TODO(lgY): race here if file closed in one thread 
+        // but other thread(s) does not stop writting file 
+        fclose(handle->ostream.file);
+        handle->ostream.file = fopen(new_file_name, "wb");
+      } */
     }
   }
-  fwrite(msg, 1, length, handle->ostream.file);
-  handle->row_count_text++;
+  if (handle->row_count_text < WEBRTC_TRACE_MAX_FILE_SIZE) {
+    fwrite(msg, 1, length, handle->ostream.file);
+    fflush(handle->ostream.file);
+    handle->row_count_text++;
+  }
 }
 
 static 
@@ -492,8 +581,18 @@ void TraceInit(void) {
     TraceOStream ostream = {
       .file = stdout,
       .filter = kTraceDefault,
+      .wrap_line_number = 0,
     };
     WebRtcTrace_SetOStream(&ostream);
+  }
+  TraceHandle* handle;
+  HANDLE_FOREACH(handle) {
+    char msg_tmp[WEBRTC_TRACE_MAX_MESSAGE_SIZE];
+    int length_tmp = AddDateTimeInfo(msg_tmp);
+    msg_tmp[length_tmp] = '\0';
+    msg_tmp[length_tmp - 1] = '\n';
+    fwrite(msg_tmp, 1, length_tmp, handle->ostream.file);
+    fflush(handle->ostream.file);
   }
 }
 

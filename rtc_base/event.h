@@ -15,10 +15,15 @@
 #if defined(WEBRTC_WIN)
 #include <windows.h>
 #elif defined(WEBRTC_POSIX)
+#define USE_SEMAPHORE 0
+#if !USE_SEMAPHORE
 #include <pthread.h>
-#else
+#else // USE_SEMAPHORE
+#include <semaphore.h>
+#endif // USE_SEMAPHORE
+#else // WEBRTC_WIN
 #error "Must define either WEBRTC_WIN or WEBRTC_POSIX."
-#endif
+#endif // WEBRTC_WIN
 
 namespace rtc {
 
@@ -52,11 +57,15 @@ class Event {
 #if defined(WEBRTC_WIN)
   HANDLE event_handle_;
 #elif defined(WEBRTC_POSIX)
+#if !USE_SEMAPHORE
   pthread_mutex_t event_mutex_;
   pthread_cond_t event_cond_;
+#else // USE_SEMAPHORE
+  sem_t event_sem_;
+#endif // USE_SEMAPHORE
   const bool is_manual_reset_;
-  bool event_status_;
-#endif
+  volatile bool event_status_;
+#endif // WEBRTC_WIN
 
   RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(Event);
 };

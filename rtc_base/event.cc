@@ -55,6 +55,21 @@ bool Event::Wait(const int give_up_after_ms, int /*warn_after_ms*/) {
 
 #elif defined(WEBRTC_POSIX)
 
+namespace {
+
+timespec GetTimespec(const int milliseconds_from_now) {
+  struct timespec ts, ts_elapsed;
+  Timespec(&ts);
+  TimeToTimespec(&ts_elapsed, milliseconds_from_now);
+  TimespecAfter(&ts, &ts_elapsed);
+
+  return ts;
+}
+
+}  // namespace
+
+#if !USE_SEMAPHORE
+
 // On MacOS, clock_gettime is available from version 10.12, and on
 // iOS, from version 10.0. So we can't use it yet.
 #if defined(WEBRTC_MAC) || defined(WEBRTC_IOS)
@@ -72,21 +87,21 @@ bool Event::Wait(const int give_up_after_ms, int /*warn_after_ms*/) {
 Event::Event(bool manual_reset, bool initially_signaled)
     : is_manual_reset_(manual_reset),
       event_status_(initially_signaled) {
-  // cannot use PTHREAD_MUTEX_RECURSIVE here
-  // cond_wait only unlocks one level mutex
+  // Cannot use |PTHREAD_MUTEX_RECURSIVE| here
+  // |pthread_cond_timedwait| only unlocks one level mutex
   RTC_CHECK(pthread_mutex_init(&event_mutex_, nullptr) == 0);
   pthread_condattr_t cond_attr;
   RTC_CHECK(pthread_condattr_init(&cond_attr) == 0);
 #if !USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
   RTC_CHECK(pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC) == 0);
-#endif
+#endif // USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
   RTC_CHECK(pthread_cond_init(&event_cond_, &cond_attr) == 0);
   pthread_condattr_destroy(&cond_attr);
 }
 
 Event::~Event() {
-  pthread_mutex_destroy(&event_mutex_);
   pthread_cond_destroy(&event_cond_);
+  pthread_mutex_destroy(&event_mutex_);
 }
 
 void Event::Set() {
@@ -101,19 +116,6 @@ void Event::Reset() {
   event_status_ = false;
   pthread_mutex_unlock(&event_mutex_);
 }
-
-namespace {
-
-timespec GetTimespec(const int milliseconds_from_now) {
-  struct timespec ts, ts_elapsed;
-  Timespec(&ts);
-  TimeToTimespec(&ts_elapsed, milliseconds_from_now);
-  TimespecAfter(&ts, &ts_elapsed);
-
-  return ts;
-}
-
-}  // namespace
 
 bool Event::Wait(const int give_up_after_ms, const int warn_after_ms) {
   // Instant when we'll log a warning message (because we've been waiting so
@@ -144,9 +146,9 @@ bool Event::Wait(const int give_up_after_ms, const int warn_after_ms) {
       } else {
 #if USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
         error = pthread_cond_timedwait_monotonic_np(&event_cond_, &event_mutex_, &*timeout_ts);
-#else
+#else // USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
         error = pthread_cond_timedwait(&event_cond_, &event_mutex_, &*timeout_ts);
-#endif
+#endif // USE_PTHREAD_COND_TIMEDWAIT_MONOTONIC_NP
       }
     }
     return error;
@@ -174,6 +176,45 @@ bool Event::Wait(const int give_up_after_ms, const int warn_after_ms) {
   return (error == 0);
 }
 
-#endif
+#else // USE_SEMAPHORE
+
+Event::Event(bool manual_reset, bool initially_signaled)
+    : is_manual_reset_(manual_reset),
+      event_status_(initially_signaled) {
+  RTC_CHECK(sem_init(&event_sem_, 0, 0) == 0);
+}
+
+Event::~Event() {
+  sem_destroy(&event_sem_);
+}
+
+void Event::Set() {
+  // AtomicOps::ReleaseStore(&event_status_, true);
+  sem_post(&event_sem_);
+}
+
+void Event::Reset() {
+  // AtomicOps::ReleaseStore(&event_status_, false);
+}
+
+bool Event::Wait(const int give_up_after_ms, int /*warn_after_ms*/) {
+  // ScopedYieldPolicy::YieldExecution();
+  int error = 0;
+  // while (!AtomicOps::AcquireLoad(&event_status_) && error == 0) {
+    if (give_up_after_ms == kForever) {
+      error = sem_wait(&event_sem_);
+    } else {
+      timespec timeout_ts = GetTimespec(give_up_after_ms);
+      error = sem_timedwait(&event_sem_, &timeout_ts);
+    }
+  // }
+  // if (error == 0 && !is_manual_reset_)
+  //   AtomicOps::ReleaseStore(&event_status_, false);
+  return (error == 0);
+}
+
+#endif // USE_SEMAPHORE
+
+#endif // WEBRTC_WIN
 
 }  // namespace rtc

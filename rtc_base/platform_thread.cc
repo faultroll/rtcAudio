@@ -27,9 +27,9 @@ PlatformThread::PlatformThread(ThreadRunFunction func,
                                void* obj,
                                const char* name /*= "Thread"*/,
                                ThrdPrio priority /*= kNormalPrio*/)
-    : run_function_(func), priority_(priority), obj_(obj) {
+    : run_function_(func), priority_(priority), obj_(obj), name_(name) {
   RTC_DCHECK(func);
-  SetName(name, this);  // default name
+  // SetName(name, this);  // default name
   spawned_thread_checker_.Detach();
 }
 
@@ -38,7 +38,7 @@ PlatformThread::~PlatformThread() {
   RTC_DCHECK(!IsRunning());
 }
 
-bool PlatformThread::SetName(const std::string& name, const void* obj) {
+/* bool PlatformThread::SetName(const std::string& name, const void* obj) {
   RTC_DCHECK(!IsRunning());
   RTC_DCHECK(!name.empty());
   // TODO(tommi): Consider lowering the limit to 15 (limit on Linux).
@@ -53,7 +53,7 @@ bool PlatformThread::SetName(const std::string& name, const void* obj) {
     name_ += buf;
   }
   return true;
-}
+} */
 
 int PlatformThread::StartThread(void* param) {
   static_cast<PlatformThread*>(param)->Run();
@@ -79,7 +79,9 @@ bool PlatformThread::IsRunning() const {
 }
 
 Thrd PlatformThread::GetThreadRef() const {
-  return ThrdCurrent();
+  // Cannot use |ThrdCurrent|, it will 
+  // get the |thread_ref_| who calls this function
+  return thread_;
 }
 
 void PlatformThread::Stop() {
@@ -176,7 +178,7 @@ void PlatformThread::Run() {
 #endif
 }
 
-bool PlatformThread::SetPriority(ThrdPrio priority) {
+/* bool PlatformThread::SetPriority(ThrdPrio priority) {
 #if RTC_DCHECK_IS_ON
   if (run_function_) {
     // The non-deprecated way of how this function gets called, is that it must
@@ -192,7 +194,7 @@ bool PlatformThread::SetPriority(ThrdPrio priority) {
 #endif
 
   return ThrdSetPrio(thread_, priority);
-}
+} */
 
 #if defined(WEBRTC_WIN)
 bool PlatformThread::QueueAPC(PAPCFUNC function, ULONG_PTR data) {

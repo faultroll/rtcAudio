@@ -24,48 +24,55 @@
 /*
  * int main(void)
  * {
- *     TraceOStream ostream1 = {
- *         .file = stdout,
- *         .filter = kTraceAll,
- *     };
- *     WebRtcTrace_SetOStream(&ostream1);
- *     // Generate file name
+ *   // |WebRtcTrace_SetOStream| calls 
+ *   // before |InitFunctionPointers| be called
+ *   TraceOStream ostream1 = {
+ *     .file = stdout,
+ *     .filter = kTraceAll,
+ *     .wrap_line_number = 0,
+ *   };
+ *   WebRtcTrace_SetOStream(&ostream1);
+ *   char filename[64];
+ *   {
  *     struct timespec ts;
- *     clock_gettime(CLOCK_REALTIME, &ts); // CLOCK_MONOTONIC
+ *     clock_gettime(CLOCK_REALTIME, &ts);
  *     struct tm buffer;
  *     const struct tm *system_time = localtime_r(&ts.tv_sec, &buffer);
- *     char filename[64];
- *     snprintf(filename, sizeof(filename), "%s_%02d_%02d_%02d_%02d_%02d_%02d.log", "webrtc",
+ *     snprintf(filename, sizeof(filename), "%s/%s_%02d_%02d_%02d_%02d_%02d_%02d.log",
+ *              "/tmp", "webrtc",
  *              system_time->tm_year + 1900, system_time->tm_mon + 1, system_time->tm_mday,
  *              system_time->tm_hour, system_time->tm_min, system_time->tm_sec);
- *     fp = fopen(filename, "wb");
- *     TraceOStream ostream2 = {
- *         .file = fp,
- *         .filter = kTraceError,
- *     };
- *     // Called before |InitFunctionPointers| be called
- *     WebRtcTrace_SetOStream(&ostream1);
- *     WebRtcTrace_SetOStream(&ostream2);
- *     // Test max ostream number
- *     // WebRtcTrace_SetOStream(&ostream2);
- *     // WebRtcTrace_SetOStream(&ostream2);
- *     WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, 0xa5,
- *                  "failed in TimeToNextUpdate() call");
- *     WEBRTC_TRACE(kTraceWarning, kTraceAudioMixerServer, 0xa5,
- *                  "participant must be registered before turning it into anonymous");
- *     printf("stdout(%p): (%#x), fp(%p): (%#x)\n", 
- *            (void *)stdout, WebRtcTrace_level_filter(stdout), 
- *            (void *)fp, WebRtcTrace_level_filter(fp));
- *     WebRtcTrace_set_level_filter(stdout, kTraceNone);
- *     // Test file rewind
- *     for (size_t i = 0; i < 1024; i++) {
- *         WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, i,
- *                      "failed in TimeToNextUpdate() call (%zu)", i);
- *         usleep(1000);
- *     }
- *     if (fp)
- *         fclose(fp);
- *     return 0;
+ *   }
+ *   FILE* fp = fopen(filename, "wb");
+ *   TraceOStream ostream2 = {
+ *       .file = fp,
+ *       .filter = kTraceError,
+ *       .wrap_line_number = 100,
+ *   };
+ *   WebRtcTrace_SetOStream(&ostream2);
+ *   // Test |WEBRTC_TRACE_MAX_OSTREAM_NUMBER|
+ *   WebRtcTrace_SetOStream(&ostream2);
+ *   WebRtcTrace_SetOStream(&ostream2);
+ *   WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, 0xa5,
+ *                "failed in TimeToNextUpdate() call");
+ *   WEBRTC_TRACE(kTraceWarning, kTraceAudioMixerServer, 0xa5,
+ *                "participant must be registered before turning it into anonymous");
+ *   // Test |level_filter|
+ *   printf("stdout(%p): (%#x), fp(%p): (%#x)\n", 
+ *          (void *)stdout, WebRtcTrace_level_filter(stdout), 
+ *          (void *)fp, WebRtcTrace_level_filter(fp));
+ *   WebRtcTrace_set_level_filter(stdout, kTraceNone);
+ *   // Test wrap file and add time
+ *   for (size_t i = 0; i < 1024; i++) {
+ *       WEBRTC_TRACE(kTraceError, kTraceAudioMixerServer, i,
+ *                    "failed in TimeToNextUpdate() call %d", i);
+ *       usleep(1 * 1000); // 1ms
+ *   }
+ *   if (fp) {
+ *       fclose(fp);
+ *       fp = NULL;
+ *   }
+ *   return 0;
  * }
  *
  */
@@ -134,8 +141,14 @@ typedef enum {
 
 typedef struct {
   FILE* file; // Used as identifer
+  // const char *file_name_utf8;
   TraceLevel filter; // Used as bitmask
   // TraceModule module;
+  // wrap file at line number x, so line [x, max) will be wrap written
+  // if |wrap_line_number| is GE than max line in file, no more line will be written
+  // eg. x is 1000, and max is 1000
+  // line [0,1000) will be written once, and no more line will be written
+  const size_t wrap_line_number;
   // If |add_file_counter| is false the same file will be
   // reused when it fills up. If it's true a new file with incremented name will be used.
   // const bool add_file_counter;
@@ -150,7 +163,7 @@ void WebRtcTrace_set_level_filter(FILE* file,
 // Returns what type of messages are written to the trace file.
 int WebRtcTrace_level_filter(FILE* file);
 
-// Registers out stream to receive trace messages. returns -1 if full
+// Registers out stream to receive trace messages.
 int WebRtcTrace_SetOStream(TraceOStream* ostream);
 
 // Adds a trace message for writing to file. The message is put in a queue
@@ -165,7 +178,12 @@ int WebRtcTrace_SetOStream(TraceOStream* ostream);
 void WebRtcTrace_Add(const TraceLevel level,
                      const TraceModule module,
                      const int id,
-                     const char* msg, ...);
+                     const char* msg, ...)
+#if defined(__GNUC__)
+    __attribute__((__format__(__printf__, 4, 5)));
+#else
+    ;
+#endif
 
 #if defined(__cplusplus)
 } // }  // namespace webrtc

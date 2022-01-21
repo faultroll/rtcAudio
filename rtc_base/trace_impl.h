@@ -24,6 +24,8 @@
 // 256 bytes per row). So on average 110*100*1000 = 11 Mbyte, max 256*100*1000 =
 // 25.6 Mbyte
 #define WEBRTC_TRACE_MAX_FILE_SIZE 1000 // 100*1000
+// Max length of file_name_utf8
+#define WEBRTC_TRACE_MAX_FILENAME_SIZE 256
 // Number of ostream that my be added
 #define WEBRTC_TRACE_MAX_OSTREAM_NUMBER 3
 
@@ -41,7 +43,9 @@ static const int kBoilerplateLength = 71; // 12(level)+22(time)+25(module,id)+12
 
 typedef struct {
   TraceOStream ostream;
+  long wrap_offset;
   size_t row_count_text;
+  // size_t file_count_text;
 } TraceHandle;
 
 // Form trace message

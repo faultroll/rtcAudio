@@ -78,7 +78,8 @@
         }
         int thrd_set_priority(thrd_t thr, int prio)
         {
-            const int policy = SCHED_RR;
+            // Do not use |SCHED_RR| or |SCHED_FIFO| if we don't need realtime
+            const int policy = SCHED_OTHER;
             const int min_prio = sched_get_priority_min(policy);
             const int max_prio = sched_get_priority_max(policy);
             if (min_prio == -1 || max_prio == -1)
@@ -107,6 +108,7 @@
                     param.sched_priority = /* std::max */fmax(top_prio - 1, low_prio);
                     break;
                 case thrd_priority_realtime:
+                    // Shoule we use |SCHED_RR| here?
                     param.sched_priority = top_prio;
                     break;
             }

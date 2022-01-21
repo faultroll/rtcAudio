@@ -497,12 +497,20 @@ class RTC_LOCKABLE RTC_EXPORT Thread {
     int milliseconds;
   };
 
+  class _SetNameMessage final : public rtc::MessageData {
+   public:
+    Thread *thread;
+    /* const */ std::string name;
+    const void* obj;
+  };
+
   class QueuedTaskHandler final : public MessageHandler {
    public:
     enum Operation {
       kSend,
       /* kSetDispatchWarningMs, */
       kSleepMs,
+      kSetName,
     };
     QueuedTaskHandler() {}
     void OnMessage(Message* msg) override;
@@ -542,7 +550,7 @@ class RTC_LOCKABLE RTC_EXPORT Thread {
   DWORD thread_id_ = 0;
 #endif */
   PlatformThread* thread_;
-  Thrd thread_ref_;
+  volatile int thread_ref_; // Thrd thread_ref_;
 
   // Indicates whether or not ownership of the worker thread lies with
   // this instance or not. (i.e. owned_ == !wrapped).

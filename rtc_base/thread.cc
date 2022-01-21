@@ -260,7 +260,7 @@ void Thread::DoInit() {
 
   fInitialized_ = true;
   thread_ = new PlatformThread(PreRun, this);
-  thread_ref_ = kNullThrd;
+  thread_ref_ = 0; // thread_ref_ = kNullThrd;
   ThreadManager::Add(this);
 }
 
@@ -607,8 +607,14 @@ bool Thread::SleepMs(int milliseconds) {
 }
 
 bool Thread::SetName(const std::string& name, const void* obj) {
-  /* RTC_DCHECK(!IsRunning());
-
+  if (!IsCurrent()) {
+    _SetNameMessage *smsg = new _SetNameMessage;
+    smsg->thread = this;
+    smsg->name = name;
+    smsg->obj = obj;
+    Post(RTC_FROM_HERE, &queued_task_handler_, QueuedTaskHandler::kSetName, smsg);
+    return true;
+  }
   name_ = name;
   if (obj) {
     // The %p specifier typically produce at most 16 hex digits, possibly with a
@@ -617,8 +623,8 @@ bool Thread::SetName(const std::string& name, const void* obj) {
     snprintf(buf, sizeof(buf), " 0x%p", obj);
     name_ += buf;
   }
-  return true; */
-  return thread_->SetName(name, obj);
+  ThrdSetName(name_.c_str());
+  return true;
 }
 
 void Thread::SetDispatchWarningMs(int deadline) {
@@ -672,7 +678,7 @@ bool Thread::Start() {
   RTC_DCHECK(thread_);
 #endif */
   thread_->Start();
-  thread_ref_ = thread_->GetThreadRef();
+  AtomicOps::ReleaseStore(&thread_ref_, 1); // thread_ref_ = thread_->GetThreadRef();
   return true;
 }
 
@@ -694,7 +700,7 @@ void Thread::UnwrapCurrent() {
 #elif defined(WEBRTC_POSIX)
   thread_ = 0;
 #endif */
-  thread_ref_ = kNullThrd;
+  AtomicOps::ReleaseStore(&thread_ref_, 0); // thread_ref_ = kNullThrd;
 }
 
 void Thread::SafeWrapCurrent() {
@@ -722,7 +728,7 @@ void Thread::Join() {
   thread_ = 0;
 #endif */
   thread_->Stop();
-  thread_ref_ = kNullThrd;
+  AtomicOps::ReleaseStore(&thread_ref_, 0); // thread_ref_ = kNullThrd;
 }
 
 // static
@@ -734,7 +740,7 @@ void* Thread::PreRun(void* pv) {
 void Thread::PreRun(void* pv) {
   Thread* thread = static_cast<Thread*>(pv);
   ThreadManager::Instance()->SetCurrentThread(thread);
-  /* ThrdSetName(thread->name_.c_str()); */ // set in platform_thread
+  /* ThrdSetName(thread->name().c_str()); */ // set in platform_thread
   thread->Run();
 
   ThreadManager::Instance()->SetCurrentThread(nullptr);
@@ -988,6 +994,15 @@ void Thread::QueuedTaskHandler::OnMessage(Message* msg) {
       }
       break;
     }
+    case kSetName: {
+      _SetNameMessage *smsg = (_SetNameMessage *)msg->pdata;
+      if (smsg->thread) {
+        smsg->thread->SetName(smsg->name, smsg->obj);
+      } else {
+        // what to do here?
+      }
+      break;
+    }
   }
   // Thread expects handler to own Message::pdata when OnMessage is called
   // Since MessageData is no longer needed, delete it.
@@ -1059,7 +1074,7 @@ bool Thread::WrapCurrentWithThreadManager(ThreadManager* thread_manager,
   thread_ = pthread_self();
 #endif */
   RTC_UNUSED(need_synchronize_access); // TODO imply synchronization in PlatformThread
-  thread_ref_ = thread_->GetThreadRef();
+  AtomicOps::ReleaseStore(&thread_ref_, 1); // thread_ref_ = thread_->GetThreadRef();
   owned_ = false;
   thread_manager->SetCurrentThread(this);
   return true;
@@ -1072,13 +1087,13 @@ bool Thread::IsRunning() {
   return thread_ != 0;
 #endif */
   /* if (owned_) {
-    return ((thread_ref_ != kNullThrd) && (thread_ != nullptr)
-      && thread_->IsRunning());
+    return ((AtomicOps::AcquireLoad(&thread_ref_) != 0) // (thread_ref_ != kNullThrd) 
+            && (thread_ != nullptr) && thread_->IsRunning());
   }
   else */ {
     // |thread_| will not running if not call |Thread::Start()|
-    // only call |ThreadManager::WrapCurrentThread()| also works
-    return (thread_ref_ != kNullThrd);
+    // only call |ThreadManager::WrapCurrentThread()| also should work
+    return (AtomicOps::AcquireLoad(&thread_ref_) != 0); // (thread_ref_ != kNullThrd);
   }
 }
 

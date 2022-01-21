@@ -75,7 +75,6 @@ void CriticalSection::Leave() const RTC_UNLOCK_FUNCTION() {
 }
 
 bool CriticalSection::CurrentThreadIsOwner() const {
-
 #if RTC_DCHECK_IS_ON
   return ThrdEqual(thread_, ThrdCurrent());
 #else
