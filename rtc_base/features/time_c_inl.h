@@ -1,6 +1,7 @@
 
-#include "time_c.h"
+// #include "time_c.h"
 
+static inline
 void timespec_normalize(struct timespec *ts)
 {
     if (ts->tv_nsec >= NS_PER_SEC) {
@@ -10,12 +11,14 @@ void timespec_normalize(struct timespec *ts)
         ts->tv_nsec -= NS_PER_SEC; */
     }
 }
+static inline
 void timespec_from_millisec(struct timespec *ts, int64_t ms)
 {
     ts->tv_sec  = ms / MS_PER_SEC;
     ts->tv_nsec = (ms % MS_PER_SEC) * NS_PER_MS;
     timespec_normalize(ts);
 }
+static inline
 int64_t timespec_to_millisec(struct timespec *ts)
 {
     return ((int64_t)(ts->tv_sec) * MS_PER_SEC +
@@ -23,26 +26,31 @@ int64_t timespec_to_millisec(struct timespec *ts)
 }
 
 #if defined(_TIME_C_USE_STD)
+    static inline
     int timespec_get_systime(struct timespec *ts)
     {
         // how to get systick?
         // cannot use |timespec_get|, for it gets |CLOCK_REALTIME|
         return clock_gettime(CLOCK_MONOTONIC, ts);
     }
+    static inline
     int timespec_get_utctime(struct timespec *ts)
     {
         return timespec_get(ts, TIME_UTC);
     }
+    // static inline
     // int timespec_get(struct timespec *ts, int base);
 #else
 
     #if defined(_TIME_C_USE_POSIX)
+        static inline
         int timespec_get_systime(struct timespec *ts)
         {
             // TODO(deadbeef): Do we need to handle the case when CLOCK_MONOTONIC is not
             // supported?
             return clock_gettime(CLOCK_MONOTONIC, ts);
         }
+        static inline
         int timespec_get_utctime(struct timespec *ts)
         {
         #if 0
@@ -56,6 +64,7 @@ int64_t timespec_to_millisec(struct timespec *ts)
         #endif
         }
     #elif defined(_TIME_C_USE_WIN)
+        static inline
         int timespec_get_systime(struct timespec *ts)
         {
             int64_t ticks;
@@ -85,6 +94,7 @@ int64_t timespec_to_millisec(struct timespec *ts)
 
             return 0;
         }
+        static inline
         int timespec_get_utctime(struct timespec *ts)
         {
             struct _timeb time;
@@ -96,7 +106,8 @@ int64_t timespec_to_millisec(struct timespec *ts)
             return 0;
         }
     #elif defined(_TIME_C_USE_NONE)
-        /* int timespec_get_systime(struct timespec *ts)
+        /* static inline
+        int timespec_get_systime(struct timespec *ts)
         {
             int64_t ticks;
             // how to get systick?
@@ -105,6 +116,7 @@ int64_t timespec_to_millisec(struct timespec *ts)
 
             return 0;
         }
+        static inline
         int timespec_get_utctime(struct timespec *ts)
         {
             // how to get time from rtc?
@@ -114,12 +126,14 @@ int64_t timespec_to_millisec(struct timespec *ts)
     #else
         #error "time_c: unknown branch in |timespec_get_xxx|"
     #endif /* defined(_TIME_C_USE_POSIX) */
+    static inline
     int timespec_get(struct timespec *ts, int base)
     {
         return timespec_get_utctime(ts);
     }
 #endif /* defined(_TIME_C_USE_STD) */
 
+static inline
 int timespec_get_ntptime(struct timespec *ts)
 {
     // http://doc.ntp.org/archives/4.1.2/leap/

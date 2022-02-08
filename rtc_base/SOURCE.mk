@@ -1,8 +1,9 @@
 # in use
-srcs_c += \
+# srcs_c += \
         rtc_base/features/align_c.c \
         rtc_base/features/time_c.c \
-        rtc_base/features/thread_c.c \
+        rtc_base/features/thread_c.c
+srcs_c += \
         rtc_base/checks_c.c \
         rtc_base/trace_impl_c.c
 srcs += \

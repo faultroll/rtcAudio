@@ -165,29 +165,29 @@ extern "C" {
         #error "thread_c: unknown branch in |thrd|"
     #endif /* defined(_THREAD_C_USE_POSIX) */
     // Create a new thread
-    extern int thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
+    // extern int thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
     // Retrieves a reference to the current thread. On Windows, this is the same
     // as CurrentThreadId. On other platforms it's the pthread_t returned by
     // pthread_self().
-    extern thrd_t thrd_current(void);
+    // extern thrd_t thrd_current(void);
     // Dispose of any resources allocated to the thread when that thread exits
-    extern int thrd_detach(thrd_t thr);
+    // extern int thrd_detach(thrd_t thr);
     // Compares two thread identifiers for equality.
     // Non-zero value if thr0 and thr1 refer to the same value, ​0​ otherwise.
-    extern int thrd_equal(thrd_t thr0, thrd_t thr1);
+    // extern int thrd_equal(thrd_t thr0, thrd_t thr1);
     // Terminate execution of the calling thread
-    extern noreturn void thrd_exit(int res);
+    // extern noreturn void thrd_exit(int res);
     // Wait for a thread to terminate
-    extern int thrd_join(thrd_t thr, int *res);
+    // extern int thrd_join(thrd_t thr, int *res);
     // ​0​ on successful sleep, -1 if a signal occurred, other negative value if an error occurred.
-    extern int thrd_sleep(const struct timespec *duration, struct timespec *remaining);
+    // extern int thrd_sleep(const struct timespec *duration, struct timespec *remaining);
     // Yield execution to another thread. Permit other threads to run,
     // even if current thread would ordinarily continue to run.
-    extern void thrd_yield(void);
+    // extern void thrd_yield(void);
     // Set the priority of the thread. Must be called when thread is running.
-    extern int thrd_set_priority(thrd_t thr, int prio);
+    // extern int thrd_set_priority(thrd_t thr, int prio);
     // Sets the current thread name.
-    extern void thrd_set_name(const char *name);
+    // extern void thrd_set_name(const char *name);
     /**
      * tss
      * 
@@ -213,13 +213,13 @@ extern "C" {
         #error "thread_c: unknown branch in |tss|"
     #endif /* defined(_THREAD_C_USE_POSIX) */
     // Create a TsS
-    extern int tss_create(tss_t *key, tss_dtor_t dtor);
+    // extern int tss_create(tss_t *key, tss_dtor_t dtor);
     // Delete a TsS
-    extern void tss_delete(tss_t key);
+    // extern void tss_delete(tss_t key);
     // Get the value for a TsS
-    extern void *tss_get(tss_t key);
+    // extern void *tss_get(tss_t key);
     // Set the value for a TsS
-    extern int tss_set(tss_t key, void *val);
+    // extern int tss_set(tss_t key, void *val);
     /**
      * mtx
      * 
@@ -243,23 +243,23 @@ extern "C" {
         #error "thread_c: unknown branch in |mtx|"
     #endif /* defined(_THREAD_C_USE_POSIX) */
     // Create a mutex object
-    extern int mtx_init(mtx_t *mtx, int type);
+    // extern int mtx_init(mtx_t *mtx, int type);
     // Release any resources used by the given mutex
-    extern void mtx_destroy(mtx_t *mtx);
+    // extern void mtx_destroy(mtx_t *mtx);
     // Lock the given mutex
     // Blocks until the given mutex can be locked. If the mutex is non-recursive, and
     // the calling thread already has a lock on the mutex, this call will block forever.
-    extern int mtx_lock(mtx_t *mtx);
+    // extern int mtx_lock(mtx_t *mtx);
     // Lock the given mutex, or block until a specific point in time.
     // Blocks until either the given mutex can be locked, or the specified TIME_UTC
     // based time.
-    extern int mtx_timedlock(mtx_t *mtx, const struct timespec *ts);
+    // extern int mtx_timedlock(mtx_t *mtx, const struct timespec *ts);
     // Try to lock the given mutex
     // The specified mutex shall support either test and return or timeout. If the
     // mutex is already locked, the function returns without blocking.
-    extern int mtx_trylock(mtx_t *mtx);
+    // extern int mtx_trylock(mtx_t *mtx);
     // Unlock the given mutex
-    extern int mtx_unlock(mtx_t *mtx);
+    // extern int mtx_unlock(mtx_t *mtx);
     /**
      * cnd
      * 
@@ -284,30 +284,30 @@ extern "C" {
         #error "thread_c: unknown branch in |cnd|"
     #endif /* defined(_THREAD_C_USE_POSIX) */
     // Create a condition variable object
-    extern int cnd_init(cnd_t *cond);
+    // extern int cnd_init(cnd_t *cond);
     // Release any resources used by the given condition variable
-    extern void cnd_destroy(cnd_t *cond);
+    // extern void cnd_destroy(cnd_t *cond);
     // Signal a condition variable
     // Unblocks one of the threads that are blocked on the given condition variable
     // at the time of the call. If no threads are blocked on the condition variable
     // at the time of the call, the function does nothing and return success.
-    extern int cnd_signal(cnd_t *cond);
+    // extern int cnd_signal(cnd_t *cond);
     // Broadcast a condition variable.
     // Unblocks all of the threads that are blocked on the given condition variable
     // at the time of the call. If no threads are blocked on the condition variable
     // at the time of the call, the function does nothing and return success.
-    extern int cnd_broadcast(cnd_t *cond);
+    // extern int cnd_broadcast(cnd_t *cond);
     // Wait for a condition variable to become signaled.
     // The function atomically unlocks the given mutex and endeavors to block until
     // the given condition variable is signaled by a call to cnd_signal or to cnd_broadcast.
     // When the calling thread becomes unblocked it locks the mutex before it returns.
-    extern int cnd_wait(cnd_t *cond, mtx_t *mtx);
+    // extern int cnd_wait(cnd_t *cond, mtx_t *mtx);
     // Wait for a condition variable to become signaled.
     // The function atomically unlocks the given mutex and endeavors to block until
     // the given condition variable is signaled by a call to cnd_signal or to
     // cnd_broadcast, or until after the specified time. When the calling thread
     // becomes unblocked it locks the mutex before it returns.
-    extern int cnd_timedwait(cnd_t *cond, mtx_t *mtx, const struct timespec *ts);
+    // extern int cnd_timedwait(cnd_t *cond, mtx_t *mtx, const struct timespec *ts);
     /**
      * once
      * 
@@ -322,7 +322,7 @@ extern "C" {
             CRITICAL_SECTION lock;
         } once_flag;
         #define ONCE_FLAG_INIT {0,}
-        extern void call_once(once_flag *flag, void (*func)(void));
+        // extern void call_once(once_flag *flag, void (*func)(void));
     #elif defined(_THREAD_C_USE_NONE)
         #error "thread_c: current not support |_THREAD_C_USE_NONE|"
     #else
@@ -333,5 +333,7 @@ extern "C" {
 #if defined(__cplusplus)
 }
 #endif
+
+#include "thread_c_inl.h"
 
 #endif /* _THREAD_C_H */

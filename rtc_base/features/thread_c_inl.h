@@ -39,23 +39,28 @@
             }
             pthread_attr_destroy(&attr);
         }
+        static inline
         thrd_t thrd_current(void)
         {
             return pthread_self();
         }
+        static inline
         int thrd_detach(thrd_t thr)
         {
             return pthread_detach(thr);
         }
         // Non-zero value if thr0 and thr1 refer to the same value, ​0​ otherwise.
+        static inline
         int thrd_equal(thrd_t thr0, thrd_t thr1)
         {
             return (0 == pthread_equal(thr0, thr1)) ? 1 : 0;
         }
+        static inline
         noreturn void thrd_exit(int res)
         {
             pthread_exit((void *)(intptr_t)res);
         }
+        static inline
         int thrd_join(thrd_t thr, int *res)
         {
             void *pres;
@@ -68,14 +73,17 @@
             return thrd_success;
         }
         // ​0​ on successful sleep, -1 if a signal occurred, other negative value if an error occurred.
+        static inline
         int thrd_sleep(const struct timespec *duration, struct timespec *remaining)
         {
             return nanosleep(duration, remaining);
         }
+        static inline
         void thrd_yield(void)
         {
             sched_yield(); // nanosleep(&ts_null, NULL);
         }
+        static inline
         int thrd_set_priority(thrd_t thr, int prio)
         {
             // Do not use |SCHED_RR| or |SCHED_FIFO| if we don't need realtime
@@ -114,6 +122,7 @@
             }
             return pthread_setschedparam(thr, policy, &param);
         }
+        static inline
         void thrd_set_name(const char *name)
         {
         #if defined(_THREAD_C_USE_LINUX)
@@ -140,15 +149,18 @@
             *thr = CreateThread(NULL, 1024 * 1024, &thrd_start_wrapper_func, (LPVOID) ti,
                                 STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
         }
+        static inline
         thrd_t thrd_current(void)
         {
             return GetCurrentThread();
         }
+        static inline
         int thrd_detach(thrd_t thr)
         {
             // https://stackoverflow.com/questions/12744324/how-to-detach-a-thread-on-windows-c#answer-12746081
             return CloseHandle(thr);
         }
+        static inline
         int thrd_equal(thrd_t thr0, thrd_t thr1)
         {
             /* // OwningThread has type HANDLE but actually contains the Thread ID:
@@ -159,10 +171,12 @@
                 reinterpret_cast<HANDLE>(static_cast<size_t>(GetCurrentThreadId())); */
             return (GetThreadId(thr0) == GetThreadId(thr1)) ? 1 : 0;
         }
+        static inline
         noreturn void thrd_exit(int res)
         {
             ExitThread((DWORD)res);
         }
+        static inline
         int thrd_join(thrd_t thr, int *res)
         {
             DWORD dwRes;
@@ -178,6 +192,7 @@
             CloseHandle(thr);
             return thrd_success;
         }
+        static inline
         int thrd_sleep(const struct timespec *duration, struct timespec *remaining)
         {
             SleepEx((DWORD)(duration->tv_sec * 1000 +
@@ -186,15 +201,18 @@
                     TRUE);
             return 0;
         }
+        static inline
         void thrd_yield(void)
         {
             // Alertable sleep to permit RaiseFlag to run and update |stop_|.
             SleepEx(0, true); // Sleep(0);
         }
+        static inline
         int thrd_set_priority(thrd_t thr, int prio)
         {
             return SetThreadPrio(thr, prio);
         }
+        static inline
         void thrd_set_name(const char *name)
         {
             struct {
@@ -243,6 +261,7 @@
 
         return result;
     }
+    static inline
     int thrd_create(thrd_t *thr, thrd_start_t func, void *arg)
     {
         // Fill out the thread startup information
@@ -269,23 +288,28 @@
      * 
      **/
     #if defined(_THREAD_C_USE_POSIX)
+        static inline
         int tss_create(tss_t *key, tss_dtor_t dtor)
         {
             return pthread_key_create(key, dtor);
         }
+        static inline
         void tss_delete(tss_t key)
         {
             pthread_key_delete(key);
         }
+        static inline
         void *tss_get(tss_t key)
         {
             return pthread_getspecific(key);
         }
+        static inline
         int tss_set(tss_t key, void *val)
         {
             return pthread_setspecific(key, val);
         }
     #elif defined(_THREAD_C_USE_WIN)
+        static inline
         int tss_create(tss_t *key, tss_dtor_t dtor)
         {
             if ((*key = TlsAlloc()) == tss_null) {
@@ -294,14 +318,17 @@
                 return thrd_success;
             }
         }
+        static inline
         void tss_delete(tss_t key)
         {
             TlsFree(key);
         }
+        static inline
         void *tss_get(tss_t key)
         {
             return TlsGetValue(key);
         }
+        static inline
         int tss_set(tss_t key, void *val)
         {
             return TlsSetValue(key, val);
@@ -316,6 +343,7 @@
      * 
      **/
     #if defined(_THREAD_C_USE_POSIX)
+        static inline
         int mtx_init(mtx_t *mtx, int type)
         {
             int result;
@@ -328,47 +356,58 @@
             pthread_mutexattr_destroy(&mutex_attribute);
             return result;
         }
+        static inline
         void mtx_destroy(mtx_t *mtx)
         {
             pthread_mutex_destroy(mtx);
         }
+        static inline
         int mtx_lock(mtx_t *mtx)
         {
             return pthread_mutex_lock(mtx);
         }
+        static inline
         int mtx_timedlock(mtx_t *mtx, const struct timespec *ts)
         {
             return pthread_mutex_timedlock(mtx, ts);
         }
+        static inline
         int mtx_trylock(mtx_t *mtx)
         {
             return pthread_mutex_trylock(mtx);
         }
+        static inline
         int mtx_unlock(mtx_t *mtx)
         {
             return pthread_mutex_unlock(mtx);
         }
     #elif defined(_THREAD_C_USE_WIN)
+        static inline
         int mtx_init(mtx_t *mtx, int type)
         {
             return InitializeCriticalSection(mtx);
         }
+        static inline
         void mtx_destroy(mtx_t *mtx)
         {
             DeleteCriticalSection(mtx);
         }
+        static inline
         int mtx_lock(mtx_t *mtx)
         {
             return EnterCriticalSection(mtx);
         }
+        static inline
         int mtx_timedlock(mtx_t *mtx, const struct timespec *ts)
         {
             return thrd_error;
         }
+        static inline
         int mtx_trylock(mtx_t *mtx)
         {
             return TryEnterCriticalSection(mtx);
         }
+        static inline
         int mtx_unlock(mtx_t *mtx)
         {
             return LeaveCriticalSection(mtx);
@@ -383,31 +422,38 @@
      * 
      **/
     #if defined(_THREAD_C_USE_POSIX)
+        static inline
         int cnd_init(cnd_t *cond)
         {
             return pthread_cond_init(cond, NULL);
         }
+        static inline
         void cnd_destroy(cnd_t *cond)
         {
             pthread_cond_destroy(cond);
         }
+        static inline
         int cnd_signal(cnd_t *cond)
         {
             return pthread_cond_signal(cond);
         }
+        static inline
         int cnd_broadcast(cnd_t *cond)
         {
             return pthread_cond_broadcast(cond);
         }
+        static inline
         int cnd_wait(cnd_t *cond, mtx_t *mtx)
         {
             return pthread_cond_wait(cond, mtx);
         }
+        static inline
         int cnd_timedwait(cnd_t *cond, mtx_t *mtx, const struct timespec *ts)
         {
             return pthread_cond_timedwait(cond, mtx, ts);
         }
     #elif defined(_THREAD_C_USE_WIN)
+        static inline
         int cnd_init(cnd_t *cond)
         {
             cond->waiter_count_ = 0;
@@ -427,6 +473,7 @@
             }
             return thrd_success;
         }
+        static inline
         void cnd_destroy(cnd_t *cond)
         {
             if (cond->events_[cnd_event_signal] != NULL) {
@@ -437,18 +484,22 @@
             }
             DeleteCriticalSection(&cond->waiter_mutex_);
         }
+        static inline
         int cnd_signal(cnd_t *cond)
         {
             return thrd_error;
         }
+        static inline
         int cnd_broadcast(cnd_t *cond)
         {
             return thrd_error;
         }
+        static inline
         int cnd_wait(cnd_t *cond, mtx_t *mtx)
         {
             return thrd_error;
         }
+        static inline
         int cnd_timedwait(cnd_t *cond, mtx_t *mtx, const struct timespec *ts)
         {
             return thrd_error;
@@ -465,6 +516,7 @@
     #if defined(_THREAD_C_USE_POSIX)
         // #define call_once(flag,func) pthread_once(flag,func)
     #elif defined(_THREAD_C_USE_WIN)
+        static inline
         void call_once(once_flag *flag, void (*func)(void))
         {
             /* The idea here is that we use a spin lock (via the

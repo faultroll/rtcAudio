@@ -1,5 +1,5 @@
 
-#include "align_c.h"
+// #include "align_c.h"
 
 // The functions declared here
 // 1) Allocates block of aligned memory.
@@ -59,6 +59,7 @@
 // Allocates memory of |size| bytes aligned on an |alignment| boundry.
 // The return value is a pointer to the memory. Note that the memory must
 // be de-allocated using AlignedFree.
+static inline
 void *aligned_alloc(size_t size, size_t alignment)
 {
     if (size == 0) {
@@ -95,6 +96,7 @@ void *aligned_alloc(size_t size, size_t alignment)
 }
 
 // De-allocates memory created using the aligned_alloc() API.
+static inline
 void aligned_free(void *mem_block)
 {
     if (mem_block == NULL) {

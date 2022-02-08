@@ -40,7 +40,7 @@ extern "C" {
 #if defined(_ALIGN_C_USE_STD)
     #include <stdalign.h> // for alignas, alignof
     #include <stdlib.h> // for aligned_alloc, free
-    #define aligned_free(addr) free(addr)
+    #define aligned_free(mem_block) free(mem_block)
 #else
     #if defined(_ALIGN_C_USE_POSIX)
         #ifndef __alignas_is_defined
@@ -72,8 +72,8 @@ extern "C" {
     #else
         #error "align_c: unknown branch in |alignxxx|"
     #endif /* defined(_ALIGN_C_USE_POSIX) */
-    extern void* aligned_alloc(size_t size, size_t alignment);
-    extern void aligned_free(void* mem_block);
+    // extern void* aligned_alloc(size_t size, size_t alignment);
+    // extern void aligned_free(void* mem_block);
 #endif /* defined(_ALIGN_C_USE_STD) */
 // Alignment must be an integer power of two.
 #define ALIGN_VALID(a) (((a)!=0)&&(0==((a)&((a)-1))))
@@ -83,5 +83,9 @@ extern "C" {
 #if defined(__cplusplus)
 }
 #endif
+
+// Work as inline function (c file)
+// TODO(lgY): split it into different files (posix/win/none)
+#include "align_c_inl.h"
 
 #endif /* _ALIGN_C_H */
