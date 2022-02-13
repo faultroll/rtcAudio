@@ -41,7 +41,6 @@ int64_t timespec_to_millisec(struct timespec *ts)
     // static inline
     // int timespec_get(struct timespec *ts, int base);
 #else
-
     #if defined(_TIME_C_USE_POSIX)
         static inline
         int timespec_get_systime(struct timespec *ts)

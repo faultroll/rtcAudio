@@ -1,4 +1,7 @@
 
+#if defined(_ALIGN_C_USE_STD)
+// Nothing here
+#else 
 // #include "align_c.h"
 
 // The functions declared here
@@ -110,3 +113,4 @@ void aligned_free(void *mem_block)
     void *memory_start = (void *)memory_start_pos;
     free(memory_start);
 }
+#endif /* defined(_ALIGN_C_USE_STD) */
