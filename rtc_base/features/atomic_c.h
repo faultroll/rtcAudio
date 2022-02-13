@@ -44,7 +44,7 @@ extern "C" {
 #if defined(_ATOMIC_C_USE_STD)
     #include <stdatomic.h>
     // var
-    #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __extension__({ __typeof__(_oval) __tmp = _oval; atomic_compare_exchange_strong((_ptr), &__tmp, _nval); })
+    #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __extension__({ __typeof__(_oval) __oval = _oval; atomic_compare_exchange_strong((_ptr), &__oval, _nval); __oval; })
     #define ATOMIC_VAR_FAA(_ptr, _val) atomic_fetch_add((_ptr), (_val))
     #define ATOMIC_VAR_XCHG(_ptr, _val) atomic_exchange((_ptr), (_val))
     #define ATOMIC_VAR_STOR(_ptr, _val) atomic_store((_ptr), (_val))
@@ -64,7 +64,7 @@ extern "C" {
     #undef ATOMIC_FLAG_INIT
     #define ATOMIC_FLAG_INIT (false)
     #if defined(_ATOMIC_C_USE_POSIX)
-        #if defined(__clang__)
+        #if 0 // defined(__clang__)
             // var
             #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __c11_atomic_compare_exchange_strong((_ptr), (_oval), (_nval), memory_order_seq_cst, memory_order_seq_cst)
             #define ATOMIC_VAR_FAA(_ptr, _val) __c11_atomic_fetch_add((_ptr), (_val), memory_order_seq_cst)
@@ -74,10 +74,10 @@ extern "C" {
             // flag
             // #define ATOMIC_FLAG_TAS(_ptr) __c11_atomic_flag_test_and_set(_ptr)
             // #define ATOMIC_FLAG_CLR(_ptr) __c11_atomic_flag_clear(_ptr)
-        #elif defined(__GNUC__)
+        #elif 1 // defined(__GNUC__)
             // use __sync or __atomic
             // var
-            #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __sync_bool_compare_and_swap((_ptr), (_oval), (_nval))
+            #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __sync_val_compare_and_swap((_ptr), (_oval), (_nval))
             #define ATOMIC_VAR_FAA(_ptr, _val) __sync_fetch_and_add((_ptr), (_val))
             #define ATOMIC_VAR_XCHG(_ptr, _val) __sync_lock_test_and_set((_ptr), (_val))
             #define ATOMIC_VAR_STOR(_ptr, _val) (void)(*(_ptr) = (_val))
@@ -95,7 +95,7 @@ extern "C" {
         #include <winsock2.h>
         #include <windows.h>
         // var
-        #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) (_InterlockedCompareExchange((_ptr), (_nval), (_oval)) == (_oval))
+        #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) _InterlockedCompareExchange((_ptr), (_nval), (_oval))
         #define ATOMIC_VAR_FAA(_ptr, _val) _InterlockedExchangeAdd((_ptr), (_val))
         #define ATOMIC_VAR_XCHG(_ptr, _val) _InterlockedExchange((_ptr), (_val))
         #define ATOMIC_VAR_STOR(_ptr, _val) (void)(*(_ptr) = (_val))
@@ -105,7 +105,7 @@ extern "C" {
         // #define ATOMIC_FLAG_CLR(_ptr) _InterlockedExchange(_ptr, false)
     #elif defined(_ATOMIC_C_USE_NONE)
         // var
-        #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __extension__({ bool __ret; if ((uintptr_t)_oval == *(uintptr_t *)(_ptr)) { *(_ptr) = (_nval); __ret = true; } else { __ret = false; } __ret; })
+        #define ATOMIC_VAR_CAS(_ptr, _oval, _nval) __extension__({ __typeof__(*(_ptr)) __oval = *(_ptr); if ((uintptr_t)_oval == (uintptr_t)__oval) { *(_ptr) = (_nval); } __oval; })
         #define ATOMIC_VAR_FAA(_ptr, _val) __extension__({ __typeof__(*(_ptr)) __oval = *(_ptr); *(_ptr) += (_val); __oval; })
         #define ATOMIC_VAR_XCHG(_ptr, _val) __extension__({ __typeof__(*(_ptr)) __oval = *(_ptr); *(_ptr) = (_val); __oval; })
         #define ATOMIC_VAR_STOR(_ptr, _val) (void)(*(_ptr) = (_val))

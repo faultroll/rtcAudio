@@ -160,13 +160,13 @@
         rtc::AtomicOps::AcquireLoadPtr(&atomic_histogram_pointer);         \
     if (!histogram_pointer) {                                              \
       histogram_pointer = factory_get_invocation;                          \
-      /* webrtc::metrics::Histogram* prev_pointer */bool swapped =                           \
+      webrtc::metrics::Histogram* prev_pointer =                           \
           rtc::AtomicOps::CompareAndSwapPtr(                               \
               &atomic_histogram_pointer,                                   \
               static_cast<webrtc::metrics::Histogram*>(nullptr),           \
               histogram_pointer);                                          \
-      RTC_DCHECK(swapped/* prev_pointer == nullptr */                                   \
-                /* || prev_pointer == histogram_pointer */);                     \
+      RTC_DCHECK(prev_pointer == nullptr                                   \
+                || prev_pointer == histogram_pointer);                     \
     }                                                                      \
     if (histogram_pointer) {                                               \
       webrtc::metrics::HistogramAdd(histogram_pointer, sample);            \

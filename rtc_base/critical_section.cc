@@ -108,14 +108,14 @@ bool TryCritScope::locked() const {
 }
 
 void GlobalLock::Lock() {
-  while (!AtomicOps::CompareAndSwap(&lock_acquired_, 0, 1)) {
+  while (AtomicOps::CompareAndSwap(&lock_acquired_, 0, 1)) {
     ThrdYield();
   }
 }
 
 void GlobalLock::Unlock() {
-  bool success = AtomicOps::CompareAndSwap(&lock_acquired_, 1, 0);
-  RTC_DCHECK_EQ(true, success) /* << "Unlock called without calling Lock first" */;
+  int old_value = AtomicOps::CompareAndSwap(&lock_acquired_, 1, 0);
+  RTC_DCHECK_EQ(1, old_value) /* << "Unlock called without calling Lock first" */;
 }
 
 GlobalLockScope::GlobalLockScope(GlobalLock* lock)

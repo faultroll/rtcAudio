@@ -30,7 +30,7 @@ class AtomicOps {
   static void ReleaseStore(volatile int* i, int value) {
     ATOMIC_VAR_STOR(i, value);
   }
-  static bool CompareAndSwap(volatile int* i, int old_value, int new_value) {
+  static int CompareAndSwap(volatile int* i, int old_value, int new_value) {
     return ATOMIC_VAR_CAS(i, old_value, new_value);
   }
   // Pointer variants.
@@ -39,7 +39,7 @@ class AtomicOps {
     return ATOMIC_VAR_LOAD(ptr);
   }
   template <typename T>
-  static bool CompareAndSwapPtr(T* volatile* ptr, T* old_value, T* new_value) {
+  static T* CompareAndSwapPtr(T* volatile* ptr, T* old_value, T* new_value) {
     return ATOMIC_VAR_CAS(ptr, old_value, new_value);
   }
 };

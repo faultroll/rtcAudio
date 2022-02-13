@@ -192,9 +192,9 @@ void CreateMap() {
   RtcHistogramMap* map = rtc::AtomicOps::AcquireLoadPtr(&g_rtc_histogram_map);
   if (map == nullptr) {
     RtcHistogramMap* new_map = new RtcHistogramMap();
-    /* RtcHistogramMap* old_map */bool swapped = rtc::AtomicOps::CompareAndSwapPtr(
+    RtcHistogramMap* old_map = rtc::AtomicOps::CompareAndSwapPtr(
         &g_rtc_histogram_map, static_cast<RtcHistogramMap*>(nullptr), new_map);
-    if (/* old_map != nullptr */!swapped)
+    if (old_map != nullptr)
       delete new_map;
   }
 }
