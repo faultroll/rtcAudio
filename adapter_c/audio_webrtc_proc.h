@@ -2,14 +2,13 @@
 #ifndef _AUDIO_WEBRTC_PROC_H
 #define _AUDIO_WEBRTC_PROC_H
 
-#if defined(__cplusplus)
-extern "C"
-{
-#endif
-
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 typedef struct AudioWebrtcProc AudioWebrtcProc;
 typedef struct AudioWebrtcProcParam AudioWebrtcProcParam;
@@ -55,7 +54,7 @@ struct AudioWebrtcProcParam
 #define SAMPLE2LENGTH(_sample) ((size_t)(_sample) << 1) // ((size_t)(_sample) * sizeof(int16_t))
 
 #if defined(__cplusplus)
-};
+}
 #endif
 
 #endif /* _AUDIO_WEBRTC_PROC_H */

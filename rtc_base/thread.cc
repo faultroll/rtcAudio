@@ -237,7 +237,7 @@ Thread::Thread(SocketServer* ss, bool do_init)
       ss_(ss) {
   RTC_DCHECK(ss);
   ss_->SetMessageQueue(this);
-  /* SetName("Thread", this);  // default name */
+  /* SetName("rtcThread", this);  // default name */
   if (do_init) {
     DoInit();
   }

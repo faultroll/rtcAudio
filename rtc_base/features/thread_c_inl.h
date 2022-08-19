@@ -126,6 +126,9 @@
         void thrd_set_name(const char *name)
         {
         #if defined(_THREAD_C_USE_LINUX)
+            /* if(name != NULL && strlen(name) > 0) {
+                pthread_setname_np(pthread_self(), name);
+            } */
             prctl(PR_SET_NAME, (unsigned long)(uintptr_t)(name));  // NOLINT
         #endif
         }

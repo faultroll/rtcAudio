@@ -2,12 +2,11 @@
 #ifndef _AUDIO_WEBRTC_MIXER_H_
 #define _AUDIO_WEBRTC_MIXER_H_
 
-#if defined(__cplusplus)
-extern "C"
-{
-#endif
-
 #include "dsp_common.h"
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 typedef struct AUDIO_WEBRTC_MIXER AUDIO_WEBRTC_MIXER_S;
 typedef struct AUDIO_WEBRTC_MIXER_PARAM
@@ -26,7 +25,7 @@ DSP_S32 Audio_Webrtc_GetMixGrpFrame(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_PUB_DATAIN
 DSP_S32 Audio_Webrtc_ReleaseMixGrpFrame(AUDIO_WEBRTC_MIXER_S *pMixer, DSP_PUB_DATAINFO_S *pstData);
 
 #if defined(__cplusplus)
-};
+}
 #endif
 
 #endif /* AUDIO_WEBRTC_MIXER_H */

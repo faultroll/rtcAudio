@@ -31,7 +31,7 @@ class PlatformThread {
  public:
   PlatformThread(ThreadRunFunction func,
                  void* obj,
-                 const char* name = "Thread",
+                 const char* name = "rtcThread",
                  ThrdPrio priority = kNormalPrio);
   virtual ~PlatformThread();
 

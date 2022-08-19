@@ -25,7 +25,7 @@ void CALLBACK RaiseFlag(ULONG_PTR param) {
 
 PlatformThread::PlatformThread(ThreadRunFunction func,
                                void* obj,
-                               const char* name /*= "Thread"*/,
+                               const char* name /*= "rtcThread"*/,
                                ThrdPrio priority /*= kNormalPrio*/)
     : run_function_(func), priority_(priority), obj_(obj), name_(name) {
   RTC_DCHECK(func);

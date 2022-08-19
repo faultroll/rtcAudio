@@ -2,14 +2,13 @@
 #ifndef _AUDIO_WEBRTC_BUFFER_H
 #define _AUDIO_WEBRTC_BUFFER_H
 
-#if defined(__cplusplus)
-extern "C"
-{
-#endif
-
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 typedef struct AudioWebrtcBuffer AudioWebrtcBuffer;
 typedef struct AudioWebrtcBufferParam AudioWebrtcBufferParam;
@@ -33,8 +32,33 @@ struct AudioWebrtcBufferParam
     int num_channels_;
 };
 
-#if defined(__cplusplus)
+
+// packet buffer
+typedef struct AudioWebrtcPacketBuffer AudioWebrtcPacketBuffer;
+typedef struct AudioWebrtcPacketBufferParam AudioWebrtcPacketBufferParam;
+
+int Audio_Webrtc_PacketBuffer_Create(AudioWebrtcPacketBuffer **handle,
+                                     AudioWebrtcPacketBufferParam *parameter);
+int Audio_Webrtc_PacketBuffer_Destroy(AudioWebrtcPacketBuffer *handle);
+// length is remain_len, both in/out; buffer is offset of origin
+// -1: error, 0: success, 1: length not enough
+int Audio_Webrtc_PacketBuffer_Process(AudioWebrtcPacketBuffer *handle,
+                                      const void *buffer, size_t *length);
+// whether if user want to use this buffer again or skip this buffer
+int Audio_Webrtc_PacketBuffer_MarkUsed(AudioWebrtcPacketBuffer *handle,
+                                       bool used);
+
+struct AudioWebrtcPacketBufferParam
+{
+    void *buffer_; // reduce copy
+    // buffer |length| is |data_len_|+|head_len_|
+    size_t data_len_;
+    void *head_data_;
+    size_t head_len_;
 };
+
+#if defined(__cplusplus)
+}
 #endif
 
 #endif /* _AUDIO_WEBRTC_BUFFER_H */
